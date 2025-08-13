@@ -105,21 +105,22 @@ const GameBoard: React.FC<{
   };
 
   return (
-    <div className="grid grid-cols-10 gap-1 p-4 bg-gray-100 rounded-lg">
-      {/* Column labels */}
-      <div className="col-span-10 grid grid-cols-10 gap-1 mb-2">
+    <div className="inline-block">
+      {/* Column labels (A-J) */}
+      <div className="grid grid-cols-10 gap-1 mb-1">
+        <div className="w-8 h-8"></div> {/* Empty corner */}
         {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'].map((letter) => (
-          <div key={letter} className="text-center text-xs font-bold text-gray-600">
+          <div key={letter} className="w-8 h-8 flex items-center justify-center text-xs font-bold text-gray-600">
             {letter}
           </div>
         ))}
       </div>
 
-      {/* Game board */}
+      {/* Game board with row labels */}
       {Array.from({ length: 10 }, (_, y) => (
-        <React.Fragment key={y}>
-          {/* Row label */}
-          <div className="text-center text-xs font-bold text-gray-600 flex items-center justify-center">
+        <div key={y} className="flex gap-1 mb-1">
+          {/* Row label (1-10) */}
+          <div className="w-8 h-8 flex items-center justify-center text-xs font-bold text-gray-600">
             {y + 1}
           </div>
           
@@ -132,7 +133,7 @@ const GameBoard: React.FC<{
               showShip={showShips}
             />
           ))}
-        </React.Fragment>
+        </div>
       ))}
     </div>
   );
@@ -143,10 +144,36 @@ function App() {
   const { showMainButton, hideMainButton } = useTelegram();
   const [currentScreen, setCurrentScreen] = useState<'home' | 'game' | 'profile'>('home');
   const [gameBoard, setGameBoard] = useState<Board>({
-    ships: [],
-    shots: [],
-    hits: [],
-    misses: []
+    ships: [
+      {
+        id: '1',
+        positions: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }, { x: 3, y: 0 }, { x: 4, y: 0 }], // Aircraft carrier
+        hits: [{ x: 0, y: 0 }, { x: 1, y: 0 }],
+        isSunk: false
+      },
+      {
+        id: '2',
+        positions: [{ x: 2, y: 2 }, { x: 3, y: 2 }, { x: 4, y: 2 }, { x: 5, y: 2 }], // Battleship
+        hits: [{ x: 2, y: 2 }, { x: 3, y: 2 }, { x: 4, y: 2 }, { x: 5, y: 2 }],
+        isSunk: true
+      },
+      {
+        id: '3',
+        positions: [{ x: 7, y: 7 }, { x: 8, y: 7 }, { x: 9, y: 7 }], // Cruiser
+        hits: [],
+        isSunk: false
+      }
+    ],
+    shots: [
+      { x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 2 }, { x: 3, y: 2 }, { x: 4, y: 2 }, { x: 5, y: 2 },
+      { x: 5, y: 5 }, { x: 6, y: 6 }, { x: 8, y: 8 }
+    ],
+    hits: [
+      { x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 2 }, { x: 3, y: 2 }, { x: 4, y: 2 }, { x: 5, y: 2 }
+    ],
+    misses: [
+      { x: 5, y: 5 }, { x: 6, y: 6 }, { x: 8, y: 8 }
+    ]
   });
 
   // Настройка кнопок Telegram
@@ -238,34 +265,38 @@ function App() {
               </div>
             </div>
             
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="flex flex-col lg:flex-row gap-8 justify-center">
               {/* Player's board */}
-              <div>
+              <div className="flex flex-col items-center">
                 <h2 className="text-xl font-semibold mb-4 text-gray-700">Ваше поле</h2>
-                <GameBoard
-                  board={gameBoard}
-                  showShips={true}
-                  onCellClick={(x, y) => {
-                    console.log('Player clicked:', x, y);
-                  }}
-                />
+                <div className="p-4 bg-gray-100 rounded-lg">
+                  <GameBoard
+                    board={gameBoard}
+                    showShips={true}
+                    onCellClick={(x, y) => {
+                      console.log('Player clicked:', x, y);
+                    }}
+                  />
+                </div>
               </div>
 
               {/* Opponent's board */}
-              <div>
+              <div className="flex flex-col items-center">
                 <h2 className="text-xl font-semibold mb-4 text-gray-700">Поле противника</h2>
-                <GameBoard
-                  board={gameBoard}
-                  showShips={false}
-                  onCellClick={(x, y) => {
-                    console.log('Opponent clicked:', x, y);
-                    // Add shot to board
-                    setGameBoard(prev => ({
-                      ...prev,
-                      shots: [...prev.shots, { x, y }]
-                    }));
-                  }}
-                />
+                <div className="p-4 bg-gray-100 rounded-lg">
+                  <GameBoard
+                    board={gameBoard}
+                    showShips={false}
+                    onCellClick={(x, y) => {
+                      console.log('Opponent clicked:', x, y);
+                      // Add shot to board
+                      setGameBoard(prev => ({
+                        ...prev,
+                        shots: [...prev.shots, { x, y }]
+                      }));
+                    }}
+                  />
+                </div>
               </div>
             </div>
           </div>
