@@ -10,6 +10,12 @@
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
+    "build:packages": "npm run build:shared-types && npm run build:game-logic && npm run build:ui",
+    "build:shared-types": "cd packages/shared-types && npm run build",
+    "build:game-logic": "cd packages/game-logic && npm run build",
+    "build:ui": "cd packages/ui && npm run build",
+    "build:webapp": "cd apps/webapp && npm run build",
+    "build:vercel": "npm run build:packages && npm run build:webapp",
     "lint": "turbo run lint",
     "test": "turbo run test",
     "clean": "turbo run clean",
