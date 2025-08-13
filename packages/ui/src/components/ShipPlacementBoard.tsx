@@ -18,8 +18,6 @@ interface ShipPlacementBoardProps {
   placedShips: PlacedShip[];
   onShipPlace?: (ship: PlacedShip) => void;
   onShipRemove?: (shipId: string) => void;
-  onCellHover?: (position: Position) => void;
-  onCellLeave?: () => void;
   className?: string;
   disabled?: boolean;
 }
@@ -33,8 +31,6 @@ export const ShipPlacementBoard: React.FC<ShipPlacementBoardProps> = ({
   placedShips,
   onShipPlace,
   onShipRemove,
-  onCellHover,
-  onCellLeave,
   className = '',
   disabled = false,
 }) => {
@@ -47,13 +43,12 @@ export const ShipPlacementBoard: React.FC<ShipPlacementBoardProps> = ({
     if (!boardRef.current) return;
 
     const rect = boardRef.current.getBoundingClientRect();
-    const x = Math.floor((e.clientX - rect.left) / 36);
-    const y = Math.floor((e.clientY - rect.top) / 36);
+    const x = Math.floor((e.clientX - rect.left - 12) / 36); // 12px padding
+    const y = Math.floor((e.clientY - rect.top - 12) / 36);
 
     if (x >= 0 && x < 10 && y >= 0 && y < 10) {
       setDragOverPosition({ x, y });
       
-      // Получаем данные о корабле из drag event
       const shipData = e.dataTransfer.getData('application/json');
       if (shipData) {
         try {
@@ -69,7 +64,6 @@ export const ShipPlacementBoard: React.FC<ShipPlacementBoardProps> = ({
   const handleDragLeave = () => {
     setDragOverPosition(null);
     setDragOverShip(null);
-    onCellLeave?.();
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -82,7 +76,6 @@ export const ShipPlacementBoard: React.FC<ShipPlacementBoardProps> = ({
         const ship = JSON.parse(shipData);
         const positions: Position[] = [];
         
-        // Генерируем позиции корабля
         for (let i = 0; i < ship.size; i++) {
           if (ship.isHorizontal) {
             positions.push({ x: dragOverPosition.x + i, y: dragOverPosition.y });
@@ -91,7 +84,6 @@ export const ShipPlacementBoard: React.FC<ShipPlacementBoardProps> = ({
           }
         }
 
-        // Проверяем, что корабль помещается на поле
         const isValidPlacement = positions.every(pos => 
           pos.x >= 0 && pos.x < 10 && pos.y >= 0 && pos.y < 10
         );
@@ -115,7 +107,6 @@ export const ShipPlacementBoard: React.FC<ShipPlacementBoardProps> = ({
   };
 
   const getCellState = (x: number, y: number): any => {
-    // Проверяем, есть ли корабль на этой позиции
     const shipAtPosition = placedShips.find(ship =>
       ship.positions.some(pos => pos.x === x && pos.y === y)
     );
@@ -131,7 +122,6 @@ export const ShipPlacementBoard: React.FC<ShipPlacementBoardProps> = ({
       };
     }
 
-    // Проверяем, находится ли ячейка под перетаскиваемым кораблем
     if (dragOverPosition && dragOverShip) {
       const isUnderDragShip = Array.from({ length: dragOverShip.size }, (_, i) => {
         if (dragOverShip.isHorizontal) {
@@ -165,7 +155,6 @@ export const ShipPlacementBoard: React.FC<ShipPlacementBoardProps> = ({
   };
 
   const handleCellClick = (row: number, col: number) => {
-    // Находим корабль на этой позиции
     const shipAtPosition = placedShips.find(ship =>
       ship.positions.some(pos => pos.x === col && pos.y === row)
     );

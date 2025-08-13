@@ -28,7 +28,7 @@ export const QuickGameSetupScreen: React.FC = () => {
   const { user } = useAuth();
   
   const [placedShips, setPlacedShips] = useState<PlacedShip[]>([]);
-  const [timeLeft, setTimeLeft] = useState(80); // 80 секунд на расстановку
+  const [timeLeft, setTimeLeft] = useState(80);
   const [isGameStarted, setIsGameStarted] = useState(false);
 
   // Подсчитываем доступные корабли
@@ -58,7 +58,6 @@ export const QuickGameSetupScreen: React.FC = () => {
       const timer = setInterval(() => {
         setTimeLeft(prev => {
           if (prev <= 1) {
-            // Время истекло, начинаем игру
             startGame();
             return 0;
           }
@@ -71,7 +70,6 @@ export const QuickGameSetupScreen: React.FC = () => {
   }, [timeLeft, isGameStarted]);
 
   const handleShipPlace = (ship: PlacedShip) => {
-    // Проверяем, не пересекается ли корабль с уже размещенными
     const isOverlapping = placedShips.some(existingShip =>
       existingShip.positions.some(existingPos =>
         ship.positions.some(newPos => 
@@ -93,7 +91,6 @@ export const QuickGameSetupScreen: React.FC = () => {
     try {
       const fleetShips = randomFleet();
       
-      // Простая функция для конвертации корабля в позиции
       const shipToPositions = (ship: any): Position[] => {
         const positions: Position[] = [];
         for (let i = 0; i < ship.length; i++) {
@@ -125,12 +122,11 @@ export const QuickGameSetupScreen: React.FC = () => {
 
   const startGame = () => {
     setIsGameStarted(true);
-    // Переходим к игре
     navigate('/game/quick-game');
   };
 
   const handleStartGame = () => {
-    if (placedShips.length === 10) { // Все 10 кораблей размещены
+    if (placedShips.length === 10) {
       startGame();
     }
   };
@@ -181,7 +177,7 @@ export const QuickGameSetupScreen: React.FC = () => {
           className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-4"
         >
           <h3 className="font-heading font-semibold text-h3 text-foam mb-4">
-            Перетащите корабли на поле
+            Корабли
           </h3>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -205,7 +201,6 @@ export const QuickGameSetupScreen: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                {/* Показываем визуальный корабль */}
                 <div className="mt-2 flex justify-center">
                   <div className="flex">
                     {Array.from({ length: ship.size }, (_, i) => (
@@ -244,7 +239,7 @@ export const QuickGameSetupScreen: React.FC = () => {
           className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-4"
         >
           <h3 className="font-heading font-semibold text-h3 text-foam mb-4">
-            Ваше поле
+            Поле
           </h3>
           
           <div className="flex justify-center overflow-x-auto">
