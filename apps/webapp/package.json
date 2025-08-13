@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "npm run build:deps && vite build",
+    "build:deps": "cd ../../packages/shared-types && npm run build && cd ../../packages/game-logic && npm run build && cd ../../packages/ui && npm run build",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
