@@ -3,6 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button, LoadingScreen } from '@battleship/ui';
 import { useAuth } from '../providers/AuthProvider';
+import { 
+  Zap, 
+  Users, 
+  BookOpen, 
+  Trophy, 
+  Package, 
+  Settings,
+  User,
+  Crown
+} from 'lucide-react';
 
 export const HomeScreen: React.FC = () => {
   const navigate = useNavigate();
@@ -103,21 +113,19 @@ export const HomeScreen: React.FC = () => {
       {/* Header */}
       <div className="bg-steel border-b border-edge/50 px-4 py-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-bg-graphite rounded-full ring-2 ring-sonar flex items-center justify-center">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="w-10 h-10 bg-bg-graphite rounded-full ring-2 ring-sonar flex items-center justify-center flex-shrink-0">
               {user.photoUrl ? (
                 <img src={user.photoUrl} alt="Avatar" className="w-full h-full rounded-full" />
               ) : (
-                <span className="font-heading font-semibold text-sonar">
-                  {user.firstName.charAt(0)}
-                </span>
+                <User className="w-5 h-5 text-sonar" />
               )}
             </div>
-            <div>
-              <h3 className="font-heading font-semibold text-body text-foam">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-heading font-semibold text-body text-foam truncate">
                 {user.firstName}
               </h3>
-              <p className="font-mono text-caption text-mist">
+              <p className="font-mono text-caption text-mist truncate">
                 Рейтинг: {user.rating}
               </p>
             </div>
@@ -125,7 +133,7 @@ export const HomeScreen: React.FC = () => {
         </div>
       </div>
 
-      <div className="p-4 space-y-6">
+      <div className="p-4 space-y-4 sm:space-y-6">
         {/* Welcome message */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -147,19 +155,19 @@ export const HomeScreen: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-6"
+            className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-4 sm:p-6"
           >
             <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="font-heading font-semibold text-h3 text-foam mb-1">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-heading font-semibold text-h3 text-foam mb-1 truncate">
                   Быстрый бой
                 </h3>
-                <p className="text-secondary text-mist">
+                <p className="text-secondary text-mist truncate">
                   Сразитесь с ИИ или потренируйтесь
                 </p>
               </div>
-              <div className="w-12 h-12 bg-sonar/10 rounded-full flex items-center justify-center">
-                <span className="text-sonar text-xl">⚡</span>
+              <div className="w-12 h-12 bg-sonar/10 rounded-full flex items-center justify-center flex-shrink-0 ml-4">
+                <Zap className="w-6 h-6 text-sonar" />
               </div>
             </div>
             <Button
@@ -179,19 +187,19 @@ export const HomeScreen: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-6"
+            className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-4 sm:p-6"
           >
             <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="font-heading font-semibold text-h3 text-foam mb-1">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-heading font-semibold text-h3 text-foam mb-1 truncate">
                   Игра с другом
                 </h3>
-                <p className="text-secondary text-mist">
+                <p className="text-secondary text-mist truncate">
                   Создайте приватную игру
                 </p>
               </div>
-              <div className="w-12 h-12 bg-info/10 rounded-full flex items-center justify-center">
-                <span className="text-info text-xl">👥</span>
+              <div className="w-12 h-12 bg-info/10 rounded-full flex items-center justify-center flex-shrink-0 ml-4">
+                <Users className="w-6 h-6 text-info" />
               </div>
             </div>
             <Button
@@ -211,19 +219,19 @@ export const HomeScreen: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-6"
+            className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-4 sm:p-6"
           >
             <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="font-heading font-semibold text-h3 text-foam mb-1">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-heading font-semibold text-h3 text-foam mb-1 truncate">
                   Обучение
                 </h3>
-                <p className="text-secondary text-mist">
+                <p className="text-secondary text-mist truncate">
                   Изучите правила за 3 шага
                 </p>
               </div>
-              <div className="w-12 h-12 bg-radio/10 rounded-full flex items-center justify-center">
-                <span className="text-radio text-xl">📚</span>
+              <div className="w-12 h-12 bg-radio/10 rounded-full flex items-center justify-center flex-shrink-0 ml-4">
+                <BookOpen className="w-6 h-6 text-radio" />
               </div>
             </div>
             <Button
@@ -245,7 +253,7 @@ export const HomeScreen: React.FC = () => {
             onClick={handleQuickGame}
             className="flex flex-col items-center gap-1 p-2 rounded-lg text-sonar hover:bg-bg-graphite transition-colors"
           >
-            <span className="text-xl">⚡</span>
+            <Zap className="w-5 h-5" />
             <span className="text-caption font-heading">Играть</span>
           </button>
           
@@ -253,7 +261,7 @@ export const HomeScreen: React.FC = () => {
             onClick={handleHistory}
             className="flex flex-col items-center gap-1 p-2 rounded-lg text-mist hover:text-foam hover:bg-bg-graphite transition-colors"
           >
-            <span className="text-xl">🏆</span>
+            <Trophy className="w-5 h-5" />
             <span className="text-caption font-heading">История</span>
           </button>
           
@@ -261,7 +269,7 @@ export const HomeScreen: React.FC = () => {
             onClick={handleInventory}
             className="flex flex-col items-center gap-1 p-2 rounded-lg text-mist hover:text-foam hover:bg-bg-graphite transition-colors"
           >
-            <span className="text-xl">📦</span>
+            <Package className="w-5 h-5" />
             <span className="text-caption font-heading">Инвентарь</span>
           </button>
           
@@ -269,7 +277,7 @@ export const HomeScreen: React.FC = () => {
             onClick={handleSettings}
             className="flex flex-col items-center gap-1 p-2 rounded-lg text-mist hover:text-foam hover:bg-bg-graphite transition-colors"
           >
-            <span className="text-xl">⚙️</span>
+            <Settings className="w-5 h-5" />
             <span className="text-caption font-heading">Настройки</span>
           </button>
         </div>

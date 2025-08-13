@@ -4,6 +4,16 @@ import { motion } from 'framer-motion';
 import { Button, Board, RingTimer } from '@battleship/ui';
 import { useAuth } from '../providers/AuthProvider';
 import { randomFleet } from '@battleship/game-logic';
+import { 
+  Ship, 
+  RotateCcw, 
+  Trash2, 
+  Play, 
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  Zap
+} from 'lucide-react';
 
 interface Position {
   x: number;
@@ -29,10 +39,10 @@ interface BoardState {
 
 // Правильные корабли по классическим правилам Морского боя
 const SHIP_TYPES = [
-  { size: 4, name: 'Линкор', count: 1, color: 'bg-torpedo' },
-  { size: 3, name: 'Крейсер', count: 2, color: 'bg-radio' },
-  { size: 2, name: 'Эсминец', count: 3, color: 'bg-sonar' },
-  { size: 1, name: 'Катер', count: 4, color: 'bg-info' },
+  { size: 4, name: 'Линкор', count: 1, color: 'bg-torpedo', icon: Ship },
+  { size: 3, name: 'Крейсер', count: 2, color: 'bg-radio', icon: Ship },
+  { size: 2, name: 'Эсминец', count: 3, color: 'bg-sonar', icon: Ship },
+  { size: 1, name: 'Катер', count: 4, color: 'bg-info', icon: Ship },
 ];
 
 export const QuickGameSetupScreen: React.FC = () => {
@@ -225,16 +235,19 @@ export const QuickGameSetupScreen: React.FC = () => {
       {/* Header */}
       <div className="bg-steel border-b border-edge/50 px-4 py-3">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="font-heading font-semibold text-h2 text-foam">
-              Быстрая игра
-            </h1>
-            <p className="text-secondary text-mist">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <Zap className="w-5 h-5 text-sonar" />
+              <h1 className="font-heading font-semibold text-h2 text-foam truncate">
+                Быстрая игра
+              </h1>
+            </div>
+            <p className="text-secondary text-mist truncate">
               Разместите {10 - board.ships.length} кораблей
             </p>
           </div>
-          <div className="text-right">
-            <div className="text-caption text-mist">Время</div>
+          <div className="flex items-center gap-2 ml-4">
+            <Clock className="w-4 h-4 text-mist" />
             <RingTimer
               duration={80}
               currentTime={timeLeft}
@@ -244,7 +257,7 @@ export const QuickGameSetupScreen: React.FC = () => {
         </div>
       </div>
 
-      <div className="p-4 space-y-6">
+      <div className="p-4 space-y-4 sm:space-y-6">
         {/* Ship selection */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -255,37 +268,45 @@ export const QuickGameSetupScreen: React.FC = () => {
             Выберите корабль
           </h3>
           
-          <div className="grid grid-cols-2 gap-3">
-            {availableShips.map((ship, index) => (
-              <button
-                key={ship.id}
-                onClick={() => setSelectedShip(ship.index)}
-                className={`p-3 rounded-lg border-2 transition-all ${
-                  selectedShip === ship.index
-                    ? 'border-sonar bg-sonar/10'
-                    : 'border-edge hover:border-sonar/50'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <div className={`w-4 h-4 ${ship.color} rounded-sm`}></div>
-                  <div className="text-left">
-                    <div className="font-heading font-semibold text-body text-foam">
-                      {ship.name}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {availableShips.map((ship, index) => {
+              const IconComponent = ship.icon;
+              return (
+                <button
+                  key={ship.id}
+                  onClick={() => setSelectedShip(ship.index)}
+                  className={`p-3 rounded-lg border-2 transition-all ${
+                    selectedShip === ship.index
+                      ? 'border-sonar bg-sonar/10'
+                      : 'border-edge hover:border-sonar/50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className={`w-4 h-4 ${ship.color} rounded-sm flex items-center justify-center`}>
+                      <IconComponent className="w-3 h-3 text-white" />
                     </div>
-                    <div className="text-caption text-mist">
-                      {ship.size} клетки
+                    <div className="text-left flex-1 min-w-0">
+                      <div className="font-heading font-semibold text-body text-foam truncate">
+                        {ship.name}
+                      </div>
+                      <div className="text-caption text-mist">
+                        {ship.size} клетки
+                      </div>
                     </div>
                   </div>
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
 
           {availableShips.length === 0 && (
             <div className="text-center py-4">
-              <p className="text-body text-sonar font-semibold">
-                ✓ Все корабли размещены!
-              </p>
+              <div className="flex items-center justify-center gap-2 text-sonar mb-2">
+                <CheckCircle className="w-5 h-5" />
+                <p className="font-heading font-semibold text-body">
+                  Все корабли размещены!
+                </p>
+              </div>
             </div>
           )}
         </motion.div>
@@ -303,10 +324,11 @@ export const QuickGameSetupScreen: React.FC = () => {
             </span>
             <button
               onClick={() => setIsHorizontal(!isHorizontal)}
-              className="px-4 py-2 bg-steel rounded-lg hover:bg-bg-deep transition-colors"
+              className="px-4 py-2 bg-steel rounded-lg hover:bg-bg-deep transition-colors flex items-center gap-2"
             >
-              <span className="text-sonar">
-                {isHorizontal ? '↔️ Горизонтально' : '↕️ Вертикально'}
+              <RotateCcw className={`w-4 h-4 text-sonar transition-transform ${!isHorizontal ? 'rotate-90' : ''}`} />
+              <span className="text-sonar font-medium">
+                {isHorizontal ? 'Горизонтально' : 'Вертикально'}
               </span>
             </button>
           </div>
@@ -323,12 +345,14 @@ export const QuickGameSetupScreen: React.FC = () => {
             Ваше поле
           </h3>
           
-          <div className="flex justify-center">
-            <Board
-              cells={createBoardCells()}
-              onCellClick={handleCellClick}
-              isOpponent={false}
-            />
+          <div className="flex justify-center overflow-x-auto">
+            <div className="min-w-0">
+              <Board
+                cells={createBoardCells()}
+                onCellClick={handleCellClick}
+                isOpponent={false}
+              />
+            </div>
           </div>
         </motion.div>
 
@@ -339,23 +363,25 @@ export const QuickGameSetupScreen: React.FC = () => {
           transition={{ delay: 0.3 }}
           className="space-y-3"
         >
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Button
               variant="secondary"
               size="lg"
               onClick={handleRandomPlacement}
-              className="w-full"
+              className="w-full flex items-center justify-center gap-2"
             >
-              🎲 Случайная расстановка
+              <RotateCcw className="w-4 h-4" />
+              Случайная расстановка
             </Button>
             
             <Button
               variant="ghost"
               size="lg"
               onClick={handleClearBoard}
-              className="w-full"
+              className="w-full flex items-center justify-center gap-2"
             >
-              🗑️ Очистить поле
+              <Trash2 className="w-4 h-4" />
+              Очистить поле
             </Button>
           </div>
 
@@ -364,9 +390,19 @@ export const QuickGameSetupScreen: React.FC = () => {
             size="lg"
             onClick={handleStartGame}
             disabled={!isBoardComplete}
-            className="w-full"
+            className="w-full flex items-center justify-center gap-2"
           >
-            {isBoardComplete ? '🚀 Начать игру' : `Разместите еще ${10 - board.ships.length} кораблей`}
+            {isBoardComplete ? (
+              <>
+                <Play className="w-4 h-4" />
+                Начать игру
+              </>
+            ) : (
+              <>
+                <AlertCircle className="w-4 h-4" />
+                Разместите еще {10 - board.ships.length} кораблей
+              </>
+            )}
           </Button>
         </motion.div>
       </div>

@@ -3,6 +3,17 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button, LoadingScreen } from '@battleship/ui';
 import { useAuth } from '../providers/AuthProvider';
+import { 
+  Copy, 
+  LogOut, 
+  Play, 
+  CheckCircle, 
+  Clock, 
+  Users, 
+  Crown,
+  User,
+  AlertCircle
+} from 'lucide-react';
 
 interface LobbyPlayer {
   id: number;
@@ -140,9 +151,12 @@ export const LobbyScreen: React.FC = () => {
     return (
       <div className="min-h-screen bg-bg-deep text-foam flex items-center justify-center p-4">
         <div className="text-center">
-          <h2 className="font-heading font-semibold text-h2 text-foam mb-2">
-            Ошибка
-          </h2>
+          <div className="flex items-center justify-center gap-2 text-torpedo mb-2">
+            <AlertCircle className="w-6 h-6" />
+            <h2 className="font-heading font-semibold text-h2 text-foam">
+              Ошибка
+            </h2>
+          </div>
           <p className="text-body text-mist mb-4">{error || 'Лобби не найдено'}</p>
           <Button
             variant="primary"
@@ -164,11 +178,11 @@ export const LobbyScreen: React.FC = () => {
       {/* Header */}
       <div className="bg-steel border-b border-edge/50 px-4 py-3">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="font-heading font-semibold text-h2 text-foam">
+          <div className="flex-1 min-w-0">
+            <h1 className="font-heading font-semibold text-h2 text-foam truncate">
               Лобби игры
             </h1>
-            <p className="text-secondary text-mist">
+            <p className="text-secondary text-mist truncate">
               ID: {lobby.id.slice(-8)}
             </p>
           </div>
@@ -176,13 +190,15 @@ export const LobbyScreen: React.FC = () => {
             variant="ghost"
             size="sm"
             onClick={handleLeaveLobby}
+            className="flex items-center gap-2 flex-shrink-0 ml-4"
           >
+            <LogOut className="w-4 h-4" />
             Покинуть
           </Button>
         </div>
       </div>
 
-      <div className="p-4 space-y-6">
+      <div className="p-4 space-y-4 sm:space-y-6">
         {/* Status */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -190,15 +206,15 @@ export const LobbyScreen: React.FC = () => {
           className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-4"
         >
           <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-heading font-semibold text-h3 text-foam">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-heading font-semibold text-h3 text-foam truncate">
                 Статус: {lobby.status === 'waiting' ? 'Ожидание игроков' : 'Готово к игре'}
               </h3>
-              <p className="text-secondary text-mist">
+              <p className="text-secondary text-mist truncate">
                 {lobby.players.length}/2 игроков
               </p>
             </div>
-            <div className="text-right">
+            <div className="text-right flex-shrink-0 ml-4">
               <p className="text-caption text-mist">Создано</p>
               <p className="text-body text-foam">
                 {new Date(lobby.createdAt).toLocaleTimeString()}
@@ -224,31 +240,34 @@ export const LobbyScreen: React.FC = () => {
               className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-4"
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-bg-deep rounded-full ring-2 ring-sonar flex items-center justify-center">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="w-10 h-10 bg-bg-deep rounded-full ring-2 ring-sonar flex items-center justify-center flex-shrink-0">
                     {player.photoUrl ? (
                       <img src={player.photoUrl} alt="Avatar" className="w-full h-full rounded-full" />
                     ) : (
-                      <span className="font-heading font-semibold text-sonar">
-                        {player.firstName.charAt(0)}
-                      </span>
+                      <User className="w-5 h-5 text-sonar" />
                     )}
                   </div>
-                  <div>
-                    <h4 className="font-heading font-semibold text-body text-foam">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-heading font-semibold text-body text-foam truncate">
                       {player.firstName} {player.lastName}
                     </h4>
-                    <p className="text-caption text-mist">
+                    <p className="text-caption text-mist truncate">
                       {player.isHost ? 'Хост' : 'Игрок'}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-shrink-0 ml-4">
                   {player.isReady && (
-                    <span className="text-success text-sm">✓ Готов</span>
+                    <div className="flex items-center gap-1 text-success">
+                      <CheckCircle className="w-4 h-4" />
+                      <span className="text-sm">Готов</span>
+                    </div>
                   )}
                   {player.isHost && (
-                    <span className="text-info text-sm">👑</span>
+                    <div className="flex items-center gap-1 text-info">
+                      <Crown className="w-4 h-4" />
+                    </div>
                   )}
                 </div>
               </div>
@@ -259,7 +278,10 @@ export const LobbyScreen: React.FC = () => {
           {lobby.players.length < 2 && (
             <div className="bg-bg-graphite/50 rounded-card ring-1 ring-edge/50 border-dashed p-4">
               <div className="text-center">
-                <p className="text-body text-mist">Ожидание второго игрока...</p>
+                <div className="flex items-center justify-center gap-2 text-mist mb-2">
+                  <Clock className="w-5 h-5" />
+                  <p className="text-body">Ожидание второго игрока...</p>
+                </div>
               </div>
             </div>
           )}
@@ -277,9 +299,10 @@ export const LobbyScreen: React.FC = () => {
             variant="secondary"
             size="lg"
             onClick={handleCopyInviteLink}
-            className="w-full"
+            className="w-full flex items-center justify-center gap-2"
           >
-            📋 Скопировать ссылку приглашения
+            <Copy className="w-4 h-4" />
+            Скопировать ссылку приглашения
           </Button>
 
           {/* Ready toggle */}
@@ -287,9 +310,19 @@ export const LobbyScreen: React.FC = () => {
             variant={isReady ? "primary" : "primary"}
             size="lg"
             onClick={handleToggleReady}
-            className="w-full"
+            className="w-full flex items-center justify-center gap-2"
           >
-            {isReady ? '✓ Готов к игре' : 'Готов к игре'}
+            {isReady ? (
+              <>
+                <CheckCircle className="w-4 h-4" />
+                Готов к игре
+              </>
+            ) : (
+              <>
+                <Clock className="w-4 h-4" />
+                Готов к игре
+              </>
+            )}
           </Button>
 
           {/* Start game */}
@@ -300,9 +333,19 @@ export const LobbyScreen: React.FC = () => {
               onClick={handleStartGame}
               loading={isStarting}
               disabled={isStarting}
-              className="w-full"
+              className="w-full flex items-center justify-center gap-2"
             >
-              {isStarting ? 'Запуск игры...' : '🚀 Начать игру'}
+              {isStarting ? (
+                <>
+                  <Clock className="w-4 h-4" />
+                  Запуск игры...
+                </>
+              ) : (
+                <>
+                  <Play className="w-4 h-4" />
+                  Начать игру
+                </>
+              )}
             </Button>
           )}
         </motion.div>
