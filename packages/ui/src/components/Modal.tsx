@@ -1,13 +1,27 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '../utils/cn';
+import { X } from 'lucide-react';
+import { Button } from './Button';
 
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  actions?: {
+    primary?: {
+      label: string;
+      onClick: () => void;
+      variant?: 'primary' | 'danger';
+      loading?: boolean;
+    };
+    secondary?: {
+      label: string;
+      onClick: () => void;
+    };
+  };
   className?: string;
+  closeOnBackdrop?: boolean;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -15,19 +29,34 @@ export const Modal: React.FC<ModalProps> = ({
   onClose,
   title,
   children,
-  className
+  actions,
+  className = '',
+  closeOnBackdrop = true,
 }) => {
+  // Закрытие по Escape
   useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+
     if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
       document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
     }
 
     return () => {
+      document.removeEventListener('keydown', handleEscape);
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen]);
+  }, [isOpen, onClose]);
+
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (closeOnBackdrop && e.target === e.currentTarget) {
+      onClose();
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -37,44 +66,70 @@ export const Modal: React.FC<ModalProps> = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
         >
           {/* Backdrop */}
-          <motion.div
-            className="absolute inset-0 bg-black bg-opacity-50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={handleBackdropClick}
           />
 
           {/* Modal */}
           <motion.div
-            className={cn(
-              'relative bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-hidden',
-              className
-            )}
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className={`
+              relative w-full max-w-md bg-bg-graphite rounded-modal
+              ring-1 ring-edge shadow-steel border border-edge/50
+              ${className}
+            `}
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
           >
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+            {/* Заголовок */}
+            <div className="flex items-center justify-between p-6 pb-4 border-b border-edge/50">
+              <h2 className="font-heading font-semibold text-h3 text-foam">
+                {title}
+              </h2>
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="p-1 rounded-md text-mist hover:text-foam hover:bg-steel/50 transition-colors"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <X size={20} strokeWidth={2} />
               </button>
             </div>
 
-            {/* Content */}
-            <div className="p-4 overflow-y-auto">
-              {children}
+            {/* Контент */}
+            <div className="p-6 pt-4">
+              <div className="text-body text-mist leading-relaxed">
+                {children}
+              </div>
             </div>
+
+            {/* Действия */}
+            {actions && (
+              <div className="flex gap-3 p-6 pt-0">
+                {actions.secondary && (
+                  <Button
+                    variant="ghost"
+                    onClick={actions.secondary.onClick}
+                    className="flex-1"
+                  >
+                    {actions.secondary.label}
+                  </Button>
+                )}
+                {actions.primary && (
+                  <Button
+                    variant={actions.primary.variant || 'primary'}
+                    onClick={actions.primary.onClick}
+                    loading={actions.primary.loading}
+                    className="flex-1"
+                  >
+                    {actions.primary.label}
+                  </Button>
+                )}
+              </div>
+            )}
           </motion.div>
         </motion.div>
       )}

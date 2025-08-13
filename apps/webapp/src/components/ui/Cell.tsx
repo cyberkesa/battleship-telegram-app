@@ -149,8 +149,8 @@ export const Cell: React.FC<CellProps> = ({
       onMouseLeave={handleMouseUp}
       onTouchStart={handleMouseDown}
       onTouchEnd={handleMouseUp}
-      whileHover={!disabled ? { scale: 1.02 } : {}}
-      whileTap={!disabled ? { scale: 0.98 } : {}}
+      whileHover={!disabled ? { scale: 1.05 } : {}}
+      whileTap={!disabled ? { scale: 0.95 } : {}}
       animate={
         state === 'hit' || state === 'sunk' || state === 'ship-hit' || state === 'ship-sunk'
           ? 'torpedo-hit'
@@ -158,18 +158,6 @@ export const Cell: React.FC<CellProps> = ({
           ? 'miss-splash'
           : {}
       }
-      variants={{
-        'torpedo-hit': {
-          scale: [1, 1.2, 1],
-          rotate: [0, 180, 45],
-          transition: { duration: 0.3, ease: "easeOut" }
-        },
-        'miss-splash': {
-          scale: [0, 1],
-          opacity: [0, 1],
-          transition: { duration: 0.2, ease: "easeOut" }
-        }
-      }}
     >
       {getCellContent()}
     </motion.div>

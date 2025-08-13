@@ -1,149 +1,29 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from './hooks/useAuth';
 import { useTelegram } from './hooks/useTelegram';
-import { UserProfile } from './components/UserProfile';
+import { LobbyScreen } from './screens/LobbyScreen';
+import { GameScreen } from './screens/GameScreen';
+import { MatchmakingScreen } from './screens/MatchmakingScreen';
+import { SetupScreen } from './screens/SetupScreen';
+import { Toast, ToastType } from './components/ui/Toast';
 
-// Simple enum for cell states
-enum CellState {
-  EMPTY = 'empty',
-  SHIP = 'ship',
-  HIT = 'hit',
-  MISS = 'miss',
-  SUNK = 'sunk'
+type Screen = 'lobby' | 'matchmaking' | 'setup' | 'game' | 'history' | 'settings' | 'inventory';
+
+interface ToastMessage {
+  id: string;
+  type: ToastType;
+  title: string;
+  message?: string;
 }
-
-// Simple position interface
-interface Position {
-  x: number;
-  y: number;
-}
-
-// Simple board interface
-interface Board {
-  ships: any[];
-  shots: Position[];
-  hits: Position[];
-  misses: Position[];
-}
-
-// Simple cell component
-const Cell: React.FC<{
-  state: CellState;
-  onClick?: () => void;
-  showShip?: boolean;
-}> = ({ state, onClick, showShip = false }) => {
-  const getCellContent = () => {
-    switch (state) {
-      case CellState.HIT:
-        return '💥';
-      case CellState.MISS:
-        return '💧';
-      case CellState.SHIP:
-        return showShip ? '🚢' : '';
-      case CellState.SUNK:
-        return '💀';
-      default:
-        return '';
-    }
-  };
-
-  const getCellClasses = () => {
-    const baseClasses = 'w-8 h-8 border border-gray-300 flex items-center justify-center font-bold transition-all cursor-pointer';
-    
-    switch (state) {
-      case CellState.HIT:
-        return `${baseClasses} bg-red-500 text-white`;
-      case CellState.MISS:
-        return `${baseClasses} bg-blue-200 text-blue-800`;
-      case CellState.SHIP:
-        return `${baseClasses} ${showShip ? 'bg-gray-600 text-white' : 'bg-gray-100'}`;
-      case CellState.SUNK:
-        return `${baseClasses} bg-red-700 text-white`;
-      default:
-        return `${baseClasses} bg-white hover:bg-gray-50`;
-    }
-  };
-
-  return (
-    <div
-      className={getCellClasses()}
-      onClick={onClick}
-    >
-      {getCellContent()}
-    </div>
-  );
-};
-
-// Simple game board component
-const GameBoard: React.FC<{
-  board: Board;
-  onCellClick?: (x: number, y: number) => void;
-  showShips?: boolean;
-}> = ({ board, onCellClick, showShips = false }) => {
-  const getCellState = (x: number, y: number): CellState => {
-    const wasShot = board.shots.some(shot => shot.x === x && shot.y === y);
-
-    if (!wasShot) {
-      const hasShip = board.ships.some(ship =>
-        ship.positions.some((pos: Position) => pos.x === x && pos.y === y)
-      );
-      return hasShip ? CellState.SHIP : CellState.EMPTY;
-    }
-
-    const ship = board.ships.find(ship =>
-      ship.positions.some((pos: Position) => pos.x === x && pos.y === y)
-    );
-
-    if (ship) {
-      const isSunk = ship.positions.every((pos: Position) =>
-        board.hits.some(hit => hit.x === pos.x && hit.y === pos.y)
-      );
-      return isSunk ? CellState.SUNK : CellState.HIT;
-    }
-
-    return CellState.MISS;
-  };
-
-  return (
-    <div className="inline-block">
-      {/* Column labels (A-J) */}
-      <div className="grid grid-cols-10 gap-1 mb-1">
-        <div className="w-8 h-8"></div> {/* Empty corner */}
-        {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'].map((letter) => (
-          <div key={letter} className="w-8 h-8 flex items-center justify-center text-xs font-bold text-gray-600">
-            {letter}
-          </div>
-        ))}
-      </div>
-
-      {/* Game board with row labels */}
-      {Array.from({ length: 10 }, (_, y) => (
-        <div key={y} className="flex gap-1 mb-1">
-          {/* Row label (1-10) */}
-          <div className="w-8 h-8 flex items-center justify-center text-xs font-bold text-gray-600">
-            {y + 1}
-          </div>
-          
-          {/* Row cells */}
-          {Array.from({ length: 10 }, (_, x) => (
-            <Cell
-              key={`${x}-${y}`}
-              state={getCellState(x, y)}
-              onClick={() => onCellClick?.(x, y)}
-              showShip={showShips}
-            />
-          ))}
-        </div>
-      ))}
-    </div>
-  );
-};
 
 function App() {
-  const { user, isLoading, isAuthenticated, error, logout } = useAuth();
+  const { user, isLoading, isAuthenticated, error } = useAuth();
   const { showMainButton, hideMainButton } = useTelegram();
-  const [currentScreen, setCurrentScreen] = useState<'home' | 'game' | 'profile'>('home');
-  const [gameBoard, setGameBoard] = useState<Board>({
+  const [currentScreen, setCurrentScreen] = useState<Screen>('lobby');
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  // Demo game data
+  const [gameBoard, setGameBoard] = useState({
     ships: [
       {
         id: '1',
@@ -176,192 +56,161 @@ function App() {
     ]
   });
 
-  // Настройка кнопок Telegram
-  useEffect(() => {
-    if (currentScreen === 'home') {
-      showMainButton('🎮 Начать игру', () => setCurrentScreen('game'));
-    } else if (currentScreen === 'game') {
-      hideMainButton();
-    } else if (currentScreen === 'profile') {
-      hideMainButton();
-    }
-  }, [currentScreen, showMainButton, hideMainButton]);
+  const addToast = (type: ToastType, title: string, message?: string) => {
+    const id = Math.random().toString(36).substr(2, 9);
+    setToasts(prev => [...prev, { id, type, title, message }]);
+  };
 
+  const removeToast = (id: string) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  };
+
+  const handleStartGame = () => {
+    setCurrentScreen('matchmaking');
+    addToast('info', 'Поиск соперника', 'Ищем подходящего игрока...');
+  };
+
+  const handleShowHistory = () => {
+    setCurrentScreen('history');
+    addToast('info', 'История игр', 'Загружаем ваши матчи...');
+  };
+
+  const handleShowSettings = () => {
+    setCurrentScreen('settings');
+    addToast('info', 'Настройки', 'Открываем настройки...');
+  };
+
+  const handleShowInventory = () => {
+    setCurrentScreen('inventory');
+    addToast('info', 'Инвентарь', 'Загружаем ваши предметы...');
+  };
+
+  const handleBackToLobby = () => {
+    setCurrentScreen('lobby');
+  };
+
+  // Loading screen
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-        <div className="text-white text-2xl font-bold">🚢 Загрузка...</div>
+      <div className="min-h-screen bg-steel-depth flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-sonar/30 border-t-sonar rounded-full animate-spin mx-auto mb-4"></div>
+          <h2 className="text-foam font-sans font-semibold text-lg mb-2">Инициализация</h2>
+          <p className="text-mist text-sm">Подключение к серверу...</p>
+        </div>
       </div>
     );
   }
 
+  // Error screen
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Ошибка аутентификации</h1>
-          <p className="text-gray-600 mb-6">{error}</p>
+      <div className="min-h-screen bg-steel-depth flex items-center justify-center p-4">
+        <div className="bg-graphite ring-1 ring-edge rounded-xl p-6 max-w-md w-full text-center">
+          <h1 className="text-torpedo font-sans font-semibold text-xl mb-4">Ошибка подключения</h1>
+          <p className="text-mist mb-6">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+            className="bg-sonar text-deep px-6 py-3 rounded-lg font-sans font-medium hover:bg-sonar/90 transition-colors"
           >
-            Попробовать снова
+            Повторить
           </button>
         </div>
       </div>
     );
   }
 
+  // Authentication screen
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center">
-          <h1 className="text-3xl font-bold text-gray-800 mb-6">🚢 Морской бой</h1>
-          <p className="text-gray-600 mb-8">Ожидание аутентификации через Telegram...</p>
-          <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto"></div>
+      <div className="min-h-screen bg-steel-depth flex items-center justify-center p-4">
+        <div className="bg-graphite ring-1 ring-edge rounded-xl p-6 max-w-md w-full text-center">
+          <h1 className="text-foam font-sans font-semibold text-2xl mb-6">🚢 Морской бой</h1>
+          <p className="text-mist mb-8">Ожидание аутентификации через Telegram...</p>
+          <div className="w-8 h-8 border-4 border-sonar/30 border-t-sonar rounded-full animate-spin mx-auto"></div>
         </div>
       </div>
     );
   }
 
-  if (currentScreen === 'profile') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 p-4">
-        <div className="max-w-md mx-auto">
-          <div className="mb-4">
-            <button
-              onClick={() => setCurrentScreen('home')}
-              className="bg-white text-blue-500 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              ← Назад
-            </button>
-          </div>
-          <UserProfile user={user!} onLogout={logout} />
-        </div>
-      </div>
-    );
-  }
-
-  if (currentScreen === 'game') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 p-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-lg shadow-xl p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h1 className="text-3xl font-bold text-gray-800">🚢 Морской бой</h1>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => setCurrentScreen('profile')}
-                  className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
-                >
-                  👤 Профиль
-                </button>
-                <button
-                  onClick={() => setCurrentScreen('home')}
-                  className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
-                >
-                  ← Назад
-                </button>
-              </div>
-            </div>
-            
-            <div className="flex flex-col lg:flex-row gap-8 justify-center">
-              {/* Player's board */}
-              <div className="flex flex-col items-center">
-                <h2 className="text-xl font-semibold mb-4 text-gray-700">Ваше поле</h2>
-                <div className="p-4 bg-gray-100 rounded-lg">
-                  <GameBoard
-                    board={gameBoard}
-                    showShips={true}
-                    onCellClick={(x, y) => {
-                      console.log('Player clicked:', x, y);
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Opponent's board */}
-              <div className="flex flex-col items-center">
-                <h2 className="text-xl font-semibold mb-4 text-gray-700">Поле противника</h2>
-                <div className="p-4 bg-gray-100 rounded-lg">
-                  <GameBoard
-                    board={gameBoard}
-                    showShips={false}
-                    onCellClick={(x, y) => {
-                      console.log('Opponent clicked:', x, y);
-                      // Add shot to board
-                      setGameBoard(prev => ({
-                        ...prev,
-                        shots: [...prev.shots, { x, y }]
-                      }));
-                    }}
-                  />
-                </div>
-              </div>
+  // Render current screen
+  const renderScreen = () => {
+    switch (currentScreen) {
+      case 'lobby':
+        return (
+          <LobbyScreen
+            onStartGame={handleStartGame}
+            onShowHistory={handleShowHistory}
+            onShowSettings={handleShowSettings}
+            onShowInventory={handleShowInventory}
+          />
+        );
+      
+      case 'matchmaking':
+        return (
+          <MatchmakingScreen
+            onMatchFound={() => setCurrentScreen('setup')}
+            onCancel={() => setCurrentScreen('lobby')}
+          />
+        );
+      
+      case 'setup':
+        return (
+          <SetupScreen
+            onReady={() => setCurrentScreen('game')}
+            onBack={() => setCurrentScreen('lobby')}
+          />
+        );
+      
+      case 'game':
+        return (
+          <GameScreen
+            gameBoard={gameBoard}
+            onBack={() => setCurrentScreen('lobby')}
+          />
+        );
+      
+      case 'history':
+      case 'settings':
+      case 'inventory':
+        return (
+          <div className="min-h-screen bg-steel-depth flex items-center justify-center p-4">
+            <div className="bg-graphite ring-1 ring-edge rounded-xl p-6 max-w-md w-full text-center">
+              <h1 className="text-foam font-sans font-semibold text-xl mb-4">
+                {currentScreen === 'history' && 'История игр'}
+                {currentScreen === 'settings' && 'Настройки'}
+                {currentScreen === 'inventory' && 'Инвентарь'}
+              </h1>
+              <p className="text-mist mb-6">Эта функция находится в разработке</p>
+              <button
+                onClick={handleBackToLobby}
+                className="bg-sonar text-deep px-6 py-3 rounded-lg font-sans font-medium hover:bg-sonar/90 transition-colors"
+              >
+                Назад в лобби
+              </button>
             </div>
           </div>
-        </div>
-      </div>
-    );
-  }
+        );
+      
+      default:
+        return null;
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
-        <div className="flex items-center space-x-3 mb-6">
-          <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white text-xl font-bold">
-            {user?.firstName.charAt(0).toUpperCase()}
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">🚢 Морской бой</h1>
-            <p className="text-gray-600">Привет, {user?.firstName}!</p>
-          </div>
-        </div>
-        
-        <div className="space-y-4">
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <h3 className="font-semibold text-blue-800 mb-2">📊 Ваша статистика:</h3>
-            <div className="grid grid-cols-3 gap-2 text-sm">
-              <div className="text-center">
-                <div className="font-bold text-blue-600">{user?.gamesPlayed}</div>
-                <div className="text-blue-700">Игр</div>
-              </div>
-              <div className="text-center">
-                <div className="font-bold text-green-600">{user?.gamesWon}</div>
-                <div className="text-green-700">Побед</div>
-              </div>
-              <div className="text-center">
-                <div className="font-bold text-purple-600">{user?.rating}</div>
-                <div className="text-purple-700">Рейтинг</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-green-50 p-4 rounded-lg">
-            <h3 className="font-semibold text-green-800 mb-2">🎮 Как играть:</h3>
-            <ul className="text-sm text-green-700 space-y-1">
-              <li>• Разместите корабли на поле</li>
-              <li>• Стреляйте по полю противника</li>
-              <li>• Первый, кто потопит все корабли, побеждает!</li>
-            </ul>
-          </div>
-        </div>
-
-        <div className="mt-8 space-y-3">
-          <button
-            onClick={() => setCurrentScreen('profile')}
-            className="w-full bg-gray-500 text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-600 transition-colors"
-          >
-            👤 Мой профиль
-          </button>
-        </div>
-
-        <div className="mt-6 text-center">
-          <p className="text-xs text-gray-500">
-            Версия 1.0.0 • Аутентификация через Telegram
-          </p>
-        </div>
-      </div>
+    <div className="App">
+      {renderScreen()}
+      
+      {/* Toast notifications */}
+      {toasts.map((toast) => (
+        <Toast
+          key={toast.id}
+          type={toast.type}
+          title={toast.title}
+          message={toast.message}
+          onClose={() => removeToast(toast.id)}
+        />
+      ))}
     </div>
   );
 }
