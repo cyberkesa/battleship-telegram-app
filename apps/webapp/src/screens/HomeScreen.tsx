@@ -1,150 +1,247 @@
-import React, { useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Button } from '@battleship/ui';
+import { Button, LoadingScreen } from '@battleship/ui';
 import { useAuth } from '../providers/AuthProvider';
-import { useGameStore } from '../stores/gameStore';
+import { api } from '../services/api';
 
 export const HomeScreen: React.FC = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, isLoading, error, user } = useAuth();
-  const { getActiveMatch } = useGameStore();
+  const { user } = useAuth();
+  
+  const [isCreatingLobby, setIsCreatingLobby] = useState(false);
+  const [isStartingQuickGame, setIsStartingQuickGame] = useState(false);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      // Check if user has an active match
-      getActiveMatch();
+  const handleCreateLobby = async () => {
+    if (!user) return;
+
+    try {
+      setIsCreatingLobby(true);
+      const response = await api.post('/lobby/create', {
+        playerId: user.id,
+        playerName: user.firstName,
+        playerAvatar: user.photoUrl,
+      });
+      
+      // Перенаправляем в лобби
+      navigate(`/lobby/${response.data.id}`);
+    } catch (err: any) {
+      console.error('Ошибка создания лобби:', err);
+      // Можно добавить toast уведомление об ошибке
+    } finally {
+      setIsCreatingLobby(false);
     }
-  }, [isAuthenticated, getActiveMatch]);
-
-  const handlePlayGame = () => {
-    navigate('/matchmaking');
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-tg-button mx-auto mb-4"></div>
-          <p className="text-tg-hint">Загрузка...</p>
-        </div>
-      </div>
-    );
-  }
+  const handleQuickGame = async () => {
+    try {
+      setIsStartingQuickGame(true);
+      // Для быстрой игры сразу переходим к расстановке кораблей
+      // Создаем временный матч или используем демо-режим
+      navigate('/setup/quick-game');
+    } catch (err: any) {
+      console.error('Ошибка запуска быстрой игры:', err);
+    } finally {
+      setIsStartingQuickGame(false);
+    }
+  };
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-red-500 mb-2">
-            Ошибка загрузки
-          </h2>
-          <p className="text-tg-hint mb-4">{error}</p>
-          <Button onClick={() => window.location.reload()}>
-            Попробовать снова
-          </Button>
-        </div>
-      </div>
-    );
+  const handleTutorial = () => {
+    navigate('/tutorial');
+  };
+
+  const handleHistory = () => {
+    navigate('/history');
+  };
+
+  const handleInventory = () => {
+    navigate('/inventory');
+  };
+
+  const handleSettings = () => {
+    navigate('/settings');
+  };
+
+  if (!user) {
+    return <LoadingScreen status="connecting" message="Загрузка профиля..." />;
   }
 
   return (
-    <div className="min-h-screen bg-tg-bg p-6">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="max-w-md mx-auto"
-      >
-        {/* Header */}
-        <div className="text-center mb-8">
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="text-6xl mb-4"
-          >
-            🚢
-          </motion.div>
-          <h1 className="text-3xl font-bold text-tg-text mb-2">
-            Морской бой
-          </h1>
-          <p className="text-tg-hint">
-            Классическая игра в Telegram
-          </p>
-        </div>
-
-        {/* User info */}
-        {user && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="bg-tg-secondary-bg rounded-lg p-4 mb-6"
-          >
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-tg-button rounded-full flex items-center justify-center text-tg-button-text font-semibold mr-3">
-                {user.first_name?.[0] || 'U'}
-              </div>
-              <div>
-                <h3 className="font-semibold text-tg-text">
-                  {user.first_name} {user.last_name}
-                </h3>
-                {user.username && (
-                  <p className="text-tg-hint text-sm">
-                    @{user.username}
-                  </p>
-                )}
-              </div>
+    <div className="min-h-screen bg-bg-deep text-foam selection-sonar">
+      {/* Header */}
+      <div className="bg-steel border-b border-edge/50 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-bg-graphite rounded-full ring-2 ring-sonar flex items-center justify-center">
+              {user.photoUrl ? (
+                <img src={user.photoUrl} alt="Avatar" className="w-full h-full rounded-full" />
+              ) : (
+                <span className="font-heading font-semibold text-sonar">
+                  {user.firstName.charAt(0)}
+                </span>
+              )}
             </div>
-          </motion.div>
-        )}
+            <div>
+              <h3 className="font-heading font-semibold text-body text-foam">
+                {user.firstName}
+              </h3>
+              <p className="font-mono text-caption text-mist">
+                Рейтинг: 1250
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
 
-        {/* Game options */}
+      <div className="p-4 space-y-6">
+        {/* Welcome message */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="space-y-4"
+          transition={{ delay: 0.1 }}
         >
-          <Button
-            onClick={handlePlayGame}
-            size="lg"
-            className="w-full"
-          >
-            🎮 Начать игру
-          </Button>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Button
-              variant="secondary"
-              onClick={() => {/* TODO: Show rules */}}
-              className="w-full"
-            >
-              📖 Правила
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => {/* TODO: Show stats */}}
-              className="w-full"
-            >
-              📊 Статистика
-            </Button>
-          </div>
-        </motion.div>
-
-        {/* Game info */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-          className="mt-8 text-center"
-        >
-          <p className="text-tg-hint text-sm">
-            Найдите противника и сразитесь в классической игре "Морской бой"
+          <h1 className="font-heading font-semibold text-h1 text-foam mb-2">
+            Готовы нырнуть в бой?
+          </h1>
+          <p className="text-body text-mist">
+            Выберите режим игры и отправляйтесь в морское сражение
           </p>
         </motion.div>
-      </motion.div>
+
+        {/* Game options */}
+        <div className="space-y-4">
+          {/* Quick play */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-6"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-heading font-semibold text-h3 text-foam mb-1">
+                  Быстрый бой
+                </h3>
+                <p className="text-secondary text-mist">
+                  Сразитесь с ИИ или потренируйтесь
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-sonar/10 rounded-full flex items-center justify-center">
+                <span className="text-sonar text-xl">⚡</span>
+              </div>
+            </div>
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={handleQuickGame}
+              loading={isStartingQuickGame}
+              disabled={isStartingQuickGame}
+              className="w-full"
+            >
+              {isStartingQuickGame ? 'Запуск...' : 'НАЧАТЬ'}
+            </Button>
+          </motion.div>
+
+          {/* Play with friend */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-6"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-heading font-semibold text-h3 text-foam mb-1">
+                  Игра с другом
+                </h3>
+                <p className="text-secondary text-mist">
+                  Создайте приватную игру
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-info/10 rounded-full flex items-center justify-center">
+                <span className="text-info text-xl">👥</span>
+              </div>
+            </div>
+            <Button
+              variant="secondary"
+              size="lg"
+              onClick={handleCreateLobby}
+              loading={isCreatingLobby}
+              disabled={isCreatingLobby}
+              className="w-full"
+            >
+              {isCreatingLobby ? 'Создание...' : 'СОЗДАТЬ ИГРУ'}
+            </Button>
+          </motion.div>
+
+          {/* Tutorial */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-6"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-heading font-semibold text-h3 text-foam mb-1">
+                  Обучение
+                </h3>
+                <p className="text-secondary text-mist">
+                  Изучите правила за 3 шага
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-radio/10 rounded-full flex items-center justify-center">
+                <span className="text-radio text-xl">📚</span>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="lg"
+              onClick={handleTutorial}
+              className="w-full"
+            >
+              НАЧАТЬ ОБУЧЕНИЕ
+            </Button>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Bottom navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-steel border-t border-edge/50 px-4 py-3">
+        <div className="flex items-center justify-around">
+          <button
+            onClick={handleQuickGame}
+            className="flex flex-col items-center gap-1 p-2 rounded-lg text-sonar hover:bg-bg-graphite transition-colors"
+          >
+            <span className="text-xl">⚡</span>
+            <span className="text-caption font-heading">Играть</span>
+          </button>
+          
+          <button
+            onClick={handleHistory}
+            className="flex flex-col items-center gap-1 p-2 rounded-lg text-mist hover:text-foam hover:bg-bg-graphite transition-colors"
+          >
+            <span className="text-xl">🏆</span>
+            <span className="text-caption font-heading">История</span>
+          </button>
+          
+          <button
+            onClick={handleInventory}
+            className="flex flex-col items-center gap-1 p-2 rounded-lg text-mist hover:text-foam hover:bg-bg-graphite transition-colors"
+          >
+            <span className="text-xl">📦</span>
+            <span className="text-caption font-heading">Инвентарь</span>
+          </button>
+          
+          <button
+            onClick={handleSettings}
+            className="flex flex-col items-center gap-1 p-2 rounded-lg text-mist hover:text-foam hover:bg-bg-graphite transition-colors"
+          >
+            <span className="text-xl">⚙️</span>
+            <span className="text-caption font-heading">Настройки</span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

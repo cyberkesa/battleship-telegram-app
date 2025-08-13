@@ -11,192 +11,89 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  telegramId BigInt  @unique @map("tg_id")
+  id        String   @id @default(cuid())
+  telegramId Int      @unique
   username  String?
-  firstName String   @map("first_name")
-  lastName  String?  @map("last_name")
-  avatarUrl String?  @map("avatar_url")
-  rating    Int      @default(1000)
-  gamesPlayed Int    @default(0) @map("games_played")
-  gamesWon   Int     @default(0) @map("games_won")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  firstName String
+  lastName  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
   matchesAsPlayerA Match[] @relation("PlayerA")
   matchesAsPlayerB Match[] @relation("PlayerB")
-  boards          Board[]
-  moves           Move[]
-  inventories     Inventory[]
-  payments        Payment[]
-  bans            Ban[]
-  outboxEvents    OutboxEvent[]
+  moves           GameMove[]
+  lobbyPlayers    LobbyPlayer[]
 
   @@map("users")
 }
 
 model Match {
-  id         String   @id @default(cuid())
-  status     MatchStatus @default(CREATED)
-  playerAId  Int      @map("player_a_id")
-  playerBId  Int      @map("player_b_id")
-  turn       Turn?    // A, B, or null
-  mode       GameMode @default(CLASSIC)
-  createdAt  DateTime @default(now()) @map("created_at")
-  finishedAt DateTime? @map("finished_at")
-  winnerId   Int?     @map("winner_id")
+  id          String   @id @default(cuid())
+  status      String   // 'placing', 'in_progress', 'finished'
+  playerAId   String
+  playerBId   String
+  currentTurn String?  // 'A' or 'B'
+  winnerId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  finishedAt  DateTime?
+
+  // Game state (JSON)
+  state       Json
 
   // Relations
-  playerA    User     @relation("PlayerA", fields: [playerAId], references: [id])
-  playerB    User     @relation("PlayerB", fields: [playerBId], references: [id])
-  boards     Board[]
-  moves      Move[]
-  events     MatchEvent[]
-  outboxEvents OutboxEvent[]
+  playerA     User      @relation("PlayerA", fields: [playerAId], references: [id])
+  playerB     User      @relation("PlayerB", fields: [playerBId], references: [id])
+  moves       GameMove[]
+  lobbies     Lobby[]
 
   @@map("matches")
 }
 
-model Board {
-  id        String   @id @default(cuid())
-  matchId   String   @map("match_id")
-  playerId  Int      @map("player_id")
-  layout    Json     // Ships array
-  ready     Boolean  @default(false)
-  createdAt DateTime @default(now()) @map("created_at")
+model GameMove {
+  id       String   @id @default(cuid())
+  matchId  String
+  playerId String
+  x        Int
+  y        Int
+  result   String   // 'hit', 'miss', 'sunk'
+  createdAt DateTime @default(now())
 
   // Relations
-  match     Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
-  player    User     @relation(fields: [playerId], references: [id])
+  match    Match    @relation(fields: [matchId], references: [id])
+  player   User     @relation(fields: [playerId], references: [id])
 
-  @@unique([matchId, playerId])
-  @@map("boards")
+  @@map("game_moves")
 }
 
-model Move {
-  id        String   @id @default(cuid())
-  matchId   String   @map("match_id")
-  byPlayerId Int     @map("by_player_id")
-  x         Int
-  y         Int
-  result    MoveResult
-  turnNo    Int      @map("turn_no")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  // Relations
-  match     Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
-  byPlayer  User     @relation(fields: [byPlayerId], references: [id])
-
-  @@unique([matchId, turnNo])
-  @@map("moves")
-}
-
-model MatchEvent {
-  id        String   @id @default(cuid())
-  matchId   String   @map("match_id")
-  type      String
-  payload   Json
-  createdAt DateTime @default(now()) @map("created_at")
-
-  // Relations
-  match     Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
-
-  @@map("match_events")
-}
-
-model Inventory {
-  id        String   @id @default(cuid())
-  userId    Int      @map("user_id")
-  itemType  String   @map("item_type")
-  itemKey   String   @map("item_key")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  // Relations
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("inventories")
-}
-
-model Payment {
+model Lobby {
   id         String   @id @default(cuid())
-  userId     Int      @map("user_id")
-  provider   String
-  amount     Int
-  currency   String   @default("USD")
-  payload    Json
-  status     PaymentStatus @default(PENDING)
-  providerTxId String? @map("provider_tx_id")
-  createdAt  DateTime @default(now()) @map("created_at")
+  status     String   // 'waiting', 'ready', 'playing', 'finished'
+  inviteLink String
+  matchId    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   // Relations
-  user       User     @relation(fields: [userId], references: [id])
+  players    LobbyPlayer[]
+  match      Match?   @relation(fields: [matchId], references: [id])
 
-  @@unique([provider, providerTxId])
-  @@map("payments")
+  @@map("lobbies")
 }
 
-model Ban {
-  id        String   @id @default(cuid())
-  userId    Int      @map("user_id")
-  reason    String
-  untilAt   DateTime @map("until_at")
-  createdAt DateTime @default(now()) @map("created_at")
+model LobbyPlayer {
+  id       String @id @default(cuid())
+  lobbyId  String
+  playerId String
+  name     String
+  avatar   String?
+  isReady  Boolean @default(false)
+  isHost   Boolean @default(false)
 
   // Relations
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lobby    Lobby   @relation(fields: [lobbyId], references: [id], onDelete: Cascade)
+  player   User    @relation(fields: [playerId], references: [id])
 
-  @@map("bans")
-}
-
-model OutboxEvent {
-  id          String   @id @default(cuid())
-  aggregate   String
-  aggregateId String   @map("aggregate_id")
-  type        String
-  payload     Json
-  createdAt   DateTime @default(now()) @map("created_at")
-  processedAt DateTime? @map("processed_at")
-
-  // Relations
-  user        User?    @relation(fields: [userId], references: [id])
-  userId      Int?     @map("user_id")
-  match       Match?   @relation(fields: [matchId], references: [id])
-  matchId     String?  @map("match_id")
-
-  @@map("outbox_events")
-}
-
-// Enums
-enum MatchStatus {
-  CREATED
-  AWAITING_SETUP
-  PLACING
-  IN_PROGRESS
-  FINISHED
-  CANCELLED
-}
-
-enum Turn {
-  A
-  B
-}
-
-enum GameMode {
-  CLASSIC
-  RAPID
-  BLITZ
-}
-
-enum MoveResult {
-  HIT
-  MISS
-  KILL
-}
-
-enum PaymentStatus {
-  PENDING
-  COMPLETED
-  FAILED
-  REFUNDED
+  @@map("lobby_players")
 }

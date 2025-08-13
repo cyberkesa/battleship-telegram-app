@@ -1,208 +1,339 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Play, Users, BookOpen, Settings, Trophy, Star } from 'lucide-react';
-import { Button } from '../components/ui/Button';
-import { useAuth } from '../hooks/useAuth';
-import { useTelegram } from '../hooks/useTelegram';
+import { Button, LoadingScreen } from '@battleship/ui';
+import { useAuth } from '../providers/AuthProvider';
+import { api } from '../services/api';
 
-interface LobbyScreenProps {
-  onStartGame: () => void;
-  onShowHistory: () => void;
-  onShowSettings: () => void;
-  onShowInventory: () => void;
+interface LobbyPlayer {
+  id: string;
+  name: string;
+  avatar?: string;
+  isReady: boolean;
+  isHost: boolean;
 }
 
-export const LobbyScreen: React.FC<LobbyScreenProps> = ({
-  onStartGame,
-  onShowHistory,
-  onShowSettings,
-  onShowInventory,
-}) => {
+interface Lobby {
+  id: string;
+  status: 'waiting' | 'ready' | 'playing' | 'finished';
+  players: LobbyPlayer[];
+  inviteLink: string;
+  createdAt: Date;
+  matchId?: string;
+}
+
+export const LobbyScreen: React.FC = () => {
+  const { lobbyId } = useParams<{ lobbyId: string }>();
+  const navigate = useNavigate();
   const { user } = useAuth();
-  const { showMainButton, hideMainButton } = useTelegram();
+  
+  const [lobby, setLobby] = useState<Lobby | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isJoining, setIsJoining] = useState(false);
+  const [isSettingReady, setIsSettingReady] = useState(false);
 
-  React.useEffect(() => {
-    showMainButton('🎮 БЫСТРЫЙ БОЙ', onStartGame);
-    return () => hideMainButton();
-  }, [showMainButton, hideMainButton, onStartGame]);
+  useEffect(() => {
+    if (lobbyId) {
+      loadLobby();
+    }
+  }, [lobbyId]);
 
-  const stats = [
-    { label: 'Игр', value: user?.gamesPlayed || 0, color: 'text-sonar' },
-    { label: 'Побед', value: user?.gamesWon || 0, color: 'text-success' },
-    { label: 'Рейтинг', value: user?.rating || 1000, color: 'text-amber' },
-  ];
+  useEffect(() => {
+    if (lobby?.status === 'playing' && lobby.matchId) {
+      navigate(`/game/${lobby.matchId}`);
+    }
+  }, [lobby, navigate]);
 
-  const winRate = user?.gamesPlayed 
-    ? Math.round((user.gamesWon / user.gamesPlayed) * 100)
-    : 0;
+  const loadLobby = async () => {
+    try {
+      setIsLoading(true);
+      const response = await api.get(`/lobby/${lobbyId}`);
+      setLobby(response.data);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Ошибка загрузки лобби');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const joinLobby = async () => {
+    if (!user || !lobbyId) return;
+
+    try {
+      setIsJoining(true);
+      const response = await api.post('/lobby/join', {
+        lobbyId,
+        playerId: user.id,
+        playerName: user.firstName,
+        playerAvatar: user.photoUrl,
+      });
+      setLobby(response.data);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Ошибка присоединения к лобби');
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
+  const setReady = async () => {
+    if (!lobbyId) return;
+
+    try {
+      setIsSettingReady(true);
+      const response = await api.post(`/lobby/${lobbyId}/ready`);
+      setLobby(response.data);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Ошибка установки статуса готовности');
+    } finally {
+      setIsSettingReady(false);
+    }
+  };
+
+  const leaveLobby = async () => {
+    if (!lobbyId) return;
+
+    try {
+      await api.post(`/lobby/${lobbyId}/leave`);
+      navigate('/');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Ошибка выхода из лобби');
+    }
+  };
+
+  const copyInviteLink = async () => {
+    if (lobby?.inviteLink) {
+      try {
+        await navigator.clipboard.writeText(lobby.inviteLink);
+        // Можно добавить toast уведомление
+      } catch (err) {
+        console.error('Ошибка копирования ссылки:', err);
+      }
+    }
+  };
+
+  const isInLobby = lobby?.players.some(p => p.id === user?.id);
+  const currentPlayer = lobby?.players.find(p => p.id === user?.id);
+  const isHost = currentPlayer?.isHost;
+  const isReady = currentPlayer?.isReady;
+  const allPlayersReady = lobby?.players.every(p => p.isReady) && lobby.players.length === 2;
+
+  if (isLoading) {
+    return <LoadingScreen status="connecting" message="Загрузка лобби..." />;
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-bg-deep flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-h2 text-torpedo mb-4">Ошибка</h2>
+          <p className="text-body text-mist mb-6">{error}</p>
+          <Button onClick={() => navigate('/')} variant="primary">
+            Вернуться на главную
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!lobby) {
+    return (
+      <div className="min-h-screen bg-bg-deep flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-h2 text-torpedo mb-4">Лобби не найдено</h2>
+          <Button onClick={() => navigate('/')} variant="primary">
+            Вернуться на главную
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-steel-depth text-foam selection:bg-sonar/30">
+    <div className="min-h-screen bg-bg-deep text-foam">
       {/* Header */}
-      <div className="bg-steel ring-1 ring-edge shadow-steel">
-        <div className="px-4 py-3">
-          <div className="flex items-center justify-between">
-            {/* User info */}
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-sonar/20 ring-1 ring-sonar/30 rounded-lg flex items-center justify-center">
-                <span className="text-sonar font-sans font-semibold text-lg">
-                  {user?.firstName?.charAt(0).toUpperCase()}
-                </span>
-              </div>
-              <div>
-                <h2 className="text-foam font-sans font-semibold">
-                  {user?.firstName}
-                </h2>
-                <p className="text-mist text-sm font-mono">
-                  {user?.rating} ELO
-                </p>
-              </div>
+      <div className="bg-steel border-b border-edge/50 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <h1 className="font-heading font-semibold text-h2 text-foam">
+            Лобби
+          </h1>
+          <div className="text-caption text-mist">
+            {lobby.players.length}/2 игроков
+          </div>
+        </div>
+      </div>
+
+      <div className="p-4 space-y-6">
+        {/* Lobby Info */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-6"
+        >
+          <h2 className="font-heading font-semibold text-h3 text-foam mb-4">
+            Информация о лобби
+          </h2>
+          
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-body text-mist">Статус:</span>
+              <span className={`font-heading font-semibold ${
+                lobby.status === 'waiting' ? 'text-radio' :
+                lobby.status === 'ready' ? 'text-sonar' :
+                'text-torpedo'
+              }`}>
+                {lobby.status === 'waiting' ? 'Ожидание игроков' :
+                 lobby.status === 'ready' ? 'Готовы к игре' :
+                 'Игра началась'}
+              </span>
             </div>
             
-            {/* Stars balance */}
-            <div className="flex items-center gap-1 px-2 py-1 bg-amber/10 ring-1 ring-amber/30 rounded-lg">
-              <Star size={16} className="text-amber" />
-              <span className="text-amber font-mono font-medium text-sm">
-                0
+            <div className="flex items-center justify-between">
+              <span className="text-body text-mist">Создано:</span>
+              <span className="font-mono text-caption text-mist">
+                {new Date(lobby.createdAt).toLocaleTimeString()}
               </span>
             </div>
           </div>
-        </div>
-      </div>
+        </motion.div>
 
-      {/* Main content */}
-      <div className="p-4 space-y-6">
-        {/* Stats cards */}
-        <div className="grid grid-cols-3 gap-3">
-          {stats.map((stat, index) => (
-            <motion.div
-              key={stat.label}
-              className="bg-graphite ring-1 ring-edge rounded-lg p-3 text-center"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <div className={`text-xl font-mono font-semibold ${stat.color}`}>
-                {stat.value}
-              </div>
-              <div className="text-mist text-xs mt-1">
-                {stat.label}
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Win rate */}
+        {/* Players */}
         <motion.div
-          className="bg-graphite ring-1 ring-edge rounded-lg p-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          transition={{ delay: 0.1 }}
+          className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-6"
         >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-mist text-sm">Процент побед</span>
-            <span className="text-foam font-mono font-semibold">{winRate}%</span>
-          </div>
-          <div className="w-full bg-steel rounded-full h-2">
-            <motion.div
-              className="bg-success h-2 rounded-full"
-              initial={{ width: 0 }}
-              animate={{ width: `${winRate}%` }}
-              transition={{ delay: 0.5, duration: 1 }}
-            />
+          <h2 className="font-heading font-semibold text-h3 text-foam mb-4">
+            Игроки
+          </h2>
+          
+          <div className="space-y-4">
+            {lobby.players.map((player, index) => (
+              <div key={player.id} className="flex items-center justify-between p-3 bg-steel rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-bg-graphite rounded-full ring-2 ring-edge flex items-center justify-center">
+                    {player.avatar ? (
+                      <img src={player.avatar} alt="Avatar" className="w-full h-full rounded-full" />
+                    ) : (
+                      <span className="font-heading font-semibold text-sonar">
+                        {player.name.charAt(0)}
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <div className="font-heading font-semibold text-body text-foam">
+                      {player.name}
+                      {player.isHost && (
+                        <span className="ml-2 text-caption text-radio">👑 Хост</span>
+                      )}
+                    </div>
+                    <div className="text-caption text-mist">
+                      {player.id === user?.id ? 'Вы' : 'Соперник'}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  {player.isReady ? (
+                    <div className="flex items-center gap-1 text-sonar">
+                      <div className="w-2 h-2 bg-sonar rounded-full"></div>
+                      <span className="text-caption font-heading">Готов</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 text-mist">
+                      <div className="w-2 h-2 bg-mist rounded-full"></div>
+                      <span className="text-caption font-heading">Не готов</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+            
+            {lobby.players.length < 2 && (
+              <div className="text-center py-8 text-mist">
+                <div className="text-4xl mb-2">⏳</div>
+                <p className="text-body">Ожидание второго игрока...</p>
+              </div>
+            )}
           </div>
         </motion.div>
 
-        {/* Game options */}
-        <div className="space-y-3">
-          {/* Quick play */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
+        {/* Actions */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="space-y-4"
+        >
+          {!isInLobby ? (
             <Button
-              variant="primary"
-              size="lg"
-              onClick={onStartGame}
+              onClick={joinLobby}
+              disabled={isJoining || lobby.players.length >= 2}
+              loading={isJoining}
               className="w-full"
-              icon={<Play size={20} />}
             >
-              БЫСТРЫЙ БОЙ
+              {isJoining ? 'Присоединение...' : 'Присоединиться к лобби'}
             </Button>
-          </motion.div>
-
-          {/* Play with friend */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-          >
-            <Button
-              variant="secondary"
-              size="lg"
-              onClick={() => {/* TODO: Implement */}}
-              className="w-full"
-              icon={<Users size={20} />}
-            >
-              ИГРА С ДРУГОМ
-            </Button>
-          </motion.div>
-
-          {/* Tutorial */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-          >
-            <Button
-              variant="ghost"
-              size="lg"
-              onClick={() => {/* TODO: Implement */}}
-              className="w-full"
-              icon={<BookOpen size={20} />}
-            >
-              ОБУЧЕНИЕ
-            </Button>
-          </motion.div>
-        </div>
-      </div>
-
-      {/* Bottom navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-steel ring-1 ring-edge shadow-steel">
-        <div className="flex items-center justify-around p-2">
-          <button
-            onClick={onStartGame}
-            className="flex flex-col items-center gap-1 p-2 text-sonar"
-          >
-            <Play size={20} />
-            <span className="text-xs font-medium">Играть</span>
-          </button>
+          ) : (
+            <>
+              {isHost && (
+                <Button
+                  onClick={copyInviteLink}
+                  variant="secondary"
+                  className="w-full"
+                >
+                  📋 Скопировать ссылку приглашения
+                </Button>
+              )}
+              
+              {!isReady && (
+                <Button
+                  onClick={setReady}
+                  disabled={isSettingReady}
+                  loading={isSettingReady}
+                  className="w-full"
+                >
+                  {isSettingReady ? 'Установка статуса...' : 'Готов к игре'}
+                </Button>
+              )}
+              
+              {isReady && !allPlayersReady && (
+                <div className="text-center py-4">
+                  <div className="flex items-center justify-center gap-2 text-sonar mb-2">
+                    <div className="w-2 h-2 bg-sonar rounded-full animate-pulse"></div>
+                    <span className="font-heading font-semibold">Ожидание готовности соперника...</span>
+                  </div>
+                </div>
+              )}
+              
+              {allPlayersReady && (
+                <div className="text-center py-4">
+                  <div className="text-sonar text-h3 mb-2">🎯</div>
+                  <p className="font-heading font-semibold text-sonar">
+                    Оба игрока готовы! Игра начинается...
+                  </p>
+                </div>
+              )}
+              
+              <Button
+                onClick={leaveLobby}
+                variant="danger"
+                className="w-full"
+              >
+                Покинуть лобби
+              </Button>
+            </>
+          )}
           
-          <button
-            onClick={onShowHistory}
-            className="flex flex-col items-center gap-1 p-2 text-mist hover:text-foam transition-colors"
+          <Button
+            onClick={() => navigate('/')}
+            variant="ghost"
+            className="w-full"
           >
-            <Trophy size={20} />
-            <span className="text-xs font-medium">История</span>
-          </button>
-          
-          <button
-            onClick={onShowInventory}
-            className="flex flex-col items-center gap-1 p-2 text-mist hover:text-foam transition-colors"
-          >
-            <Star size={20} />
-            <span className="text-xs font-medium">Инвентарь</span>
-          </button>
-          
-          <button
-            onClick={onShowSettings}
-            className="flex flex-col items-center gap-1 p-2 text-mist hover:text-foam transition-colors"
-          >
-            <Settings size={20} />
-            <span className="text-xs font-medium">Настройки</span>
-          </button>
-        </div>
+            Вернуться на главную
+          </Button>
+        </motion.div>
       </div>
     </div>
   );
