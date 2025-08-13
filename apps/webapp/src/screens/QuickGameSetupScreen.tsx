@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Button, Board, RingTimer } from '@battleship/ui';
+import { Button, ShipPlacementBoard, PlacedShip, Position, RingTimer } from '@battleship/ui';
 import { useAuth } from '../providers/AuthProvider';
 import { randomFleet } from '@battleship/game-logic';
 import { 
-  Ship, 
+  Ship as ShipIcon, 
   RotateCcw, 
   Trash2, 
   Play, 
@@ -15,50 +15,19 @@ import {
   Zap
 } from 'lucide-react';
 
-interface Position {
-  x: number;
-  y: number;
-}
-
-interface Ship {
-  id: string;
-  size: number;
-  positions: Position[];
-  hits: Position[];
-  isSunk: boolean;
-}
-
-interface BoardState {
-  id: string;
-  playerId: string;
-  ships: Ship[];
-  shots: Position[];
-  hits: Position[];
-  misses: Position[];
-}
-
 // Правильные корабли по классическим правилам Морского боя
 const SHIP_TYPES = [
-  { size: 4, name: 'Линкор', count: 1, color: 'bg-torpedo', icon: Ship },
-  { size: 3, name: 'Крейсер', count: 2, color: 'bg-radio', icon: Ship },
-  { size: 2, name: 'Эсминец', count: 3, color: 'bg-sonar', icon: Ship },
-  { size: 1, name: 'Катер', count: 4, color: 'bg-info', icon: Ship },
+  { size: 4, name: 'Линкор', count: 1, color: 'bg-torpedo' },
+  { size: 3, name: 'Крейсер', count: 2, color: 'bg-radio' },
+  { size: 2, name: 'Эсминец', count: 3, color: 'bg-sonar' },
+  { size: 1, name: 'Катер', count: 4, color: 'bg-info' },
 ];
 
 export const QuickGameSetupScreen: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   
-  const [board, setBoard] = useState<BoardState>({
-    id: 'quick-game-board',
-    playerId: user?.id?.toString() || 'player',
-    ships: [],
-    shots: [],
-    hits: [],
-    misses: []
-  });
-  const [selectedShip, setSelectedShip] = useState<number | null>(null);
-  const [isHorizontal, setIsHorizontal] = useState(true);
+  const [placedShips, setPlacedShips] = useState<PlacedShip[]>([]);
   const [timeLeft, setTimeLeft] = useState(80); // 80 секунд на расстановку
   const [isGameStarted, setIsGameStarted] = useState(false);
 
@@ -67,7 +36,7 @@ export const QuickGameSetupScreen: React.FC = () => {
     const available = [];
     for (let i = 0; i < SHIP_TYPES.length; i++) {
       const shipType = SHIP_TYPES[i];
-      const placedCount = board.ships.filter(ship => ship.size === shipType.size).length;
+      const placedCount = placedShips.filter(ship => ship.size === shipType.size).length;
       const remaining = shipType.count - placedCount;
       
       for (let j = 0; j < remaining; j++) {
@@ -101,46 +70,23 @@ export const QuickGameSetupScreen: React.FC = () => {
     }
   }, [timeLeft, isGameStarted]);
 
-  const handleCellClick = (row: number, col: number) => {
-    if (selectedShip === null || isGameStarted) return;
-
-    const position = { x: col, y: row };
-    const shipType = SHIP_TYPES[selectedShip];
-    const positions: Position[] = [];
-
-    // Генерируем позиции корабля
-    if (isHorizontal) {
-      for (let i = 0; i < shipType.size; i++) {
-        positions.push({ x: position.x + i, y: position.y });
-      }
-    } else {
-      for (let i = 0; i < shipType.size; i++) {
-        positions.push({ x: position.x, y: position.y + i });
-      }
-    }
-
-    // Проверяем, можно ли разместить корабль
-    const isValidPlacement = positions.every(pos => 
-      pos.x >= 0 && pos.x < 10 && pos.y >= 0 && pos.y < 10
-    ) && !board.ships.some(ship => 
-      ship.positions.some(pos => 
-        positions.some(newPos => pos.x === newPos.x && pos.y === newPos.y)
+  const handleShipPlace = (ship: PlacedShip) => {
+    // Проверяем, не пересекается ли корабль с уже размещенными
+    const isOverlapping = placedShips.some(existingShip =>
+      existingShip.positions.some(existingPos =>
+        ship.positions.some(newPos => 
+          existingPos.x === newPos.x && existingPos.y === newPos.y
+        )
       )
     );
-    
-    if (isValidPlacement) {
-      const newShip: Ship = {
-        id: crypto.randomUUID(),
-        size: shipType.size,
-        positions,
-        hits: [],
-        isSunk: false,
-      };
 
-      const newBoard = { ...board, ships: [...board.ships, newShip] };
-      setBoard(newBoard);
-      setSelectedShip(null);
+    if (!isOverlapping) {
+      setPlacedShips(prev => [...prev, ship]);
     }
+  };
+
+  const handleShipRemove = (shipId: string) => {
+    setPlacedShips(prev => prev.filter(ship => ship.id !== shipId));
   };
 
   const handleRandomPlacement = () => {
@@ -160,33 +106,21 @@ export const QuickGameSetupScreen: React.FC = () => {
         return positions;
       };
       
-      const ships: Ship[] = fleetShips.map((ship: any) => ({
+      const ships: PlacedShip[] = fleetShips.map((ship: any) => ({
         id: crypto.randomUUID(),
         size: ship.length,
         positions: shipToPositions(ship),
-        hits: [],
-        isSunk: false,
+        isHorizontal: ship.horizontal,
       }));
       
-      setBoard({
-        ...board,
-        ships
-      });
+      setPlacedShips(ships);
     } catch (error) {
       console.error('Error generating random fleet:', error);
     }
   };
 
   const handleClearBoard = () => {
-    setBoard({
-      id: 'quick-game-board',
-      playerId: user?.id?.toString() || 'player',
-      ships: [],
-      shots: [],
-      hits: [],
-      misses: []
-    });
-    setSelectedShip(null);
+    setPlacedShips([]);
   };
 
   const startGame = () => {
@@ -196,38 +130,20 @@ export const QuickGameSetupScreen: React.FC = () => {
   };
 
   const handleStartGame = () => {
-    if (board.ships.length === 10) { // Все 10 кораблей размещены
+    if (placedShips.length === 10) { // Все 10 кораблей размещены
       startGame();
     }
   };
 
-  const isBoardComplete = board.ships.length === 10;
+  const isBoardComplete = placedShips.length === 10;
 
-  // Создаем правильную структуру клеток для Board компонента
-  const createBoardCells = () => {
-    const cells: any[][] = [];
-    for (let y = 0; y < 10; y++) {
-      const row: any[] = [];
-      for (let x = 0; x < 10; x++) {
-        const position = { x, y };
-        
-        // Check if cell has a ship
-        const ship = board.ships.find(s => 
-          s.positions.some(pos => pos.x === x && pos.y === y)
-        );
-        
-        row.push({
-          position,
-          hasShip: !!ship,
-          shipSize: ship?.size || 0,
-          isHit: false,
-          isMiss: false,
-          isSunk: ship?.isSunk || false,
-        });
-      }
-      cells.push(row);
-    }
-    return cells;
+  const handleDragStart = (e: React.DragEvent, shipType: any) => {
+    const shipData = {
+      id: crypto.randomUUID(),
+      size: shipType.size,
+      isHorizontal: true,
+    };
+    e.dataTransfer.setData('application/json', JSON.stringify(shipData));
   };
 
   return (
@@ -243,7 +159,7 @@ export const QuickGameSetupScreen: React.FC = () => {
               </h1>
             </div>
             <p className="text-secondary text-mist truncate">
-              Разместите {10 - board.ships.length} кораблей
+              Разместите {10 - placedShips.length} кораблей
             </p>
           </div>
           <div className="flex items-center gap-2 ml-4">
@@ -265,38 +181,47 @@ export const QuickGameSetupScreen: React.FC = () => {
           className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-4"
         >
           <h3 className="font-heading font-semibold text-h3 text-foam mb-4">
-            Выберите корабль
+            Перетащите корабли на поле
           </h3>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {availableShips.map((ship, index) => {
-              const IconComponent = ship.icon;
-              return (
-                <button
-                  key={ship.id}
-                  onClick={() => setSelectedShip(ship.index)}
-                  className={`p-3 rounded-lg border-2 transition-all ${
-                    selectedShip === ship.index
-                      ? 'border-sonar bg-sonar/10'
-                      : 'border-edge hover:border-sonar/50'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <div className={`w-4 h-4 ${ship.color} rounded-sm flex items-center justify-center`}>
-                      <IconComponent className="w-3 h-3 text-white" />
+            {availableShips.map((ship, index) => (
+              <div
+                key={ship.id}
+                draggable
+                onDragStart={(e) => handleDragStart(e, ship)}
+                className="p-3 rounded-lg border-2 border-edge hover:border-sonar/50 transition-all cursor-grab active:cursor-grabbing"
+              >
+                <div className="flex items-center gap-2">
+                  <div className={`w-4 h-4 ${ship.color} rounded-sm flex items-center justify-center`}>
+                    <ShipIcon className="w-3 h-3 text-white" />
+                  </div>
+                  <div className="text-left flex-1 min-w-0">
+                    <div className="font-heading font-semibold text-body text-foam truncate">
+                      {ship.name}
                     </div>
-                    <div className="text-left flex-1 min-w-0">
-                      <div className="font-heading font-semibold text-body text-foam truncate">
-                        {ship.name}
-                      </div>
-                      <div className="text-caption text-mist">
-                        {ship.size} клетки
-                      </div>
+                    <div className="text-caption text-mist">
+                      {ship.size} клетки
                     </div>
                   </div>
-                </button>
-              );
-            })}
+                </div>
+                {/* Показываем визуальный корабль */}
+                <div className="mt-2 flex justify-center">
+                  <div className="flex">
+                    {Array.from({ length: ship.size }, (_, i) => (
+                      <div
+                        key={i}
+                        className={`w-6 h-6 border border-edge ${ship.color} ${
+                          i === 0 ? 'rounded-l-sm' : ''
+                        } ${
+                          i === ship.size - 1 ? 'rounded-r-sm' : ''
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
 
           {availableShips.length === 0 && (
@@ -309,29 +234,6 @@ export const QuickGameSetupScreen: React.FC = () => {
               </div>
             </div>
           )}
-        </motion.div>
-
-        {/* Orientation toggle */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-4"
-        >
-          <div className="flex items-center justify-between">
-            <span className="font-heading font-semibold text-body text-foam">
-              Ориентация корабля
-            </span>
-            <button
-              onClick={() => setIsHorizontal(!isHorizontal)}
-              className="px-4 py-2 bg-steel rounded-lg hover:bg-bg-deep transition-colors flex items-center gap-2"
-            >
-              <RotateCcw className={`w-4 h-4 text-sonar transition-transform ${!isHorizontal ? 'rotate-90' : ''}`} />
-              <span className="text-sonar font-medium">
-                {isHorizontal ? 'Горизонтально' : 'Вертикально'}
-              </span>
-            </button>
-          </div>
         </motion.div>
 
         {/* Game board */}
@@ -347,10 +249,10 @@ export const QuickGameSetupScreen: React.FC = () => {
           
           <div className="flex justify-center overflow-x-auto">
             <div className="min-w-0">
-              <Board
-                cells={createBoardCells()}
-                onCellClick={handleCellClick}
-                isOpponent={false}
+              <ShipPlacementBoard
+                placedShips={placedShips}
+                onShipPlace={handleShipPlace}
+                onShipRemove={handleShipRemove}
               />
             </div>
           </div>
@@ -400,7 +302,7 @@ export const QuickGameSetupScreen: React.FC = () => {
             ) : (
               <>
                 <AlertCircle className="w-4 h-4" />
-                Разместите еще {10 - board.ships.length} кораблей
+                Разместите еще {10 - placedShips.length} кораблей
               </>
             )}
           </Button>
