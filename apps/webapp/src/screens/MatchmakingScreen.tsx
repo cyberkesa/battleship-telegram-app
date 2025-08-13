@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Button, LoadingSpinner } from '@battleship/ui';
+import { Button } from '@battleship/ui';
 import { useGameStore } from '../stores/gameStore';
 
 export const MatchmakingScreen: React.FC = () => {
@@ -105,7 +105,7 @@ export const MatchmakingScreen: React.FC = () => {
                 transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
                 className="mb-4"
               >
-                <LoadingSpinner size="lg" />
+                <div className="w-8 h-8 border-2 border-tg-button border-t-transparent rounded-full"></div>
               </motion.div>
               <h3 className="text-lg font-semibold text-tg-text mb-2">
                 Поиск противника

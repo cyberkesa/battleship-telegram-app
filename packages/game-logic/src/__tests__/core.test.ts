@@ -91,7 +91,9 @@ describe('Game Logic Core', () => {
       const fleet = createDefaultFleet().slice(0, 5); // Only 5 ships
       const result = validateFleet(fleet);
       expect(result.ok).toBe(false);
-      expect(result.reason).toBe('FLEET_SIZE');
+      if (!result.ok) {
+        expect(result.reason).toBe('FLEET_SIZE');
+      }
     });
 
     test('should reject fleet with wrong composition', () => {
@@ -101,7 +103,9 @@ describe('Game Logic Core', () => {
       }));
       const result = validateFleet(fleet);
       expect(result.ok).toBe(false);
-      expect(result.reason).toBe('WRONG_COMPOSITION');
+      if (!result.ok) {
+        expect(result.reason).toBe('WRONG_COMPOSITION');
+      }
     });
 
     test('should reject ship out of bounds', () => {
@@ -110,7 +114,9 @@ describe('Game Logic Core', () => {
       );
       const result = validateFleet(fleet);
       expect(result.ok).toBe(false);
-      expect(result.reason).toBe('OUT_OF_BOUNDS');
+      if (!result.ok) {
+        expect(result.reason).toBe('OUT_OF_BOUNDS');
+      }
     });
 
     test('should reject overlapping ships', () => {
@@ -119,7 +125,9 @@ describe('Game Logic Core', () => {
       );
       const result = validateFleet(fleet);
       expect(result.ok).toBe(false);
-      expect(result.reason).toBe('OVERLAP');
+      if (!result.ok) {
+        expect(result.reason).toBe('OVERLAP');
+      }
     });
 
     test('should reject touching ships when not allowed', () => {
@@ -128,7 +136,9 @@ describe('Game Logic Core', () => {
       );
       const result = validateFleet(fleet, false);
       expect(result.ok).toBe(false);
-      expect(result.reason).toBe('TOUCHING');
+      if (!result.ok) {
+        expect(result.reason).toBe('TOUCHING');
+      }
     });
 
     test('should allow touching ships when allowed', () => {

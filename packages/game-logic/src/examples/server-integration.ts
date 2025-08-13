@@ -2,8 +2,6 @@ import {
   createMatch,
   placeFleet,
   applyMove,
-  validateFleet,
-  randomFleet,
   buildShipIndex,
   getPublicState,
   GameLogicError,
@@ -30,7 +28,7 @@ interface PlaceRequest {
 
 // Сервис для управления матчами
 export class MatchService {
-  private matches = new Map<string, MatchState>();
+  protected matches = new Map<string, MatchState>();
   private moveResults = new Map<string, any>(); // idempotencyKey -> result
 
   // Создание нового матча
@@ -139,7 +137,7 @@ export class MatchController {
     } catch (error) {
       res.status(400).json({
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   }
@@ -300,7 +298,7 @@ export class TimerWorker {
   constructor(private matchService: MatchService) {}
 
   async processTimeouts(): Promise<void> {
-    const now = Date.now();
+    // const now = Date.now();
     
     for (const [matchId, match] of this.matchService['matches'].entries()) {
       if (match.status === 'in_progress' && match.currentTurn) {

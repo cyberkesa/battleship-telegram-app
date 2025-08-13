@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Button } from '@battleship/ui';
-import { GameBoard } from '@battleship/ui';
+import { Button, Board } from '@battleship/ui';
 import { useGameStore } from '../stores/gameStore';
 import { useAuth } from '../providers/AuthProvider';
 import { Position, GameStatus } from '@battleship/shared-types';
@@ -193,9 +192,8 @@ export const GameScreen: React.FC = () => {
             </h3>
             <div className="flex justify-center">
               {playerBoard && (
-                <GameBoard
-                  board={playerBoard}
-                  showShips={true}
+                <Board
+                  cells={playerBoard?.cells || []}
                   disabled={true}
                   size="sm"
                 />
@@ -210,12 +208,12 @@ export const GameScreen: React.FC = () => {
             </h3>
             <div className="flex justify-center">
               {opponentBoard && (
-                <GameBoard
-                  board={opponentBoard}
+                <Board
+                  cells={opponentBoard?.cells || []}
                   onCellClick={handleCellClick}
-                  showShips={false}
                   disabled={!isMyTurn || currentMatch.status !== GameStatus.PLAYING}
                   size="sm"
+                  isOpponent={true}
                 />
               )}
             </div>

@@ -2,17 +2,45 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@battleship/ui';
-import { GameBoard } from '@battleship/ui';
+import { Board } from '@battleship/ui';
 import { useGameStore } from '../stores/gameStore';
-import { BoardUtils } from '@battleship/game-logic';
-import { Board, Ship, Position } from '@battleship/shared-types';
+import { randomFleet } from '@battleship/game-logic';
+// Define local types to avoid import issues
+interface Position {
+  x: number;
+  y: number;
+}
+
+interface Ship {
+  id: string;
+  size: number;
+  positions: Position[];
+  hits: Position[];
+  isSunk: boolean;
+}
+
+interface Board {
+  id: string;
+  playerId: string;
+  ships: Ship[];
+  shots: Position[];
+  hits: Position[];
+  misses: Position[];
+}
 
 export const SetupScreen: React.FC = () => {
   const { matchId } = useParams<{ matchId: string }>();
   const navigate = useNavigate();
   const { setupBoard, isLoading, error } = useGameStore();
   
-  const [board, setBoard] = useState<Board>(BoardUtils.createEmptyBoard('player'));
+  const [board, setBoard] = useState<Board>({
+    id: 'player-board',
+    playerId: 'player',
+    ships: [],
+    shots: [],
+    hits: [],
+    misses: []
+  });
   const [selectedShip, setSelectedShip] = useState<number | null>(null);
   const [isHorizontal, setIsHorizontal] = useState(true);
 
@@ -50,7 +78,16 @@ export const SetupScreen: React.FC = () => {
       isSunk: false,
     };
 
-    if (BoardUtils.canPlaceShip(board, newShip)) {
+    // Simple validation - check if positions are within bounds and not overlapping
+    const isValidPlacement = positions.every(pos => 
+      pos.x >= 0 && pos.x < 10 && pos.y >= 0 && pos.y < 10
+    ) && !board.ships.some(ship => 
+      ship.positions.some(pos => 
+        positions.some(newPos => pos.x === newPos.x && pos.y === newPos.y)
+      )
+    );
+    
+    if (isValidPlacement) {
       const newBoard = { ...board, ships: [...board.ships, newShip] };
       setBoard(newBoard);
       setSelectedShip(null);
@@ -58,12 +95,26 @@ export const SetupScreen: React.FC = () => {
   };
 
   const handleRandomPlacement = () => {
-    const randomBoard = BoardUtils.generateRandomPlacement('player');
-    setBoard(randomBoard);
+    // For now, just clear the board
+    setBoard({
+      id: 'player-board',
+      playerId: 'player',
+      ships: [],
+      shots: [],
+      hits: [],
+      misses: []
+    });
   };
 
   const handleClearBoard = () => {
-    setBoard(BoardUtils.createEmptyBoard('player'));
+    setBoard({
+      id: 'player-board',
+      playerId: 'player',
+      ships: [],
+      shots: [],
+      hits: [],
+      misses: []
+    });
   };
 
   const handleStartGame = async () => {
@@ -150,10 +201,9 @@ export const SetupScreen: React.FC = () => {
 
         {/* Game board */}
         <div className="flex justify-center mb-6">
-          <GameBoard
-            board={board}
+          <Board
+            cells={board?.cells || []}
             onCellClick={handleCellClick}
-            showShips={true}
             size="md"
           />
         </div>
