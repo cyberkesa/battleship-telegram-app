@@ -1,0 +1,68 @@
+import axios from 'axios';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+export const api = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Request interceptor to add auth token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor to handle errors
+api.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    if (error.response?.status === 401) {
+      // Handle unauthorized access
+      localStorage.removeItem('auth_token');
+      window.location.reload();
+    }
+    return Promise.reject(error);
+  }
+);
+
+// API endpoints
+export const authAPI = {
+  authenticate: (data: any) => api.post('/auth/telegram', data),
+  getProfile: () => api.get('/auth/me'),
+};
+
+export const matchmakingAPI = {
+  joinQueue: () => api.post('/matchmaking/join'),
+  leaveQueue: () => api.post('/matchmaking/leave'),
+  getStatus: () => api.get('/matchmaking/status'),
+  getActiveMatch: () => api.get('/matchmaking/active-match'),
+};
+
+export const gameAPI = {
+  setupBoard: (matchId: string, ships: any[]) => 
+    api.post(`/game/${matchId}/setup`, { ships }),
+  makeMove: (matchId: string, position: any) => 
+    api.post(`/game/${matchId}/move`, { position }),
+  getState: (matchId: string) => api.get(`/game/${matchId}/state`),
+};
+
+export const eventsAPI = {
+  subscribe: (matchId: string) => 
+    api.get(`/events/${matchId}/subscribe`, { 
+      responseType: 'stream' 
+    }),
+};

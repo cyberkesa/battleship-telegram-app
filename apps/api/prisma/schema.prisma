@@ -1,0 +1,84 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  telegramId Int      @unique
+  username  String?
+  firstName String
+  lastName  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  matchesAsPlayerA Match[] @relation("PlayerA")
+  matchesAsPlayerB Match[] @relation("PlayerB")
+  matchesAsWinner  Match[] @relation("Winner")
+  moves           GameMove[]
+  boards          Board[]
+
+  @@map("users")
+}
+
+model Match {
+  id          String     @id @default(cuid())
+  status      String     // GameStatus enum as string
+  playerAId   String
+  playerBId   String
+  currentTurn String?
+  winnerId    String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  finishedAt  DateTime?
+
+  // Relations
+  playerA User      @relation("PlayerA", fields: [playerAId], references: [id])
+  playerB User      @relation("PlayerB", fields: [playerBId], references: [id])
+  winner  User?     @relation("Winner", fields: [winnerId], references: [id])
+  moves   GameMove[]
+  boards  Board[]
+
+  @@map("matches")
+}
+
+model Board {
+  id        String   @id @default(cuid())
+  matchId   String
+  playerId  String
+  layout    Json     // Ship positions as JSON
+  fogOfWar  Json     // Visible cells for opponent
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  match  Match @relation(fields: [matchId], references: [id])
+  player User  @relation(fields: [playerId], references: [id])
+
+  @@unique([matchId, playerId])
+  @@map("boards")
+}
+
+model GameMove {
+  id        String   @id @default(cuid())
+  matchId   String
+  playerId  String
+  x         Int
+  y         Int
+  result    String   // 'hit', 'miss', 'sunk'
+  createdAt DateTime @default(now())
+
+  // Relations
+  match  Match @relation(fields: [matchId], references: [id])
+  player User  @relation(fields: [playerId], references: [id])
+
+  @@map("game_moves")
+}

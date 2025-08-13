@@ -1,0 +1,28 @@
+{
+  "name": "battleship-telegram-app",
+  "version": "1.0.0",
+  "description": "Battleship game as Telegram Mini App",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "clean": "turbo run clean",
+    "db:generate": "cd apps/api && npm run db:generate",
+    "db:migrate": "cd apps/api && npm run db:migrate",
+    "db:studio": "cd apps/api && npm run db:studio"
+  },
+  "devDependencies": {
+    "turbo": "^1.10.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
