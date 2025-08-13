@@ -7,82 +7,89 @@ import { cn } from '../utils/cn';
 interface GameBoardProps {
   board: Board;
   onCellClick?: (position: Position) => void;
-  disabled?: boolean;
   showShips?: boolean;
-  size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
 
 export const GameBoard: React.FC<GameBoardProps> = ({
   board,
   onCellClick,
-  disabled = false,
   showShips = false,
-  size = 'md',
   className
 }) => {
-  const getCellState = (position: Position): CellState => {
-    // Проверяем, был ли выстрел в эту позицию
-    const wasShot = board.shots.some(shot => shot.x === position.x && shot.y === position.y);
-    
+  const getCellState = (x: number, y: number): CellState => {
+    // Check if this position was shot
+    const wasShot = board.shots.some((shot: Position) => 
+      shot.x === x && shot.y === y
+    );
+
     if (!wasShot) {
-      // Если не было выстрела, показываем корабль только если showShips = true
-      const hasShip = board.ships.some(ship =>
-        ship.positions.some(pos => pos.x === position.x && pos.y === position.y)
+      // Check if there's a ship at this position
+      const hasShip = board.ships.some((ship: any) =>
+        ship.positions.some((pos: Position) => pos.x === x && pos.y === y)
       );
-      return hasShip && showShips ? CellState.SHIP : CellState.EMPTY;
+      return hasShip ? CellState.SHIP : CellState.EMPTY;
     }
 
-    // Проверяем, есть ли корабль в этой позиции
-    const ship = board.ships.find(ship =>
-      ship.positions.some(pos => pos.x === position.x && pos.y === position.y)
+    // Check if there's a ship at this position
+    const ship = board.ships.find((ship: any) =>
+      ship.positions.some((pos: Position) => pos.x === x && pos.y === y)
     );
 
-    if (!ship) {
-      return CellState.MISS;
+    if (ship) {
+      // Check if ship is sunk
+      const isSunk = ship.positions.every((pos: Position) =>
+        board.hits.some((hit: Position) => hit.x === pos.x && hit.y === pos.y)
+      );
+      return isSunk ? CellState.SUNK : CellState.HIT;
     }
 
-    // Проверяем, потоплен ли корабль
-    if (ship.isSunk) {
-      return CellState.SUNK;
+    return CellState.MISS;
+  };
+
+  const handleCellClick = (x: number, y: number) => {
+    if (onCellClick) {
+      onCellClick({ x, y });
     }
-
-    return CellState.HIT;
   };
-
-  const renderCell = (x: number, y: number) => {
-    const position: Position = { x, y };
-    const state = getCellState(position);
-
-    return (
-      <Cell
-        key={`${x}-${y}`}
-        position={position}
-        state={state}
-        onClick={onCellClick}
-        disabled={disabled}
-        showShip={showShips}
-        size={size}
-      />
-    );
-  };
-
-  const renderRow = (y: number) => (
-    <div key={y} className="flex">
-      {Array.from({ length: 10 }, (_, x) => renderCell(x, y))}
-    </div>
-  );
 
   return (
     <motion.div
-      className={cn('inline-block', className)}
+      className={cn('grid grid-cols-10 gap-1 p-4 bg-gray-100 rounded-lg', className)}
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="grid grid-cols-10 gap-1">
-        {Array.from({ length: 10 }, (_, y) => renderRow(y))}
+      {/* Column labels */}
+      <div className="col-span-10 grid grid-cols-10 gap-1 mb-2">
+        {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'].map((letter) => (
+          <div key={letter} className="text-center text-xs font-bold text-gray-600">
+            {letter}
+          </div>
+        ))}
       </div>
+
+      {/* Game board */}
+      {Array.from({ length: 10 }, (_, y) => (
+        <React.Fragment key={y}>
+          {/* Row label */}
+          <div className="text-center text-xs font-bold text-gray-600 flex items-center justify-center">
+            {y + 1}
+          </div>
+          
+          {/* Row cells */}
+          {Array.from({ length: 10 }, (_, x) => (
+            <Cell
+              key={`${x}-${y}`}
+              position={{ x, y }}
+              state={getCellState(x, y)}
+              onClick={() => handleCellClick(x, y)}
+              showShip={showShips}
+              size="md"
+            />
+          ))}
+        </React.Fragment>
+      ))}
     </motion.div>
   );
 };

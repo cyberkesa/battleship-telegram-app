@@ -6,84 +6,64 @@ import { cn } from '../utils/cn';
 interface CellProps {
   position: Position;
   state: CellState;
-  onClick?: (position: Position) => void;
+  onClick?: () => void;
   disabled?: boolean;
   showShip?: boolean;
   size?: 'sm' | 'md' | 'lg';
 }
 
 export const Cell: React.FC<CellProps> = ({
-  position,
   state,
   onClick,
   disabled = false,
   showShip = false,
   size = 'md'
 }) => {
-  const handleClick = () => {
-    if (!disabled && onClick) {
-      onClick(position);
-    }
+  const sizes: Record<string, string> = {
+    sm: 'w-6 h-6 text-xs',
+    md: 'w-8 h-8 text-sm',
+    lg: 'w-10 h-10 text-base'
   };
 
   const getCellContent = () => {
     switch (state) {
       case CellState.HIT:
-        return (
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            className="w-full h-full bg-red-500 rounded-full"
-          />
-        );
+        return '💥';
       case CellState.MISS:
-        return (
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            className="w-full h-full bg-gray-400 rounded-full"
-          />
-        );
-      case CellState.SUNK:
-        return (
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            className="w-full h-full bg-red-700 rounded-full"
-          />
-        );
+        return '💧';
       case CellState.SHIP:
-        if (showShip) {
-          return (
-            <div className="w-full h-full bg-blue-600 rounded-sm" />
-          );
-        }
-        return null;
+        return showShip ? '🚢' : '';
+      case CellState.SUNK:
+        return '💀';
       default:
-        return null;
+        return '';
     }
   };
 
-  const sizes = {
-    sm: 'w-6 h-6',
-    md: 'w-8 h-8',
-    lg: 'w-12 h-12'
+  const getCellClasses = () => {
+    const baseClasses = 'border border-gray-300 flex items-center justify-center font-bold transition-all cursor-pointer';
+    
+    switch (state) {
+      case CellState.HIT:
+        return cn(baseClasses, 'bg-red-500 text-white');
+      case CellState.MISS:
+        return cn(baseClasses, 'bg-blue-200 text-blue-800');
+      case CellState.SHIP:
+        return cn(baseClasses, showShip ? 'bg-gray-600 text-white' : 'bg-gray-100');
+      case CellState.SUNK:
+        return cn(baseClasses, 'bg-red-700 text-white');
+      default:
+        return cn(baseClasses, 'bg-white hover:bg-gray-50');
+    }
   };
 
   return (
     <motion.div
-      className={cn(
-        'border border-gray-300 bg-white cursor-pointer transition-colors',
-        sizes[size],
-        {
-          'hover:bg-gray-100': !disabled && state === CellState.EMPTY,
-          'cursor-not-allowed': disabled,
-          'bg-gray-200': disabled
-        }
-      )}
-      onClick={handleClick}
+      className={cn(getCellClasses(), sizes[size])}
+      onClick={!disabled ? onClick : undefined}
       whileHover={!disabled ? { scale: 1.05 } : {}}
       whileTap={!disabled ? { scale: 0.95 } : {}}
+      style={{ cursor: disabled ? 'not-allowed' : 'pointer' }}
     >
       {getCellContent()}
     </motion.div>
