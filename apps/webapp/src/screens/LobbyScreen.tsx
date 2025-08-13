@@ -1,25 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button, LoadingScreen } from '@battleship/ui';
 import { useAuth } from '../providers/AuthProvider';
-import { api } from '../services/api';
 
 interface LobbyPlayer {
-  id: string;
-  name: string;
-  avatar?: string;
+  id: number;
+  firstName: string;
+  lastName?: string;
+  username?: string;
+  photoUrl?: string;
   isReady: boolean;
   isHost: boolean;
 }
 
 interface Lobby {
   id: string;
-  status: 'waiting' | 'ready' | 'playing' | 'finished';
+  host: LobbyPlayer;
   players: LobbyPlayer[];
-  inviteLink: string;
-  createdAt: Date;
-  matchId?: string;
+  status: 'waiting' | 'ready' | 'starting';
+  createdAt: string;
 }
 
 export const LobbyScreen: React.FC = () => {
@@ -30,169 +30,179 @@ export const LobbyScreen: React.FC = () => {
   const [lobby, setLobby] = useState<Lobby | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isJoining, setIsJoining] = useState(false);
-  const [isSettingReady, setIsSettingReady] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
 
+  // Загружаем лобби из localStorage
   useEffect(() => {
-    if (lobbyId) {
-      loadLobby();
+    if (!lobbyId) {
+      setError('ID лобби не найден');
+      setIsLoading(false);
+      return;
     }
-  }, [lobbyId]);
 
-  useEffect(() => {
-    if (lobby?.status === 'playing' && lobby.matchId) {
-      navigate(`/game/${lobby.matchId}`);
-    }
-  }, [lobby, navigate]);
-
-  const loadLobby = async () => {
     try {
-      setIsLoading(true);
-      const response = await api.get(`/lobby/${lobbyId}`);
-      setLobby(response.data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Ошибка загрузки лобби');
+      const lobbyData = localStorage.getItem(`lobby_${lobbyId}`);
+      if (lobbyData) {
+        const lobbyObj = JSON.parse(lobbyData);
+        setLobby(lobbyObj);
+        
+        // Проверяем, готов ли текущий пользователь
+        const currentPlayer = lobbyObj.players.find((p: LobbyPlayer) => p.id === user?.id);
+        setIsReady(currentPlayer?.isReady || false);
+      } else {
+        setError('Лобби не найдено');
+      }
+    } catch (err) {
+      setError('Ошибка загрузки лобби');
     } finally {
       setIsLoading(false);
     }
+  }, [lobbyId, user?.id]);
+
+  const handleToggleReady = () => {
+    if (!lobby || !user) return;
+
+    const newIsReady = !isReady;
+    setIsReady(newIsReady);
+
+    // Обновляем лобби в localStorage
+    const updatedLobby: Lobby = {
+      ...lobby,
+      players: lobby.players.map(player => 
+        player.id === user.id 
+          ? { ...player, isReady: newIsReady }
+          : player
+      ),
+      status: newIsReady && lobby.players.length === 2 ? 'ready' : 'waiting'
+    };
+
+    setLobby(updatedLobby);
+    localStorage.setItem(`lobby_${lobbyId}`, JSON.stringify(updatedLobby));
   };
 
-  const joinLobby = async () => {
-    if (!user || !lobbyId) return;
+  const handleStartGame = async () => {
+    if (!lobby || !user) return;
 
     try {
-      setIsJoining(true);
-      const response = await api.post('/lobby/join', {
-        lobbyId,
-        playerId: user.id,
-        playerName: user.firstName,
-        playerAvatar: user.photoUrl,
-      });
-      setLobby(response.data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Ошибка присоединения к лобби');
+      setIsStarting(true);
+      
+      // Создаем матч
+      const matchId = `match_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Сохраняем матч в localStorage
+      const match = {
+        id: matchId,
+        lobbyId: lobby.id,
+        players: lobby.players,
+        status: 'setup',
+        createdAt: new Date().toISOString()
+      };
+      
+      localStorage.setItem(`match_${matchId}`, JSON.stringify(match));
+      
+      // Обновляем статус лобби
+      const updatedLobby: Lobby = { ...lobby, status: 'starting' };
+      setLobby(updatedLobby);
+      localStorage.setItem(`lobby_${lobbyId}`, JSON.stringify(updatedLobby));
+      
+      // Переходим к настройке игры
+      navigate(`/setup/${matchId}`);
+    } catch (err) {
+      console.error('Ошибка запуска игры:', err);
     } finally {
-      setIsJoining(false);
+      setIsStarting(false);
     }
   };
 
-  const setReady = async () => {
+  const handleCopyInviteLink = () => {
     if (!lobbyId) return;
-
-    try {
-      setIsSettingReady(true);
-      const response = await api.post(`/lobby/${lobbyId}/ready`);
-      setLobby(response.data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Ошибка установки статуса готовности');
-    } finally {
-      setIsSettingReady(false);
-    }
+    
+    const inviteLink = `${window.location.origin}/lobby/${lobbyId}`;
+    navigator.clipboard.writeText(inviteLink);
+    
+    // Можно добавить toast уведомление
+    alert('Ссылка скопирована в буфер обмена!');
   };
 
-  const leaveLobby = async () => {
-    if (!lobbyId) return;
-
-    try {
-      await api.post(`/lobby/${lobbyId}/leave`);
-      navigate('/');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Ошибка выхода из лобби');
+  const handleLeaveLobby = () => {
+    if (lobbyId) {
+      localStorage.removeItem(`lobby_${lobbyId}`);
     }
+    navigate('/');
   };
-
-  const copyInviteLink = async () => {
-    if (lobby?.inviteLink) {
-      try {
-        await navigator.clipboard.writeText(lobby.inviteLink);
-        // Можно добавить toast уведомление
-      } catch (err) {
-        console.error('Ошибка копирования ссылки:', err);
-      }
-    }
-  };
-
-  const isInLobby = lobby?.players.some(p => p.id === user?.id);
-  const currentPlayer = lobby?.players.find(p => p.id === user?.id);
-  const isHost = currentPlayer?.isHost;
-  const isReady = currentPlayer?.isReady;
-  const allPlayersReady = lobby?.players.every(p => p.isReady) && lobby.players.length === 2;
 
   if (isLoading) {
     return <LoadingScreen status="connecting" message="Загрузка лобби..." />;
   }
 
-  if (error) {
+  if (error || !lobby) {
     return (
-      <div className="min-h-screen bg-bg-deep flex items-center justify-center">
+      <div className="min-h-screen bg-bg-deep text-foam flex items-center justify-center p-4">
         <div className="text-center">
-          <h2 className="text-h2 text-torpedo mb-4">Ошибка</h2>
-          <p className="text-body text-mist mb-6">{error}</p>
-          <Button onClick={() => navigate('/')} variant="primary">
-            Вернуться на главную
+          <h2 className="font-heading font-semibold text-h2 text-foam mb-2">
+            Ошибка
+          </h2>
+          <p className="text-body text-mist mb-4">{error || 'Лобби не найдено'}</p>
+          <Button
+            variant="primary"
+            onClick={() => navigate('/')}
+          >
+            Вернуться домой
           </Button>
         </div>
       </div>
     );
   }
 
-  if (!lobby) {
-    return (
-      <div className="min-h-screen bg-bg-deep flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-h2 text-torpedo mb-4">Лобби не найдено</h2>
-          <Button onClick={() => navigate('/')} variant="primary">
-            Вернуться на главную
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  const isHost = lobby.host.id === user?.id;
+  const allPlayersReady = lobby.players.length === 2 && lobby.players.every(p => p.isReady);
+  const canStartGame = isHost && allPlayersReady;
 
   return (
     <div className="min-h-screen bg-bg-deep text-foam">
       {/* Header */}
       <div className="bg-steel border-b border-edge/50 px-4 py-3">
         <div className="flex items-center justify-between">
-          <h1 className="font-heading font-semibold text-h2 text-foam">
-            Лобби
-          </h1>
-          <div className="text-caption text-mist">
-            {lobby.players.length}/2 игроков
+          <div>
+            <h1 className="font-heading font-semibold text-h2 text-foam">
+              Лобби игры
+            </h1>
+            <p className="text-secondary text-mist">
+              ID: {lobby.id.slice(-8)}
+            </p>
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleLeaveLobby}
+          >
+            Покинуть
+          </Button>
         </div>
       </div>
 
       <div className="p-4 space-y-6">
-        {/* Lobby Info */}
+        {/* Status */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-6"
+          className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-4"
         >
-          <h2 className="font-heading font-semibold text-h3 text-foam mb-4">
-            Информация о лобби
-          </h2>
-          
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-body text-mist">Статус:</span>
-              <span className={`font-heading font-semibold ${
-                lobby.status === 'waiting' ? 'text-radio' :
-                lobby.status === 'ready' ? 'text-sonar' :
-                'text-torpedo'
-              }`}>
-                {lobby.status === 'waiting' ? 'Ожидание игроков' :
-                 lobby.status === 'ready' ? 'Готовы к игре' :
-                 'Игра началась'}
-              </span>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-heading font-semibold text-h3 text-foam">
+                Статус: {lobby.status === 'waiting' ? 'Ожидание игроков' : 'Готово к игре'}
+              </h3>
+              <p className="text-secondary text-mist">
+                {lobby.players.length}/2 игроков
+              </p>
             </div>
-            
-            <div className="flex items-center justify-between">
-              <span className="text-body text-mist">Создано:</span>
-              <span className="font-mono text-caption text-mist">
+            <div className="text-right">
+              <p className="text-caption text-mist">Создано</p>
+              <p className="text-body text-foam">
                 {new Date(lobby.createdAt).toLocaleTimeString()}
-              </span>
+              </p>
             </div>
           </div>
         </motion.div>
@@ -202,61 +212,57 @@ export const LobbyScreen: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-6"
+          className="space-y-3"
         >
-          <h2 className="font-heading font-semibold text-h3 text-foam mb-4">
+          <h3 className="font-heading font-semibold text-h3 text-foam">
             Игроки
-          </h2>
+          </h3>
           
-          <div className="space-y-4">
-            {lobby.players.map((player, index) => (
-              <div key={player.id} className="flex items-center justify-between p-3 bg-steel rounded-lg">
+          {lobby.players.map((player, index) => (
+            <div
+              key={player.id}
+              className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-4"
+            >
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-bg-graphite rounded-full ring-2 ring-edge flex items-center justify-center">
-                    {player.avatar ? (
-                      <img src={player.avatar} alt="Avatar" className="w-full h-full rounded-full" />
+                  <div className="w-10 h-10 bg-bg-deep rounded-full ring-2 ring-sonar flex items-center justify-center">
+                    {player.photoUrl ? (
+                      <img src={player.photoUrl} alt="Avatar" className="w-full h-full rounded-full" />
                     ) : (
                       <span className="font-heading font-semibold text-sonar">
-                        {player.name.charAt(0)}
+                        {player.firstName.charAt(0)}
                       </span>
                     )}
                   </div>
                   <div>
-                    <div className="font-heading font-semibold text-body text-foam">
-                      {player.name}
-                      {player.isHost && (
-                        <span className="ml-2 text-caption text-radio">👑 Хост</span>
-                      )}
-                    </div>
-                    <div className="text-caption text-mist">
-                      {player.id === user?.id ? 'Вы' : 'Соперник'}
-                    </div>
+                    <h4 className="font-heading font-semibold text-body text-foam">
+                      {player.firstName} {player.lastName}
+                    </h4>
+                    <p className="text-caption text-mist">
+                      {player.isHost ? 'Хост' : 'Игрок'}
+                    </p>
                   </div>
                 </div>
-                
                 <div className="flex items-center gap-2">
-                  {player.isReady ? (
-                    <div className="flex items-center gap-1 text-sonar">
-                      <div className="w-2 h-2 bg-sonar rounded-full"></div>
-                      <span className="text-caption font-heading">Готов</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1 text-mist">
-                      <div className="w-2 h-2 bg-mist rounded-full"></div>
-                      <span className="text-caption font-heading">Не готов</span>
-                    </div>
+                  {player.isReady && (
+                    <span className="text-success text-sm">✓ Готов</span>
+                  )}
+                  {player.isHost && (
+                    <span className="text-info text-sm">👑</span>
                   )}
                 </div>
               </div>
-            ))}
-            
-            {lobby.players.length < 2 && (
-              <div className="text-center py-8 text-mist">
-                <div className="text-4xl mb-2">⏳</div>
-                <p className="text-body">Ожидание второго игрока...</p>
+            </div>
+          ))}
+
+          {/* Empty slot */}
+          {lobby.players.length < 2 && (
+            <div className="bg-bg-graphite/50 rounded-card ring-1 ring-edge/50 border-dashed p-4">
+              <div className="text-center">
+                <p className="text-body text-mist">Ожидание второго игрока...</p>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </motion.div>
 
         {/* Actions */}
@@ -264,75 +270,41 @@ export const LobbyScreen: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="space-y-4"
+          className="space-y-3"
         >
-          {!isInLobby ? (
-            <Button
-              onClick={joinLobby}
-              disabled={isJoining || lobby.players.length >= 2}
-              loading={isJoining}
-              className="w-full"
-            >
-              {isJoining ? 'Присоединение...' : 'Присоединиться к лобби'}
-            </Button>
-          ) : (
-            <>
-              {isHost && (
-                <Button
-                  onClick={copyInviteLink}
-                  variant="secondary"
-                  className="w-full"
-                >
-                  📋 Скопировать ссылку приглашения
-                </Button>
-              )}
-              
-              {!isReady && (
-                <Button
-                  onClick={setReady}
-                  disabled={isSettingReady}
-                  loading={isSettingReady}
-                  className="w-full"
-                >
-                  {isSettingReady ? 'Установка статуса...' : 'Готов к игре'}
-                </Button>
-              )}
-              
-              {isReady && !allPlayersReady && (
-                <div className="text-center py-4">
-                  <div className="flex items-center justify-center gap-2 text-sonar mb-2">
-                    <div className="w-2 h-2 bg-sonar rounded-full animate-pulse"></div>
-                    <span className="font-heading font-semibold">Ожидание готовности соперника...</span>
-                  </div>
-                </div>
-              )}
-              
-              {allPlayersReady && (
-                <div className="text-center py-4">
-                  <div className="text-sonar text-h3 mb-2">🎯</div>
-                  <p className="font-heading font-semibold text-sonar">
-                    Оба игрока готовы! Игра начинается...
-                  </p>
-                </div>
-              )}
-              
-              <Button
-                onClick={leaveLobby}
-                variant="danger"
-                className="w-full"
-              >
-                Покинуть лобби
-              </Button>
-            </>
-          )}
-          
+          {/* Invite link */}
           <Button
-            onClick={() => navigate('/')}
-            variant="ghost"
+            variant="secondary"
+            size="lg"
+            onClick={handleCopyInviteLink}
             className="w-full"
           >
-            Вернуться на главную
+            📋 Скопировать ссылку приглашения
           </Button>
+
+          {/* Ready toggle */}
+          <Button
+            variant={isReady ? "primary" : "primary"}
+            size="lg"
+            onClick={handleToggleReady}
+            className="w-full"
+          >
+            {isReady ? '✓ Готов к игре' : 'Готов к игре'}
+          </Button>
+
+          {/* Start game */}
+          {canStartGame && (
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={handleStartGame}
+              loading={isStarting}
+              disabled={isStarting}
+              className="w-full"
+            >
+              {isStarting ? 'Запуск игры...' : '🚀 Начать игру'}
+            </Button>
+          )}
         </motion.div>
       </div>
     </div>

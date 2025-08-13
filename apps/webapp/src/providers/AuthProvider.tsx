@@ -1,11 +1,24 @@
 import React, { createContext, useContext, useEffect } from 'react';
-import { useAuthStore } from '../stores/authStore';
+import { useTelegram } from './TelegramProvider';
+
+interface User {
+  id: number;
+  telegramId: number;
+  firstName: string;
+  lastName?: string;
+  username?: string;
+  photoUrl?: string;
+  gamesPlayed: number;
+  gamesWon: number;
+  rating: number;
+  createdAt: string;
+}
 
 interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  user: any;
+  user: User | null;
   clearError: () => void;
 }
 
@@ -24,33 +37,51 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const { 
-    isAuthenticated, 
-    isLoading, 
-    error, 
-    user, 
-    clearError 
-  } = useAuthStore();
+  const { user: tgUser, isReady } = useTelegram();
+  const [authState, setAuthState] = React.useState<AuthContextType>({
+    isAuthenticated: false,
+    isLoading: true,
+    error: null,
+    user: null,
+    clearError: () => setAuthState(prev => ({ ...prev, error: null }))
+  });
 
   useEffect(() => {
-    // Check for existing token on app start
-    const token = localStorage.getItem('auth_token');
-    if (token && !isAuthenticated) {
-      // Token exists but user is not authenticated, try to validate
-      // This could trigger a token refresh or re-authentication
-    }
-  }, [isAuthenticated]);
+    if (isReady && tgUser) {
+      // Создаем пользователя из Telegram данных
+      const user: User = {
+        id: tgUser.id,
+        telegramId: tgUser.id,
+        firstName: tgUser.first_name,
+        lastName: tgUser.last_name,
+        username: tgUser.username,
+        photoUrl: undefined, // Telegram не предоставляет фото в WebApp
+        gamesPlayed: 0,
+        gamesWon: 0,
+        rating: 1000,
+        createdAt: new Date().toISOString()
+      };
 
-  const value: AuthContextType = {
-    isAuthenticated,
-    isLoading,
-    error,
-    user,
-    clearError,
-  };
+      setAuthState({
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+        user,
+        clearError: () => setAuthState(prev => ({ ...prev, error: null }))
+      });
+    } else if (isReady && !tgUser) {
+      setAuthState({
+        isAuthenticated: false,
+        isLoading: false,
+        error: 'Telegram user data not available',
+        user: null,
+        clearError: () => setAuthState(prev => ({ ...prev, error: null }))
+      });
+    }
+  }, [isReady, tgUser]);
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={authState}>
       {children}
     </AuthContext.Provider>
   );

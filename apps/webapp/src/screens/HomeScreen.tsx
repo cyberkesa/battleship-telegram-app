@@ -3,11 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button, LoadingScreen } from '@battleship/ui';
 import { useAuth } from '../providers/AuthProvider';
-import { api } from '../services/api';
 
 export const HomeScreen: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isLoading, error } = useAuth();
   
   const [isCreatingLobby, setIsCreatingLobby] = useState(false);
   const [isStartingQuickGame, setIsStartingQuickGame] = useState(false);
@@ -17,17 +16,25 @@ export const HomeScreen: React.FC = () => {
 
     try {
       setIsCreatingLobby(true);
-      const response = await api.post('/lobby/create', {
-        playerId: user.id,
-        playerName: user.firstName,
-        playerAvatar: user.photoUrl,
-      });
+      
+      // Создаем локальное лобби с уникальным ID
+      const lobbyId = `lobby_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Сохраняем в localStorage для демонстрации
+      const lobby = {
+        id: lobbyId,
+        host: user,
+        players: [user],
+        status: 'waiting',
+        createdAt: new Date().toISOString()
+      };
+      
+      localStorage.setItem(`lobby_${lobbyId}`, JSON.stringify(lobby));
       
       // Перенаправляем в лобби
-      navigate(`/lobby/${response.data.id}`);
+      navigate(`/lobby/${lobbyId}`);
     } catch (err: any) {
       console.error('Ошибка создания лобби:', err);
-      // Можно добавить toast уведомление об ошибке
     } finally {
       setIsCreatingLobby(false);
     }
@@ -37,7 +44,6 @@ export const HomeScreen: React.FC = () => {
     try {
       setIsStartingQuickGame(true);
       // Для быстрой игры сразу переходим к расстановке кораблей
-      // Создаем временный матч или используем демо-режим
       navigate('/setup/quick-game');
     } catch (err: any) {
       console.error('Ошибка запуска быстрой игры:', err);
@@ -62,6 +68,32 @@ export const HomeScreen: React.FC = () => {
     navigate('/settings');
   };
 
+  // Показываем загрузку пока Telegram не готов
+  if (isLoading) {
+    return <LoadingScreen status="connecting" message="Загрузка профиля..." />;
+  }
+
+  // Показываем ошибку если что-то пошло не так
+  if (error) {
+    return (
+      <div className="min-h-screen bg-bg-deep text-foam flex items-center justify-center p-4">
+        <div className="text-center">
+          <h2 className="font-heading font-semibold text-h2 text-foam mb-2">
+            Ошибка загрузки
+          </h2>
+          <p className="text-body text-mist mb-4">{error}</p>
+          <Button
+            variant="primary"
+            onClick={() => window.location.reload()}
+          >
+            Попробовать снова
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Показываем загрузку если пользователь еще не загружен
   if (!user) {
     return <LoadingScreen status="connecting" message="Загрузка профиля..." />;
   }
@@ -86,7 +118,7 @@ export const HomeScreen: React.FC = () => {
                 {user.firstName}
               </h3>
               <p className="font-mono text-caption text-mist">
-                Рейтинг: 1250
+                Рейтинг: {user.rating}
               </p>
             </div>
           </div>
