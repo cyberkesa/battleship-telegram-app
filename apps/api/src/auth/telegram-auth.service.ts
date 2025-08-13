@@ -1,0 +1,165 @@
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { createHmac } from 'crypto';
+import { JwtService } from '@nestjs/jwt';
+import { PrismaService } from '../infra/prisma.service';
+
+interface TelegramUser {
+  id: number;
+  first_name: string;
+  last_name?: string;
+  username?: string;
+  language_code?: string;
+}
+
+interface TelegramInitData {
+  initData: string;
+  user: TelegramUser;
+}
+
+interface AuthResponse {
+  sessionToken: string;
+  user: {
+    id: number;
+    telegramId: number;
+    firstName: string;
+    lastName?: string;
+    username?: string;
+    rating: number;
+    gamesPlayed: number;
+    gamesWon: number;
+    createdAt: string;
+  };
+}
+
+@Injectable()
+export class TelegramAuthService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
+  ) {}
+
+  async verifyInitData(initData: string): Promise<TelegramInitData> {
+    // Parse initData
+    const params = new URLSearchParams(initData);
+    const hash = params.get('hash');
+    
+    if (!hash) {
+      throw new UnauthorizedException('Invalid initData: missing hash');
+    }
+
+    // Remove hash from params for verification
+    params.delete('hash');
+    
+    // Sort parameters alphabetically
+    const sortedParams = Array.from(params.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, value]) => `${key}=${value}`)
+      .join('\n');
+
+    // Create HMAC-SHA256
+    const secretKey = createHmac('sha256', 'WebAppData')
+      .update(process.env.TELEGRAM_BOT_TOKEN!)
+      .digest();
+    
+    const calculatedHash = createHmac('sha256', secretKey)
+      .update(sortedParams)
+      .digest('hex');
+
+    if (calculatedHash !== hash) {
+      throw new UnauthorizedException('Invalid initData: hash verification failed');
+    }
+
+    // Extract user data
+    const user = {
+      id: parseInt(params.get('user') || '0'),
+      first_name: params.get('user') || '',
+      last_name: params.get('user') || undefined,
+      username: params.get('user') || undefined,
+      language_code: params.get('user') || undefined,
+    };
+
+    return { initData, user };
+  }
+
+  async authenticateUser(telegramData: TelegramInitData): Promise<AuthResponse> {
+    const { user } = telegramData;
+
+    // Find or create user
+    let dbUser = await this.prisma.user.findUnique({
+      where: { telegramId: BigInt(user.id) },
+    });
+
+    if (!dbUser) {
+      // Create new user
+      dbUser = await this.prisma.user.create({
+        data: {
+          telegramId: BigInt(user.id),
+          firstName: user.first_name,
+          lastName: user.last_name,
+          username: user.username,
+          rating: 1000,
+          gamesPlayed: 0,
+          gamesWon: 0,
+        },
+      });
+    } else {
+      // Update existing user info
+      dbUser = await this.prisma.user.update({
+        where: { id: dbUser.id },
+        data: {
+          firstName: user.first_name,
+          lastName: user.last_name,
+          username: user.username,
+        },
+      });
+    }
+
+    // Generate JWT token
+    const payload = {
+      sub: dbUser.id,
+      telegramId: dbUser.telegramId.toString(),
+      username: dbUser.username,
+    };
+
+    const sessionToken = this.jwtService.sign(payload, {
+      expiresIn: '24h',
+      secret: process.env.JWT_SECRET,
+    });
+
+    return {
+      sessionToken,
+      user: {
+        id: dbUser.id,
+        telegramId: Number(dbUser.telegramId),
+        firstName: dbUser.firstName,
+        lastName: dbUser.lastName,
+        username: dbUser.username,
+        rating: dbUser.rating,
+        gamesPlayed: dbUser.gamesPlayed,
+        gamesWon: dbUser.gamesWon,
+        createdAt: dbUser.createdAt.toISOString(),
+      },
+    };
+  }
+
+  async validateToken(token: string): Promise<any> {
+    try {
+      const payload = this.jwtService.verify(token, {
+        secret: process.env.JWT_SECRET,
+      });
+      
+      // Check if user still exists
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.sub },
+      });
+
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      return payload;
+    } catch (error) {
+      throw new UnauthorizedException('Invalid token');
+    }
+  }
+}

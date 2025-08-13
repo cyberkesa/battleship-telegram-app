@@ -1,28 +1,29 @@
-import { Controller, Post, Get, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Request, Delete, Param } from '@nestjs/common';
 import { MatchmakingService } from './matchmaking.service';
-import { ApiResponse } from '@battleship/shared-types';
 
-@Controller('matchmaking')
+interface JoinQueueRequest {
+  mode: 'CLASSIC' | 'RAPID' | 'BLITZ';
+}
+
+interface QueueResponse {
+  queued: boolean;
+  position?: number;
+  estimatedWait?: number;
+}
+
+@Controller('queue')
 export class MatchmakingController {
   constructor(private readonly matchmakingService: MatchmakingService) {}
 
   @Post('join')
-  async joinQueue(@Request() req: any): Promise<ApiResponse<{ inQueue: boolean }>> {
-    return this.matchmakingService.joinQueue(req.user.sub);
+  async joinQueue(@Request() req: any, @Body() body: JoinQueueRequest): Promise<QueueResponse> {
+    const userId = req.user.sub;
+    return this.matchmakingService.joinQueue(userId, body);
   }
 
-  @Post('leave')
-  async leaveQueue(@Request() req: any): Promise<ApiResponse<{ left: boolean }>> {
-    return this.matchmakingService.leaveQueue(req.user.sub);
-  }
-
-  @Get('status')
-  async getQueueStatus(@Request() req: any): Promise<ApiResponse<{ inQueue: boolean; queueSize: number }>> {
-    return this.matchmakingService.getQueueStatus(req.user.sub);
-  }
-
-  @Get('active-match')
-  async getActiveMatch(@Request() req: any): Promise<ApiResponse<any>> {
-    return this.matchmakingService.getActiveMatch(req.user.sub);
+  @Delete('leave/:mode')
+  async leaveQueue(@Request() req: any, @Param('mode') mode: string): Promise<QueueResponse> {
+    const userId = req.user.sub;
+    return this.matchmakingService.leaveQueue(userId, mode);
   }
 }

@@ -1,170 +1,158 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { RedisService } from '../redis/redis.service';
-import { ApiResponse, GameStatus } from '@battleship/shared-types';
+import { Redis } from 'ioredis';
+import { PrismaService } from '../infra/prisma.service';
+
+interface JoinQueueRequest {
+  mode: 'CLASSIC' | 'RAPID' | 'BLITZ';
+}
+
+interface QueueResponse {
+  queued: boolean;
+  position?: number;
+  estimatedWait?: number;
+}
 
 @Injectable()
 export class MatchmakingService {
   private readonly logger = new Logger(MatchmakingService.name);
+  private readonly redis: Redis;
 
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly redis: RedisService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {
+    this.redis = new Redis(process.env.REDIS_URL!);
+  }
 
-  async joinQueue(playerId: string): Promise<ApiResponse<{ inQueue: boolean }>> {
+  async joinQueue(userId: number, request: JoinQueueRequest): Promise<QueueResponse> {
+    const queueKey = `queue:${request.mode}`;
+    const userKey = `user:${userId}`;
+    
     try {
-      // Check if player is already in a game
-      const activeGame = await this.prisma.match.findFirst({
-        where: {
-          OR: [
-            { playerAId: playerId },
-            { playerBId: playerId }
-          ],
-          status: {
-            in: [GameStatus.SETTING_UP, GameStatus.PLAYING]
-          }
-        }
-      });
-
-      if (activeGame) {
+      // Check if user is already in queue
+      const existingPosition = await this.redis.zrank(queueKey, userId.toString());
+      if (existingPosition !== null) {
         return {
-          success: false,
-          error: 'Player is already in a game'
+          queued: true,
+          position: existingPosition + 1,
+          estimatedWait: await this.estimateWaitTime(request.mode),
         };
       }
 
-      // Add to queue
-      await this.redis.addToQueue(playerId);
+      // Add user to queue with timestamp as score
+      const timestamp = Date.now();
+      await this.redis.zadd(queueKey, timestamp, userId.toString());
       
-      // Check for matchmaking
-      await this.processMatchmaking();
+      // Set user status
+      await this.redis.setex(userKey, 300, 'queued'); // 5 minutes TTL
 
-      return {
-        success: true,
-        data: { inQueue: true }
-      };
-    } catch (error) {
-      this.logger.error('Error joining queue:', error);
-      return {
-        success: false,
-        error: 'Failed to join queue'
-      };
-    }
-  }
-
-  async leaveQueue(playerId: string): Promise<ApiResponse<{ left: boolean }>> {
-    try {
-      await this.redis.removeFromQueue(playerId);
-      return {
-        success: true,
-        data: { left: true }
-      };
-    } catch (error) {
-      this.logger.error('Error leaving queue:', error);
-      return {
-        success: false,
-        error: 'Failed to leave queue'
-      };
-    }
-  }
-
-  async getQueueStatus(playerId: string): Promise<ApiResponse<{ inQueue: boolean; queueSize: number }>> {
-    try {
-      const queueMembers = await this.redis.getQueueMembers();
-      const inQueue = queueMembers.includes(playerId);
-      const queueSize = queueMembers.length;
-
-      return {
-        success: true,
-        data: { inQueue, queueSize }
-      };
-    } catch (error) {
-      this.logger.error('Error getting queue status:', error);
-      return {
-        success: false,
-        error: 'Failed to get queue status'
-      };
-    }
-  }
-
-  private async processMatchmaking(): Promise<void> {
-    try {
-      const queueMembers = await this.redis.getQueueMembers();
+      const position = await this.redis.zrank(queueKey, userId.toString());
       
-      if (queueMembers.length >= 2) {
-        // Get first two players
-        const player1Id = queueMembers[0];
-        const player2Id = queueMembers[1];
+      this.logger.log(`User ${userId} joined ${request.mode} queue at position ${position! + 1}`);
 
-        // Remove them from queue
-        await this.redis.removeFromQueue(player1Id);
-        await this.redis.removeFromQueue(player2Id);
+      return {
+        queued: true,
+        position: position! + 1,
+        estimatedWait: await this.estimateWaitTime(request.mode),
+      };
+    } catch (error) {
+      this.logger.error(`Failed to join queue for user ${userId}:`, error);
+      throw error;
+    }
+  }
 
-        // Get player details
-        const [player1, player2] = await Promise.all([
-          this.prisma.user.findUnique({ where: { id: player1Id } }),
-          this.prisma.user.findUnique({ where: { id: player2Id } })
-        ]);
+  async leaveQueue(userId: number, mode: string): Promise<QueueResponse> {
+    const queueKey = `queue:${mode}`;
+    const userKey = `user:${userId}`;
+    
+    try {
+      // Remove from queue
+      const removed = await this.redis.zrem(queueKey, userId.toString());
+      
+      // Remove user status
+      await this.redis.del(userKey);
 
-        if (player1 && player2) {
-          // Create match
-          const match = await this.prisma.match.create({
-            data: {
-              status: GameStatus.SETTING_UP,
-              playerAId: player1Id,
-              playerBId: player2Id,
-            }
-          });
+      this.logger.log(`User ${userId} left ${mode} queue`);
 
-          this.logger.log(`Match created: ${match.id} between ${player1.username} and ${player2.username}`);
-        }
+      return {
+        queued: false,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to leave queue for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  async findMatch(mode: string): Promise<{ player1: number; player2: number } | null> {
+    const queueKey = `queue:${mode}`;
+    
+    try {
+      // Get first two players from queue
+      const players = await this.redis.zrange(queueKey, 0, 1);
+      
+      if (players.length < 2) {
+        return null;
       }
+
+      const [player1, player2] = players.map(p => parseInt(p));
+
+      // Remove both players from queue
+      await this.redis.zrem(queueKey, player1.toString(), player2.toString());
+
+      // Clear user status
+      await this.redis.del(`user:${player1}`, `user:${player2}`);
+
+      this.logger.log(`Found match: ${player1} vs ${player2} in ${mode} mode`);
+
+      return { player1, player2 };
     } catch (error) {
-      this.logger.error('Error processing matchmaking:', error);
+      this.logger.error(`Failed to find match in ${mode} queue:`, error);
+      throw error;
     }
   }
 
-  async getActiveMatch(playerId: string): Promise<ApiResponse<any>> {
+  async createMatch(player1Id: number, player2Id: number, mode: string): Promise<string> {
     try {
-      const match = await this.prisma.match.findFirst({
-        where: {
-          OR: [
-            { playerAId: playerId },
-            { playerBId: playerId }
-          ],
-          status: {
-            in: [GameStatus.SETTING_UP, GameStatus.PLAYING]
-          }
+      // Create match in database
+      const match = await this.prisma.match.create({
+        data: {
+          playerAId: player1Id,
+          playerBId: player2Id,
+          mode: mode as any,
+          status: 'AWAITING_SETUP',
         },
-        include: {
-          playerA: true,
-          playerB: true,
-          boards: true,
-          moves: {
-            orderBy: { createdAt: 'desc' },
-            take: 10
-          }
-        }
       });
 
-      if (!match) {
-        return {
-          success: false,
-          error: 'No active match found'
-        };
-      }
+      this.logger.log(`Created match ${match.id} between ${player1Id} and ${player2Id}`);
 
-      return {
-        success: true,
-        data: match
-      };
+      // Publish match found event
+      await this.redis.publish('match_found', JSON.stringify({
+        matchId: match.id,
+        player1: { id: player1Id, role: 'A' },
+        player2: { id: player2Id, role: 'B' },
+        mode,
+      }));
+
+      return match.id;
     } catch (error) {
-      this.logger.error('Error getting active match:', error);
-      return {
-        success: false,
-        error: 'Failed to get active match'
-      };
+      this.logger.error(`Failed to create match between ${player1Id} and ${player2Id}:`, error);
+      throw error;
     }
+  }
+
+  private async estimateWaitTime(mode: string): Promise<number> {
+    const queueKey = `queue:${mode}`;
+    const queueSize = await this.redis.zcard(queueKey);
+    
+    // Rough estimate: 30 seconds per player in queue
+    return Math.max(10, queueSize * 30);
+  }
+
+  async getQueuePosition(userId: number, mode: string): Promise<number | null> {
+    const queueKey = `queue:${mode}`;
+    const position = await this.redis.zrank(queueKey, userId.toString());
+    return position !== null ? position + 1 : null;
+  }
+
+  async getQueueSize(mode: string): Promise<number> {
+    const queueKey = `queue:${mode}`;
+    return await this.redis.zcard(queueKey);
   }
 }
