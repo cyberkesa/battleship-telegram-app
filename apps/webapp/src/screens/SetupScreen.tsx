@@ -52,17 +52,7 @@ export const SetupScreen: React.FC = () => {
   const availableShips = getAvailableShips();
 
   const handleShipPlace = (ship: PlacedShip) => {
-    const isOverlapping = placedShips.some(existingShip =>
-      existingShip.positions.some(existingPos =>
-        ship.positions.some(newPos => 
-          existingPos.x === newPos.x && existingPos.y === newPos.y
-        )
-      )
-    );
-
-    if (!isOverlapping) {
-      setPlacedShips(prev => [...prev, ship]);
-    }
+    setPlacedShips(prev => [...prev, ship]);
   };
 
   const handleShipRemove = (shipId: string) => {
@@ -70,20 +60,9 @@ export const SetupScreen: React.FC = () => {
   };
 
   const handleShipMove = (oldShipId: string, newShip: PlacedShip) => {
-    // Проверяем, не пересекается ли корабль с другими (кроме самого себя)
-    const isOverlapping = placedShips.some(existingShip =>
-      existingShip.id !== oldShipId && existingShip.positions.some(existingPos =>
-        newShip.positions.some(newPos => 
-          existingPos.x === newPos.x && existingPos.y === newPos.y
-        )
-      )
-    );
-
-    if (!isOverlapping) {
-      setPlacedShips(prev => prev.map(ship => 
-        ship.id === oldShipId ? newShip : ship
-      ));
-    }
+    setPlacedShips(prev => prev.map(ship => 
+      ship.id === oldShipId ? newShip : ship
+    ));
   };
 
   const handleRandomPlacement = () => {
@@ -128,15 +107,6 @@ export const SetupScreen: React.FC = () => {
 
   const isBoardComplete = placedShips.length === 10;
 
-  const handleDragStart = (e: React.DragEvent, shipType: any) => {
-    const shipData = {
-      id: crypto.randomUUID(),
-      size: shipType.size,
-      isHorizontal: true,
-    };
-    e.dataTransfer.setData('application/json', JSON.stringify(shipData));
-  };
-
   return (
     <div className="min-h-screen bg-bg-deep text-foam">
       {/* Header */}
@@ -177,9 +147,11 @@ export const SetupScreen: React.FC = () => {
             {availableShips.map((ship, index) => (
               <div
                 key={ship.id}
-                draggable
-                onDragStart={(e) => handleDragStart(e, ship)}
                 className="p-3 rounded-lg border-2 border-edge hover:border-sonar/50 transition-all cursor-grab active:cursor-grabbing"
+                style={{ 
+                  '--cell': '34px',
+                  '--gap': '2px'
+                } as React.CSSProperties}
               >
                 <div className="flex items-center gap-2">
                   <div className={`w-4 h-4 ${ship.color} rounded-sm flex items-center justify-center`}>
@@ -195,7 +167,7 @@ export const SetupScreen: React.FC = () => {
                   </div>
                 </div>
                 <div className="mt-2 flex justify-center">
-                  <div className="flex">
+                  <div className="flex gap-[var(--gap)]">
                     {Array.from({ length: ship.size }, (_, i) => (
                       <div
                         key={i}

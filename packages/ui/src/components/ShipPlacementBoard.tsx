@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Cell } from './Cell';
+import { validateFleet } from '@battleship/game-logic';
 
 export interface Position {
   x: number;
@@ -23,10 +24,115 @@ interface ShipPlacementBoardProps {
   disabled?: boolean;
 }
 
+interface DraggingShip {
+  id: string;
+  size: number;
+  isHorizontal: boolean;
+  isMoving: boolean; // true если перемещаем существующий корабль
+}
+
+interface PreviewShip {
+  positions: Position[];
+  isValid: boolean;
+}
+
 const coordinates = {
   letters: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'],
   numbers: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
 };
+
+// Функция для получения размеров из CSS переменных
+function getBoardDimensions(boardEl: HTMLDivElement) {
+  const cs = getComputedStyle(boardEl);
+  const cell = parseFloat(cs.getPropertyValue('--cell') || '34');
+  const gap = parseFloat(cs.getPropertyValue('--gap') || '2');
+  const pad = parseFloat(cs.getPropertyValue('--pad') || '12');
+  return { cell, gap, pad };
+}
+
+// Функция для вычисления координат клетки под курсором
+function getCellFromPointer(e: PointerEvent, boardEl: HTMLDivElement): Position | null {
+  const rect = boardEl.getBoundingClientRect();
+  const { cell, gap, pad } = getBoardDimensions(boardEl);
+  
+  const cx = e.clientX - rect.left - pad;
+  const cy = e.clientY - rect.top - pad;
+  const step = cell + gap;
+  
+  const x = Math.floor(cx / step);
+  const y = Math.floor(cy / step);
+  
+  if (x >= 0 && x < 10 && y >= 0 && y < 10) {
+    return { x, y };
+  }
+  
+  return null;
+}
+
+// Функция для генерации позиций корабля
+function generateShipPositions(startPos: Position, size: number, isHorizontal: boolean): Position[] {
+  const positions: Position[] = [];
+  
+  for (let i = 0; i < size; i++) {
+    if (isHorizontal) {
+      positions.push({ x: startPos.x + i, y: startPos.y });
+    } else {
+      positions.push({ x: startPos.x, y: startPos.y + i });
+    }
+  }
+  
+  return positions;
+}
+
+// Функция для проверки валидности размещения
+function validateShipPlacement(
+  positions: Position[],
+  placedShips: PlacedShip[],
+  excludeShipId?: string
+): boolean {
+  // Проверяем границы
+  const isValidBounds = positions.every(pos => 
+    pos.x >= 0 && pos.x < 10 && pos.y >= 0 && pos.y < 10
+  );
+  
+  if (!isValidBounds) return false;
+  
+  // Проверяем пересечения с другими кораблями
+  const hasOverlap = placedShips.some(ship => 
+    ship.id !== excludeShipId && ship.positions.some(pos =>
+      positions.some(newPos => pos.x === newPos.x && pos.y === newPos.y)
+    )
+  );
+  
+  if (hasOverlap) return false;
+  
+  // Проверяем касания (используем game-logic)
+  const allShips = placedShips.filter(ship => ship.id !== excludeShipId);
+  
+  // Конвертируем в формат game-logic
+  const convertToGameLogicShip = (ship: PlacedShip) => {
+    const minX = Math.min(...ship.positions.map(p => p.x));
+    const minY = Math.min(...ship.positions.map(p => p.y));
+    return {
+      id: ship.id,
+      bow: { x: minX, y: minY },
+      length: ship.size,
+      horizontal: ship.isHorizontal
+    };
+  };
+  
+  const newShip = {
+    id: 'temp',
+    bow: { x: positions[0].x, y: positions[0].y },
+    length: positions.length,
+    horizontal: positions.length > 1 ? positions[1].x > positions[0].x : true
+  };
+  
+  const testFleet = [...allShips.map(convertToGameLogicShip), newShip];
+  const validation = validateFleet(testFleet);
+  
+  return validation.ok;
+}
 
 export const ShipPlacementBoard: React.FC<ShipPlacementBoardProps> = ({
   placedShips,
@@ -36,88 +142,122 @@ export const ShipPlacementBoard: React.FC<ShipPlacementBoardProps> = ({
   className = '',
   disabled = false,
 }) => {
-  const [dragOverPosition, setDragOverPosition] = useState<Position | null>(null);
-  const [dragOverShip, setDragOverShip] = useState<{ size: number; isHorizontal: boolean } | null>(null);
-  const [draggedShipId, setDraggedShipId] = useState<string | null>(null);
+  const [draggingShip, setDraggingShip] = useState<DraggingShip | null>(null);
+  const [previewShip, setPreviewShip] = useState<PreviewShip | null>(null);
+  const [pointerId, setPointerId] = useState<number | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
 
-  const handleDragOver = (e: React.DragEvent) => {
+  // Обработчик начала перетаскивания из палитры
+  const handlePalettePointerDown = useCallback((shipData: { id: string; size: number }) => (e: React.PointerEvent) => {
+    if (disabled) return;
+    
     e.preventDefault();
-    if (!boardRef.current) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    
+    setDraggingShip({
+      id: shipData.id,
+      size: shipData.size,
+      isHorizontal: true,
+      isMoving: false
+    });
+    setPointerId(e.pointerId);
+  }, [disabled]);
 
-    const rect = boardRef.current.getBoundingClientRect();
-    const x = Math.floor((e.clientX - rect.left - 12) / 36);
-    const y = Math.floor((e.clientY - rect.top - 12) / 36);
+  // Обработчик начала перемещения существующего корабля
+  const handleShipPointerDown = useCallback((ship: PlacedShip) => (e: React.PointerEvent) => {
+    if (disabled) return;
+    
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    
+    setDraggingShip({
+      id: ship.id,
+      size: ship.size,
+      isHorizontal: ship.isHorizontal,
+      isMoving: true
+    });
+    setPointerId(e.pointerId);
+  }, [disabled]);
 
-    if (x >= 0 && x < 10 && y >= 0 && y < 10) {
-      setDragOverPosition({ x, y });
+  // Обработчик движения указателя
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!draggingShip || !boardRef.current || e.pointerId !== pointerId) return;
+    
+    const cellPos = getCellFromPointer(e.nativeEvent, boardRef.current);
+    if (!cellPos) {
+      setPreviewShip(null);
+      return;
+    }
+    
+    const positions = generateShipPositions(cellPos, draggingShip.size, draggingShip.isHorizontal);
+    const isValid = validateShipPlacement(positions, placedShips, draggingShip.isMoving ? draggingShip.id : undefined);
+    
+    setPreviewShip({ positions, isValid });
+  }, [draggingShip, placedShips, pointerId]);
+
+  // Обработчик отпускания указателя
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
+    if (!draggingShip || !previewShip || e.pointerId !== pointerId) {
+      setDraggingShip(null);
+      setPreviewShip(null);
+      setPointerId(null);
+      return;
+    }
+    
+    if (previewShip.isValid) {
+      const newShip: PlacedShip = {
+        id: draggingShip.id,
+        size: draggingShip.size,
+        positions: previewShip.positions,
+        isHorizontal: draggingShip.isHorizontal,
+      };
       
-      const shipData = e.dataTransfer.getData('application/json');
-      if (shipData) {
-        try {
-          const ship = JSON.parse(shipData);
-          setDragOverShip({ size: ship.size, isHorizontal: ship.isHorizontal });
-        } catch (error) {
-          console.error('Error parsing ship data:', error);
-        }
+      if (draggingShip.isMoving) {
+        onShipMove?.(draggingShip.id, newShip);
+      } else {
+        onShipPlace?.(newShip);
       }
     }
-  };
+    
+    setDraggingShip(null);
+    setPreviewShip(null);
+    setPointerId(null);
+  }, [draggingShip, previewShip, pointerId, onShipPlace, onShipMove]);
 
-  const handleDragLeave = () => {
-    setDragOverPosition(null);
-    setDragOverShip(null);
-  };
+  // Обработчик поворота корабля
+  const handleRotate = useCallback(() => {
+    if (!draggingShip) return;
+    
+    setDraggingShip(prev => prev ? { ...prev, isHorizontal: !prev.isHorizontal } : null);
+  }, [draggingShip]);
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    if (!dragOverPosition || !dragOverShip) return;
+  // Обработчик клика по ячейке (удаление корабля)
+  const handleCellClick = useCallback((row: number, col: number) => {
+    const shipAtPosition = placedShips.find(ship =>
+      ship.positions.some(pos => pos.x === col && pos.y === row)
+    );
 
-    const shipData = e.dataTransfer.getData('application/json');
-    if (shipData) {
-      try {
-        const ship = JSON.parse(shipData);
-        const positions: Position[] = [];
-        
-        for (let i = 0; i < ship.size; i++) {
-          if (ship.isHorizontal) {
-            positions.push({ x: dragOverPosition.x + i, y: dragOverPosition.y });
-          } else {
-            positions.push({ x: dragOverPosition.x, y: dragOverPosition.y + i });
-          }
-        }
-
-        const isValidPlacement = positions.every(pos => 
-          pos.x >= 0 && pos.x < 10 && pos.y >= 0 && pos.y < 10
-        );
-
-        if (isValidPlacement) {
-          const newShip: PlacedShip = {
-            id: ship.id,
-            size: ship.size,
-            positions,
-            isHorizontal: ship.isHorizontal,
-          };
-
-          // Если это перемещение существующего корабля
-          if (draggedShipId) {
-            onShipMove?.(draggedShipId, newShip);
-            setDraggedShipId(null);
-          } else {
-            // Если это новый корабль
-            onShipPlace?.(newShip);
-          }
-        }
-      } catch (error) {
-        console.error('Error processing ship drop:', error);
-      }
+    if (shipAtPosition) {
+      onShipRemove?.(shipAtPosition.id);
     }
+  }, [placedShips, onShipRemove]);
 
-    setDragOverPosition(null);
-    setDragOverShip(null);
-  };
+  // Обработчик клавиш
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'r' || e.key === 'R') {
+      handleRotate();
+    }
+  }, [handleRotate]);
 
-  const getCellState = (x: number, y: number): any => {
+  // Добавляем обработчик клавиш
+  React.useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
+
+  // Функция для получения состояния ячейки
+  const getCellState = useCallback((x: number, y: number) => {
+    // Проверяем, есть ли корабль на этой позиции
     const shipAtPosition = placedShips.find(ship =>
       ship.positions.some(pos => pos.x === x && pos.y === y)
     );
@@ -134,24 +274,19 @@ export const ShipPlacementBoard: React.FC<ShipPlacementBoardProps> = ({
       };
     }
 
-    if (dragOverPosition && dragOverShip) {
-      const isUnderDragShip = Array.from({ length: dragOverShip.size }, (_, i) => {
-        if (dragOverShip.isHorizontal) {
-          return { x: dragOverPosition.x + i, y: dragOverPosition.y };
-        } else {
-          return { x: dragOverPosition.x, y: dragOverPosition.y + i };
-        }
-      }).some(pos => pos.x === x && pos.y === y);
-
-      if (isUnderDragShip) {
+    // Проверяем, находится ли ячейка под превью корабля
+    if (previewShip) {
+      const isUnderPreview = previewShip.positions.some(pos => pos.x === x && pos.y === y);
+      if (isUnderPreview) {
         return {
           position: { x, y },
           hasShip: true,
-          shipSize: dragOverShip.size,
+          shipSize: draggingShip?.size || 0,
           isHit: false,
           isMiss: false,
           isSunk: false,
           isPreview: true,
+          isPreviewValid: previewShip.isValid,
         };
       }
     }
@@ -164,44 +299,25 @@ export const ShipPlacementBoard: React.FC<ShipPlacementBoardProps> = ({
       isMiss: false,
       isSunk: false,
     };
-  };
-
-  const handleCellClick = (row: number, col: number) => {
-    const shipAtPosition = placedShips.find(ship =>
-      ship.positions.some(pos => pos.x === col && pos.y === row)
-    );
-
-    if (shipAtPosition) {
-      onShipRemove?.(shipAtPosition.id);
-    }
-  };
-
-  const handleCellDragStart = (e: React.DragEvent, row: number, col: number) => {
-    const shipAtPosition = placedShips.find(ship =>
-      ship.positions.some(pos => pos.x === col && pos.y === row)
-    );
-
-    if (shipAtPosition) {
-      setDraggedShipId(shipAtPosition.id);
-      const shipData = {
-        id: shipAtPosition.id,
-        size: shipAtPosition.size,
-        isHorizontal: shipAtPosition.isHorizontal,
-      };
-      e.dataTransfer.setData('application/json', JSON.stringify(shipData));
-    }
-  };
+  }, [placedShips, previewShip, draggingShip]);
 
   return (
     <div className={`relative ${className}`}>
       {/* Верхние координаты (буквы) */}
       <div className="absolute -top-6 left-0 right-0 flex justify-center">
-        <div className="grid grid-cols-10 gap-0.5" style={{ width: 'calc(10 * 36px + 9 * 2px)' }}>
+        <div 
+          className="grid grid-cols-10 gap-[var(--gap)]"
+          style={{ 
+            width: 'calc(10 * var(--cell) + 9 * var(--gap))',
+            '--cell': '34px',
+            '--gap': '2px'
+          } as React.CSSProperties}
+        >
           {coordinates.letters.map((letter) => (
             <div
               key={letter}
               className="flex items-center justify-center text-caption font-mono text-mist"
-              style={{ width: '36px', height: '24px' }}
+              style={{ width: 'var(--cell)', height: '24px' }}
             >
               {letter}
             </div>
@@ -211,12 +327,19 @@ export const ShipPlacementBoard: React.FC<ShipPlacementBoardProps> = ({
 
       {/* Левые координаты (цифры) */}
       <div className="absolute -left-6 top-0 bottom-0 flex flex-col justify-center">
-        <div className="grid grid-rows-10 gap-0.5" style={{ height: 'calc(10 * 36px + 9 * 2px)' }}>
+        <div 
+          className="grid grid-rows-10 gap-[var(--gap)]"
+          style={{ 
+            height: 'calc(10 * var(--cell) + 9 * var(--gap))',
+            '--cell': '34px',
+            '--gap': '2px'
+          } as React.CSSProperties}
+        >
           {coordinates.numbers.map((number) => (
             <div
               key={number}
               className="flex items-center justify-center text-caption font-mono text-mist"
-              style={{ width: '24px', height: '36px' }}
+              style={{ width: '24px', height: 'var(--cell)' }}
             >
               {number}
             </div>
@@ -227,14 +350,19 @@ export const ShipPlacementBoard: React.FC<ShipPlacementBoardProps> = ({
       {/* Основная сетка */}
       <motion.div
         ref={boardRef}
-        className="grid grid-cols-10 gap-0.5 rounded-card bg-bg-graphite ring-1 ring-edge shadow-steel p-3"
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
+        className="relative grid grid-cols-10 gap-[var(--gap)] rounded-card bg-bg-graphite ring-1 ring-edge shadow-steel p-[var(--pad)]"
+        style={{ 
+          '--cell': '34px',
+          '--gap': '2px',
+          '--pad': '12px'
+        } as React.CSSProperties}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3, ease: "easeOut" }}
       >
+        {/* Ячейки сетки */}
         {Array.from({ length: 10 }, (_, y) =>
           Array.from({ length: 10 }, (_, x) => {
             const cellState = getCellState(x, y);
@@ -244,15 +372,54 @@ export const ShipPlacementBoard: React.FC<ShipPlacementBoardProps> = ({
                 state={cellState.hasShip ? 'ship' : 'idle'}
                 size="md"
                 onClick={() => handleCellClick(y, x)}
-                onDragStart={(e) => handleCellDragStart(e, y, x)}
                 disabled={disabled}
-                className={cellState.isPreview ? 'opacity-50' : ''}
-                draggable={cellState.hasShip && !cellState.isPreview}
+                className={`
+                  ${cellState.isPreview ? 'opacity-50' : ''}
+                  ${cellState.isPreviewValid === false ? 'ring-2 ring-red-500' : ''}
+                `}
               />
             );
           })
         )}
+
+        {/* Абсолютно позиционированные корабли */}
+        {placedShips.map((ship) => {
+          const minX = Math.min(...ship.positions.map(p => p.x));
+          const minY = Math.min(...ship.positions.map(p => p.y));
+          const maxX = Math.max(...ship.positions.map(p => p.x));
+          const maxY = Math.max(...ship.positions.map(p => p.y));
+          
+          return (
+            <div
+              key={ship.id}
+              className="absolute bg-sonar/20 border-2 border-sonar/50 rounded-sm cursor-grab active:cursor-grabbing"
+              style={{
+                left: `calc(var(--pad) + ${minX} * (var(--cell) + var(--gap)))`,
+                top: `calc(var(--pad) + ${minY} * (var(--cell) + var(--gap)))`,
+                width: ship.isHorizontal
+                  ? `calc(${maxX - minX + 1} * var(--cell) + ${maxX - minX} * var(--gap))`
+                  : 'var(--cell)',
+                height: ship.isHorizontal
+                  ? 'var(--cell)'
+                  : `calc(${maxY - minY + 1} * var(--cell) + ${maxY - minY} * var(--gap))`,
+              }}
+              onPointerDown={handleShipPointerDown(ship)}
+            />
+          );
+        })}
       </motion.div>
+
+      {/* Инструкции */}
+      {draggingShip && (
+        <div className="mt-4 p-3 bg-steel rounded-lg text-center">
+          <p className="text-body text-foam">
+            Перетащите корабль на поле
+          </p>
+          <p className="text-caption text-mist mt-1">
+            Нажмите R для поворота • Кликните для удаления
+          </p>
+        </div>
+      )}
     </div>
   );
 };

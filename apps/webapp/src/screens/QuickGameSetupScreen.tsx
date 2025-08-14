@@ -70,21 +70,17 @@ export const QuickGameSetupScreen: React.FC = () => {
   }, [timeLeft, isGameStarted]);
 
   const handleShipPlace = (ship: PlacedShip) => {
-    const isOverlapping = placedShips.some(existingShip =>
-      existingShip.positions.some(existingPos =>
-        ship.positions.some(newPos => 
-          existingPos.x === newPos.x && existingPos.y === newPos.y
-        )
-      )
-    );
-
-    if (!isOverlapping) {
-      setPlacedShips(prev => [...prev, ship]);
-    }
+    setPlacedShips(prev => [...prev, ship]);
   };
 
   const handleShipRemove = (shipId: string) => {
     setPlacedShips(prev => prev.filter(ship => ship.id !== shipId));
+  };
+
+  const handleShipMove = (oldShipId: string, newShip: PlacedShip) => {
+    setPlacedShips(prev => prev.map(ship => 
+      ship.id === oldShipId ? newShip : ship
+    ));
   };
 
   const handleRandomPlacement = () => {
@@ -133,15 +129,6 @@ export const QuickGameSetupScreen: React.FC = () => {
 
   const isBoardComplete = placedShips.length === 10;
 
-  const handleDragStart = (e: React.DragEvent, shipType: any) => {
-    const shipData = {
-      id: crypto.randomUUID(),
-      size: shipType.size,
-      isHorizontal: true,
-    };
-    e.dataTransfer.setData('application/json', JSON.stringify(shipData));
-  };
-
   return (
     <div className="min-h-screen bg-bg-deep text-foam">
       {/* Header */}
@@ -184,9 +171,11 @@ export const QuickGameSetupScreen: React.FC = () => {
             {availableShips.map((ship, index) => (
               <div
                 key={ship.id}
-                draggable
-                onDragStart={(e) => handleDragStart(e, ship)}
                 className="p-3 rounded-lg border-2 border-edge hover:border-sonar/50 transition-all cursor-grab active:cursor-grabbing"
+                style={{ 
+                  '--cell': '34px',
+                  '--gap': '2px'
+                } as React.CSSProperties}
               >
                 <div className="flex items-center gap-2">
                   <div className={`w-4 h-4 ${ship.color} rounded-sm flex items-center justify-center`}>
@@ -202,7 +191,7 @@ export const QuickGameSetupScreen: React.FC = () => {
                   </div>
                 </div>
                 <div className="mt-2 flex justify-center">
-                  <div className="flex">
+                  <div className="flex gap-[var(--gap)]">
                     {Array.from({ length: ship.size }, (_, i) => (
                       <div
                         key={i}
@@ -248,6 +237,7 @@ export const QuickGameSetupScreen: React.FC = () => {
                 placedShips={placedShips}
                 onShipPlace={handleShipPlace}
                 onShipRemove={handleShipRemove}
+                onShipMove={handleShipMove}
               />
             </div>
           </div>
