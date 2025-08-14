@@ -432,10 +432,11 @@ export const ShipPlacementBoard = forwardRef<ShipPlacementBoardHandle, ShipPlace
                 state={cellState.hasShip ? 'ship' : 'idle'}
                 size="sm"
                 onClick={() => handleCellClick(y, x)}
-                disabled={disabled}
+                disabled={disabled || !!draggingShip}
                 className={`
                   ${cellState.isPreview ? 'opacity-50' : ''}
                   ${cellState.isPreviewValid === false ? 'ring-2 ring-red-500' : ''}
+                  ${draggingShip ? 'pointer-events-none transition-none' : ''}
                 `}
               />
             );
@@ -464,6 +465,7 @@ export const ShipPlacementBoard = forwardRef<ShipPlacementBoardHandle, ShipPlace
                   : `calc(${maxY - minY + 1} * var(--cell) + ${maxY - minY} * var(--gap))`,
               }}
               onPointerDown={handleShipPointerDown(ship)}
+              onContextMenu={(e) => { e.preventDefault(); }}
             />
           );
         })}
