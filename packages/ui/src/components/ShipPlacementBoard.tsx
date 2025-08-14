@@ -423,21 +423,23 @@ export const ShipPlacementBoard = forwardRef<ShipPlacementBoardHandle, ShipPlace
         transition={{ duration: 0.3, ease: "easeOut" }}
       >
         {/* Ячейки сетки */}
-        {Array.from({ length: 10 }, (_, y) =>
-          Array.from({ length: 10 }, (_, x) => {
-            const cellState = getCellState(x, y);
-            return (
-              <Cell
-                key={`${x}-${y}`}
-                state={cellState.hasShip ? 'ship' : 'idle'}
-                size="sm"
-                onClick={() => handleCellClick(y, x)}
-                disabled={disabled || !!draggingShip}
-                className={`${cellState.isPreview ? 'opacity-50' : ''} ${cellState.isPreviewValid === false ? 'ring-2 ring-red-500' : ''} ${draggingShip ? 'pointer-events-none transition-none' : ''}`}
-              />
-            );
-          })
-        )}
+        {Array.from({ length: 10 }, (_, y) => (
+          <React.Fragment key={y}>
+            {Array.from({ length: 10 }, (_, x) => {
+              const cellState = getCellState(x, y);
+              return (
+                <Cell
+                  key={`${x}-${y}`}
+                  state={cellState.hasShip ? 'ship' : 'idle'}
+                  size="sm"
+                  onClick={() => handleCellClick(y, x)}
+                  disabled={disabled || !!draggingShip}
+                  className={`${cellState.isPreview ? 'opacity-50' : ''} ${cellState.isPreviewValid === false ? 'ring-2 ring-red-500' : ''} ${draggingShip ? 'pointer-events-none transition-none' : ''}`}
+                />
+              );
+            })}
+          </React.Fragment>
+        ))}
 
         {/* Абсолютно позиционированные корабли */}
         {placedShips.map((ship) => {
@@ -451,6 +453,7 @@ export const ShipPlacementBoard = forwardRef<ShipPlacementBoardHandle, ShipPlace
               key={ship.id}
               className={`absolute bg-sonar/20 border-2 border-sonar/50 rounded-sm cursor-grab active:cursor-grabbing z-10 touch-none ${draggingShip?.id === ship.id ? 'opacity-40 pointer-events-none' : ''}`}
               style={{
+                boxSizing: 'border-box',
                 left: `calc(var(--pad) + ${minX} * (var(--cell) + var(--gap)))`,
                 top: `calc(var(--pad) + ${minY} * (var(--cell) + var(--gap)))`,
                 width: ship.isHorizontal
