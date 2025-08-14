@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Button, ShipPlacementBoard, PlacedShip, Position, RingTimer } from '@battleship/ui';
+import { Button, ShipPlacementBoard, PlacedShip, Position, RingTimer, ShipPlacementBoardHandle } from '@battleship/ui';
 import { useAuth } from '../providers/AuthProvider';
 import { randomFleet } from '@battleship/game-logic';
 import { 
@@ -25,7 +25,7 @@ const SHIP_TYPES = [
 
 export const QuickGameSetupScreen: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  useAuth();
   
   const [placedShips, setPlacedShips] = useState<PlacedShip[]>([]);
   const [timeLeft, setTimeLeft] = useState(80);
@@ -51,6 +51,7 @@ export const QuickGameSetupScreen: React.FC = () => {
   };
 
   const availableShips = getAvailableShips();
+  const boardRef = useRef<ShipPlacementBoardHandle | null>(null);
 
   // Таймер для расстановки
   useEffect(() => {
@@ -167,15 +168,20 @@ export const QuickGameSetupScreen: React.FC = () => {
             Корабли
           </h3>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {availableShips.map((ship, index) => (
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {availableShips.map((ship) => (
               <div
                 key={ship.id}
                 className="p-3 rounded-lg border-2 border-edge hover:border-sonar/50 transition-all cursor-grab active:cursor-grabbing"
                 style={{ 
-                  '--cell': '34px',
+                  '--cell': '28px',
                   '--gap': '2px'
                 } as React.CSSProperties}
+                onPointerDown={(e) => {
+                  if (boardRef.current) {
+                    boardRef.current.beginNewShipDrag(ship.size, e.nativeEvent);
+                  }
+                }}
               >
                 <div className="flex items-center gap-2">
                   <div className={`w-4 h-4 ${ship.color} rounded-sm flex items-center justify-center`}>
@@ -231,15 +237,14 @@ export const QuickGameSetupScreen: React.FC = () => {
             Поле
           </h3>
           
-          <div className="flex justify-center overflow-x-auto">
-            <div className="min-w-0">
-              <ShipPlacementBoard
-                placedShips={placedShips}
-                onShipPlace={handleShipPlace}
-                onShipRemove={handleShipRemove}
-                onShipMove={handleShipMove}
-              />
-            </div>
+          <div className="flex justify-center">
+            <ShipPlacementBoard
+              ref={boardRef}
+              placedShips={placedShips}
+              onShipPlace={handleShipPlace}
+              onShipRemove={handleShipRemove}
+              onShipMove={handleShipMove}
+            />
           </div>
         </motion.div>
 
