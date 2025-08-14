@@ -20,9 +20,11 @@ interface CellProps {
   size?: CellSize;
   onClick?: () => void;
   onLongPress?: () => void;
+  onDragStart?: (e: React.DragEvent) => void;
   disabled?: boolean;
   className?: string;
   children?: React.ReactNode;
+  draggable?: boolean;
 }
 
 const sizeClasses = {
@@ -50,9 +52,11 @@ export const Cell: React.FC<CellProps> = ({
   size = 'md',
   onClick,
   onLongPress,
+  onDragStart,
   disabled = false,
   className = '',
   children,
+  draggable = false,
 }) => {
   const [isLongPress, setIsLongPress] = React.useState(false);
   const longPressTimer = React.useRef<NodeJS.Timeout>();
@@ -134,15 +138,37 @@ export const Cell: React.FC<CellProps> = ({
     }
   };
 
+  const cellClassName = `
+    grid place-items-center rounded-cell transition-all duration-200
+    ${sizeClasses[size]}
+    ${stateClasses[state]}
+    ${disabled ? 'cursor-not-allowed' : draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}
+    ${className}
+  `;
+
+  // Если ячейка перетаскиваемая, используем обычный div
+  if (draggable) {
+    return (
+      <div
+        className={cellClassName}
+        onClick={handleClick}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onTouchStart={handleMouseDown}
+        onTouchEnd={handleMouseUp}
+        onDragStart={onDragStart}
+        draggable={draggable}
+      >
+        {getCellContent()}
+      </div>
+    );
+  }
+
+  // Иначе используем motion.div для анимаций
   return (
     <motion.div
-      className={`
-        grid place-items-center rounded-cell transition-all duration-200
-        ${sizeClasses[size]}
-        ${stateClasses[state]}
-        ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}
-        ${className}
-      `}
+      className={cellClassName}
       onClick={handleClick}
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}

@@ -18,6 +18,7 @@ interface ShipPlacementBoardProps {
   placedShips: PlacedShip[];
   onShipPlace?: (ship: PlacedShip) => void;
   onShipRemove?: (shipId: string) => void;
+  onShipMove?: (oldShipId: string, newShip: PlacedShip) => void;
   className?: string;
   disabled?: boolean;
 }
@@ -31,11 +32,13 @@ export const ShipPlacementBoard: React.FC<ShipPlacementBoardProps> = ({
   placedShips,
   onShipPlace,
   onShipRemove,
+  onShipMove,
   className = '',
   disabled = false,
 }) => {
   const [dragOverPosition, setDragOverPosition] = useState<Position | null>(null);
   const [dragOverShip, setDragOverShip] = useState<{ size: number; isHorizontal: boolean } | null>(null);
+  const [draggedShipId, setDraggedShipId] = useState<string | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -43,7 +46,7 @@ export const ShipPlacementBoard: React.FC<ShipPlacementBoardProps> = ({
     if (!boardRef.current) return;
 
     const rect = boardRef.current.getBoundingClientRect();
-    const x = Math.floor((e.clientX - rect.left - 12) / 36); // 12px padding
+    const x = Math.floor((e.clientX - rect.left - 12) / 36);
     const y = Math.floor((e.clientY - rect.top - 12) / 36);
 
     if (x >= 0 && x < 10 && y >= 0 && y < 10) {
@@ -95,7 +98,15 @@ export const ShipPlacementBoard: React.FC<ShipPlacementBoardProps> = ({
             positions,
             isHorizontal: ship.isHorizontal,
           };
-          onShipPlace?.(newShip);
+
+          // Если это перемещение существующего корабля
+          if (draggedShipId) {
+            onShipMove?.(draggedShipId, newShip);
+            setDraggedShipId(null);
+          } else {
+            // Если это новый корабль
+            onShipPlace?.(newShip);
+          }
         }
       } catch (error) {
         console.error('Error processing ship drop:', error);
@@ -119,6 +130,7 @@ export const ShipPlacementBoard: React.FC<ShipPlacementBoardProps> = ({
         isHit: false,
         isMiss: false,
         isSunk: false,
+        shipId: shipAtPosition.id,
       };
     }
 
@@ -161,6 +173,22 @@ export const ShipPlacementBoard: React.FC<ShipPlacementBoardProps> = ({
 
     if (shipAtPosition) {
       onShipRemove?.(shipAtPosition.id);
+    }
+  };
+
+  const handleCellDragStart = (e: React.DragEvent, row: number, col: number) => {
+    const shipAtPosition = placedShips.find(ship =>
+      ship.positions.some(pos => pos.x === col && pos.y === row)
+    );
+
+    if (shipAtPosition) {
+      setDraggedShipId(shipAtPosition.id);
+      const shipData = {
+        id: shipAtPosition.id,
+        size: shipAtPosition.size,
+        isHorizontal: shipAtPosition.isHorizontal,
+      };
+      e.dataTransfer.setData('application/json', JSON.stringify(shipData));
     }
   };
 
@@ -216,8 +244,10 @@ export const ShipPlacementBoard: React.FC<ShipPlacementBoardProps> = ({
                 state={cellState.hasShip ? 'ship' : 'idle'}
                 size="md"
                 onClick={() => handleCellClick(y, x)}
+                onDragStart={(e) => handleCellDragStart(e, y, x)}
                 disabled={disabled}
                 className={cellState.isPreview ? 'opacity-50' : ''}
+                draggable={cellState.hasShip && !cellState.isPreview}
               />
             );
           })

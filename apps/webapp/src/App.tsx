@@ -1,29 +1,50 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { TelegramProvider } from './providers/TelegramProvider';
+import { AuthProvider } from './providers/AuthProvider';
 import { HomeScreen } from './screens/HomeScreen';
+import { CreateLobbyScreen } from './screens/CreateLobbyScreen';
 import { LobbyScreen } from './screens/LobbyScreen';
-import { QuickGameSetupScreen } from './screens/QuickGameSetupScreen';
 import { SetupScreen } from './screens/SetupScreen';
+import { QuickGameSetupScreen } from './screens/QuickGameSetupScreen';
 import { GameScreen } from './screens/GameScreen';
 import { MatchmakingScreen } from './screens/MatchmakingScreen';
-import { AuthProvider } from './providers/AuthProvider';
-import { TelegramProvider } from './providers/TelegramProvider';
+import { ProfileScreen } from './screens/ProfileScreen';
+import { SettingsScreen } from './screens/SettingsScreen';
+import { LeaderboardScreen } from './screens/LeaderboardScreen';
 
 function App() {
   return (
     <TelegramProvider>
       <AuthProvider>
-        <Router>
+        <BrowserRouter>
           <Routes>
+            {/* Главная страница */}
             <Route path="/" element={<HomeScreen />} />
+            
+            {/* Создание лобби */}
+            <Route path="/lobby/create" element={<CreateLobbyScreen />} />
+            
+            {/* Лобби */}
             <Route path="/lobby/:lobbyId" element={<LobbyScreen />} />
-            <Route path="/setup/quick-game" element={<QuickGameSetupScreen />} />
+            
+            {/* Расстановка кораблей */}
             <Route path="/setup/:matchId" element={<SetupScreen />} />
+            <Route path="/setup/computer" element={<QuickGameSetupScreen />} />
+            
+            {/* Игра */}
             <Route path="/game/:matchId" element={<GameScreen />} />
             <Route path="/game/quick-game" element={<GameScreen />} />
+            
+            {/* Поиск игры */}
             <Route path="/matchmaking" element={<MatchmakingScreen />} />
+            
+            {/* Профиль и настройки */}
+            <Route path="/profile" element={<ProfileScreen />} />
+            <Route path="/settings" element={<SettingsScreen />} />
+            <Route path="/leaderboard" element={<LeaderboardScreen />} />
           </Routes>
-        </Router>
+        </BrowserRouter>
       </AuthProvider>
     </TelegramProvider>
   );

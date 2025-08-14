@@ -69,6 +69,23 @@ export const SetupScreen: React.FC = () => {
     setPlacedShips(prev => prev.filter(ship => ship.id !== shipId));
   };
 
+  const handleShipMove = (oldShipId: string, newShip: PlacedShip) => {
+    // Проверяем, не пересекается ли корабль с другими (кроме самого себя)
+    const isOverlapping = placedShips.some(existingShip =>
+      existingShip.id !== oldShipId && existingShip.positions.some(existingPos =>
+        newShip.positions.some(newPos => 
+          existingPos.x === newPos.x && existingPos.y === newPos.y
+        )
+      )
+    );
+
+    if (!isOverlapping) {
+      setPlacedShips(prev => prev.map(ship => 
+        ship.id === oldShipId ? newShip : ship
+      ));
+    }
+  };
+
   const handleRandomPlacement = () => {
     try {
       const fleetShips = randomFleet();
@@ -224,6 +241,7 @@ export const SetupScreen: React.FC = () => {
                 placedShips={placedShips}
                 onShipPlace={handleShipPlace}
                 onShipRemove={handleShipRemove}
+                onShipMove={handleShipMove}
               />
             </div>
           </div>
