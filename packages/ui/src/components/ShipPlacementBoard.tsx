@@ -1,7 +1,6 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { motion } from 'framer-motion';
 import { Cell } from './Cell';
-import { validateFleet } from '@battleship/game-logic';
 
 export interface Position {
   x: number;
@@ -15,7 +14,7 @@ export interface PlacedShip {
   isHorizontal: boolean;
 }
 
-interface ShipPlacementBoardProps {
+export interface ShipPlacementBoardProps {
   placedShips: PlacedShip[];
   onShipPlace?: (ship: PlacedShip) => void;
   onShipRemove?: (shipId: string) => void;
@@ -107,46 +106,44 @@ function validateShipPlacement(
   
   if (hasOverlap) return false;
   
-  // Проверяем касания (используем game-logic)
-  const allShips = placedShips.filter(ship => ship.id !== excludeShipId);
+  // Проверяем касания (8 направлений) с учётом уже размещённых
+  const occupied = new Set<string>();
+  for (const ship of placedShips) {
+    if (ship.id === excludeShipId) continue;
+    for (const p of ship.positions) occupied.add(`${p.x},${p.y}`);
+  }
+  const dirs = [-1, 0, 1];
+  for (const p of positions) {
+    for (const dy of dirs) for (const dx of dirs) {
+      const nx = p.x + dx, ny = p.y + dy;
+      const key = `${nx},${ny}`;
+      if (occupied.has(key)) {
+        // Разрешаем соприкасаться клетке самого же корабля при перемещении (но мы исключили его из occupied)
+        return false;
+      }
+    }
+  }
   
-  // Конвертируем в формат game-logic
-  const convertToGameLogicShip = (ship: PlacedShip) => {
-    const minX = Math.min(...ship.positions.map(p => p.x));
-    const minY = Math.min(...ship.positions.map(p => p.y));
-    return {
-      id: ship.id,
-      bow: { x: minX, y: minY },
-      length: ship.size,
-      horizontal: ship.isHorizontal
-    };
-  };
-  
-  const newShip = {
-    id: 'temp',
-    bow: { x: positions[0].x, y: positions[0].y },
-    length: positions.length,
-    horizontal: positions.length > 1 ? positions[1].x > positions[0].x : true
-  };
-  
-  const testFleet = [...allShips.map(convertToGameLogicShip), newShip];
-  const validation = validateFleet(testFleet);
-  
-  return validation.ok;
+  return true;
 }
 
-export const ShipPlacementBoard: React.FC<ShipPlacementBoardProps> = ({
+export interface ShipPlacementBoardHandle {
+  beginNewShipDrag: (size: number, nativeEvent: PointerEvent) => void;
+}
+
+export const ShipPlacementBoard = forwardRef<ShipPlacementBoardHandle, ShipPlacementBoardProps>(({ 
   placedShips,
   onShipPlace,
   onShipRemove,
   onShipMove,
   className = '',
   disabled = false,
-}) => {
+}, ref) => {
   const [draggingShip, setDraggingShip] = useState<DraggingShip | null>(null);
   const [previewShip, setPreviewShip] = useState<PreviewShip | null>(null);
   const [pointerId, setPointerId] = useState<number | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
+  const lastPointerRef = useRef<PointerEvent | null>(null);
 
   // Вспомогательная функция: ограничение значения по диапазону
   const clamp = useCallback((value: number, min: number, max: number) => {
@@ -232,6 +229,7 @@ export const ShipPlacementBoard: React.FC<ShipPlacementBoardProps> = ({
   }, [draggingShip, previewShip, pointerId, onShipMove, onShipPlace]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    lastPointerRef.current = e.nativeEvent;
     updatePreviewFromNativeEvent(e.nativeEvent);
   }, [updatePreviewFromNativeEvent]);
 
@@ -243,9 +241,55 @@ export const ShipPlacementBoard: React.FC<ShipPlacementBoardProps> = ({
   // Обработчик поворота корабля
   const handleRotate = useCallback(() => {
     if (!draggingShip) return;
-    
-    setDraggingShip(prev => prev ? { ...prev, isHorizontal: !prev.isHorizontal } : null);
-  }, [draggingShip]);
+    const nextHorizontal = !draggingShip.isHorizontal;
+    // Пересчёт grabOffset по текущей позиции указателя
+    let grabOffset = draggingShip.grabOffset;
+    if (boardRef.current && lastPointerRef.current) {
+      const cellPos = getCellFromPointer(lastPointerRef.current, boardRef.current);
+      if (cellPos) {
+        const start = getStartFromCell(cellPos, { ...draggingShip, isHorizontal: nextHorizontal });
+        grabOffset = nextHorizontal ? cellPos.x - start.x : cellPos.y - start.y;
+        grabOffset = clamp(grabOffset, 0, draggingShip.size - 1);
+      }
+    }
+    setDraggingShip(prev => prev ? { ...prev, isHorizontal: nextHorizontal, grabOffset } : null);
+    // Обновить превью
+    if (lastPointerRef.current) {
+      updatePreviewFromNativeEvent(lastPointerRef.current);
+    }
+  }, [draggingShip, getStartFromCell, clamp, updatePreviewFromNativeEvent]);
+
+  // Публичный API: начать перетаскивание нового корабля из палитры
+  useImperativeHandle(ref, () => ({
+    beginNewShipDrag: (size: number, nativeEvent: PointerEvent) => {
+      if (disabled) return;
+      const id = (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2));
+      const newDragging: DraggingShip = {
+        id,
+        size,
+        isHorizontal: true,
+        isMoving: false,
+        grabOffset: 0,
+      };
+      setDraggingShip(newDragging);
+      setPointerId(nativeEvent.pointerId);
+      // сразу показать превью
+      updatePreviewFromNativeEvent(nativeEvent);
+    }
+  }), [disabled, updatePreviewFromNativeEvent]);
+
+  // Глобальные события для перетаскивания, чтобы обрабатывать начало из палитры
+  React.useEffect(() => {
+    if (!draggingShip) return;
+    const onMove = (ev: PointerEvent) => updatePreviewFromNativeEvent(ev);
+    const onUp = (ev: PointerEvent) => finalizeFromNativeEvent(ev);
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+    return () => {
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+    };
+  }, [draggingShip, updatePreviewFromNativeEvent, finalizeFromNativeEvent]);
 
   // Обработчик клика по ячейке (удаление корабля)
   const handleCellClick = useCallback((row: number, col: number) => {
@@ -408,7 +452,7 @@ export const ShipPlacementBoard: React.FC<ShipPlacementBoardProps> = ({
           return (
             <div
               key={ship.id}
-              className="absolute bg-sonar/20 border-2 border-sonar/50 rounded-sm cursor-grab active:cursor-grabbing z-10 touch-none"
+              className={`absolute bg-sonar/20 border-2 border-sonar/50 rounded-sm cursor-grab active:cursor-grabbing z-10 touch-none ${draggingShip?.id === ship.id ? 'opacity-40 pointer-events-none' : ''}`}
               style={{
                 left: `calc(var(--pad) + ${minX} * (var(--cell) + var(--gap)))`,
                 top: `calc(var(--pad) + ${minY} * (var(--cell) + var(--gap)))`,
@@ -438,4 +482,4 @@ export const ShipPlacementBoard: React.FC<ShipPlacementBoardProps> = ({
       )}
     </div>
   );
-};
+});
