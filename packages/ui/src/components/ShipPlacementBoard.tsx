@@ -412,7 +412,7 @@ export const ShipPlacementBoard = forwardRef<ShipPlacementBoardHandle, ShipPlace
         ref={boardRef}
         className="relative grid grid-cols-10 gap-[var(--gap)] rounded-card bg-bg-graphite ring-1 ring-edge shadow-steel p-[var(--pad)] touch-none select-none"
         style={{ 
-          '--cell': 'min(32px, calc((100vw - 32px - 24px) / 10))',
+          '--cell': 'min(36px, calc((100vw - 32px - 24px) / 10))',
           '--gap': '2px',
           '--pad': '12px'
         } as React.CSSProperties}
@@ -433,11 +433,7 @@ export const ShipPlacementBoard = forwardRef<ShipPlacementBoardHandle, ShipPlace
                 size="sm"
                 onClick={() => handleCellClick(y, x)}
                 disabled={disabled || !!draggingShip}
-                className={`
-                  ${cellState.isPreview ? 'opacity-50' : ''}
-                  ${cellState.isPreviewValid === false ? 'ring-2 ring-red-500' : ''}
-                  ${draggingShip ? 'pointer-events-none transition-none' : ''}
-                `}
+                className={`${cellState.isPreview ? 'opacity-50' : ''} ${cellState.isPreviewValid === false ? 'ring-2 ring-red-500' : ''} ${draggingShip ? 'pointer-events-none transition-none' : ''}`}
               />
             );
           })

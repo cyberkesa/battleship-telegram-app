@@ -139,6 +139,7 @@ export const Cell: React.FC<CellProps> = ({
   };
 
   const transitionClass = disabled ? 'transition-none' : 'transition-all duration-200';
+  const fallbackPx = size === 'sm' ? 28 : size === 'lg' ? 40 : size === 'mini' ? 20 : 34;
   const cellClassName = `
     grid place-items-center rounded-cell ${transitionClass}
     ${sizeClasses[size]}
@@ -152,6 +153,7 @@ export const Cell: React.FC<CellProps> = ({
     return (
       <div
         className={cellClassName}
+        style={{ width: `var(--cell, ${fallbackPx}px)`, height: `var(--cell, ${fallbackPx}px)` }}
         onClick={handleClick}
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
@@ -170,6 +172,7 @@ export const Cell: React.FC<CellProps> = ({
   return (
     <motion.div
       className={cellClassName}
+      style={{ width: `var(--cell, ${fallbackPx}px)`, height: `var(--cell, ${fallbackPx}px)` }}
       onClick={handleClick}
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
