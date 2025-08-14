@@ -369,7 +369,7 @@ export const ShipPlacementBoard = forwardRef<ShipPlacementBoardHandle, ShipPlace
           className="grid grid-cols-10 gap-[var(--gap)]"
           style={{ 
             width: 'calc(10 * var(--cell) + 9 * var(--gap))',
-            '--cell': '28px',
+            '--cell': 'min(32px, calc((100vw - 32px - 24px) / 10))',
             '--gap': '2px'
           } as React.CSSProperties}
         >
@@ -391,7 +391,7 @@ export const ShipPlacementBoard = forwardRef<ShipPlacementBoardHandle, ShipPlace
           className="grid grid-rows-10 gap-[var(--gap)]"
           style={{ 
             height: 'calc(10 * var(--cell) + 9 * var(--gap))',
-            '--cell': '28px',
+            '--cell': 'min(32px, calc((100vw - 32px - 24px) / 10))',
             '--gap': '2px'
           } as React.CSSProperties}
         >
@@ -412,7 +412,7 @@ export const ShipPlacementBoard = forwardRef<ShipPlacementBoardHandle, ShipPlace
         ref={boardRef}
         className="relative grid grid-cols-10 gap-[var(--gap)] rounded-card bg-bg-graphite ring-1 ring-edge shadow-steel p-[var(--pad)] touch-none select-none"
         style={{ 
-          '--cell': '28px',
+          '--cell': 'min(32px, calc((100vw - 32px - 24px) / 10))',
           '--gap': '2px',
           '--pad': '12px'
         } as React.CSSProperties}

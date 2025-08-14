@@ -138,8 +138,9 @@ export const Cell: React.FC<CellProps> = ({
     }
   };
 
+  const transitionClass = disabled ? 'transition-none' : 'transition-all duration-200';
   const cellClassName = `
-    grid place-items-center rounded-cell transition-all duration-200
+    grid place-items-center rounded-cell ${transitionClass}
     ${sizeClasses[size]}
     ${stateClasses[state]}
     ${disabled ? 'cursor-not-allowed' : draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}
