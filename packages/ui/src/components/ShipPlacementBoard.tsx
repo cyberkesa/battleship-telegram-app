@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { motion } from 'framer-motion';
 import { Cell } from './Cell';
+import { useBoardLayout } from '../hooks/useBoardLayout';
 
 export interface Position {
   x: number;
@@ -144,6 +145,7 @@ export const ShipPlacementBoard = forwardRef<ShipPlacementBoardHandle, ShipPlace
   const [pointerId, setPointerId] = useState<number | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const lastPointerRef = useRef<PointerEvent | null>(null);
+  const { cellPx, pad, gap } = useBoardLayout(boardRef, { min: 20, max: 40, pad: 12, gap: 2 });
 
   // Вспомогательная функция: ограничение значения по диапазону
   const clamp = useCallback((value: number, min: number, max: number) => {
@@ -412,9 +414,9 @@ export const ShipPlacementBoard = forwardRef<ShipPlacementBoardHandle, ShipPlace
         ref={boardRef}
         className="relative grid grid-cols-10 gap-[var(--gap)] rounded-card bg-bg-graphite ring-1 ring-edge shadow-steel p-[var(--pad)] touch-none select-none"
         style={{ 
-          '--cell': 'min(36px, calc((100vw - 32px - 24px) / 10))',
-          '--gap': '2px',
-          '--pad': '12px'
+          '--cell': `${cellPx}px`,
+          '--gap': `${gap}px`,
+          '--pad': `${pad}px`
         } as React.CSSProperties}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -451,7 +453,7 @@ export const ShipPlacementBoard = forwardRef<ShipPlacementBoardHandle, ShipPlace
           return (
             <div
               key={ship.id}
-              className={`absolute bg-sonar/20 border-2 border-sonar/50 rounded-sm cursor-grab active:cursor-grabbing z-10 touch-none ${draggingShip?.id === ship.id ? 'opacity-40 pointer-events-none' : ''}`}
+              className={`absolute bg-sonar/10 outline outline-2 outline-sonar/50 rounded-sm cursor-grab active:cursor-grabbing z-10 touch-none ${draggingShip?.id === ship.id ? 'opacity-40 pointer-events-none' : ''}`}
               style={{
                 boxSizing: 'border-box',
                 left: `calc(var(--pad) + ${minX} * (var(--cell) + var(--gap)))`,
