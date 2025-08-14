@@ -29,6 +29,7 @@ interface DraggingShip {
   size: number;
   isHorizontal: boolean;
   isMoving: boolean; // true если перемещаем существующий корабль
+  grabOffset: number; // смещение точки хвата относительно начала корабля (в клетках)
 }
 
 interface PreviewShip {
@@ -147,21 +148,10 @@ export const ShipPlacementBoard: React.FC<ShipPlacementBoardProps> = ({
   const [pointerId, setPointerId] = useState<number | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
 
-  // Обработчик начала перетаскивания из палитры
-  const handlePalettePointerDown = useCallback((shipData: { id: string; size: number }) => (e: React.PointerEvent) => {
-    if (disabled) return;
-    
-    e.preventDefault();
-    e.currentTarget.setPointerCapture(e.pointerId);
-    
-    setDraggingShip({
-      id: shipData.id,
-      size: shipData.size,
-      isHorizontal: true,
-      isMoving: false
-    });
-    setPointerId(e.pointerId);
-  }, [disabled]);
+  // Вспомогательная функция: ограничение значения по диапазону
+  const clamp = useCallback((value: number, min: number, max: number) => {
+    return Math.max(min, Math.min(max, value));
+  }, []);
 
   // Обработчик начала перемещения существующего корабля
   const handleShipPointerDown = useCallback((ship: PlacedShip) => (e: React.PointerEvent) => {
@@ -169,60 +159,86 @@ export const ShipPlacementBoard: React.FC<ShipPlacementBoardProps> = ({
     
     e.preventDefault();
     e.currentTarget.setPointerCapture(e.pointerId);
-    
+
+    // Вычисляем смещение точки хвата относительно начала корабля
+    let grabOffset = 0;
+    if (boardRef.current) {
+      const cellPos = getCellFromPointer(e.nativeEvent, boardRef.current);
+      if (cellPos) {
+        const minX = Math.min(...ship.positions.map(p => p.x));
+        const minY = Math.min(...ship.positions.map(p => p.y));
+        grabOffset = ship.isHorizontal ? clamp(cellPos.x - minX, 0, ship.size - 1) : clamp(cellPos.y - minY, 0, ship.size - 1);
+      }
+    }
+
     setDraggingShip({
       id: ship.id,
       size: ship.size,
       isHorizontal: ship.isHorizontal,
-      isMoving: true
+      isMoving: true,
+      grabOffset,
     });
     setPointerId(e.pointerId);
   }, [disabled]);
 
   // Обработчик движения указателя
-  const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!draggingShip || !boardRef.current || e.pointerId !== pointerId) return;
-    
-    const cellPos = getCellFromPointer(e.nativeEvent, boardRef.current);
+  // Вычисляем стартовую позицию с учетом смещения хвата и границ
+  const getStartFromCell = useCallback((cellPos: Position, ship: DraggingShip): Position => {
+    if (ship.isHorizontal) {
+      const startX = clamp(cellPos.x - ship.grabOffset, 0, 10 - ship.size);
+      return { x: startX, y: clamp(cellPos.y, 0, 9) };
+    } else {
+      const startY = clamp(cellPos.y - ship.grabOffset, 0, 10 - ship.size);
+      return { x: clamp(cellPos.x, 0, 9), y: startY };
+    }
+  }, [clamp]);
+
+  const updatePreviewFromNativeEvent = useCallback((nativeEvent: PointerEvent) => {
+    if (!draggingShip || !boardRef.current || nativeEvent.pointerId !== pointerId) return;
+    const cellPos = getCellFromPointer(nativeEvent, boardRef.current);
     if (!cellPos) {
       setPreviewShip(null);
       return;
     }
-    
-    const positions = generateShipPositions(cellPos, draggingShip.size, draggingShip.isHorizontal);
+    const start = getStartFromCell(cellPos, draggingShip);
+    const positions = generateShipPositions(start, draggingShip.size, draggingShip.isHorizontal);
     const isValid = validateShipPlacement(positions, placedShips, draggingShip.isMoving ? draggingShip.id : undefined);
-    
     setPreviewShip({ positions, isValid });
-  }, [draggingShip, placedShips, pointerId]);
+  }, [draggingShip, placedShips, pointerId, getStartFromCell]);
 
-  // Обработчик отпускания указателя
-  const handlePointerUp = useCallback((e: React.PointerEvent) => {
-    if (!draggingShip || !previewShip || e.pointerId !== pointerId) {
+  const finalizeFromNativeEvent = useCallback((nativeEvent: PointerEvent) => {
+    if (!draggingShip || nativeEvent.pointerId !== pointerId) {
       setDraggingShip(null);
       setPreviewShip(null);
       setPointerId(null);
       return;
     }
-    
-    if (previewShip.isValid) {
+    if (previewShip?.isValid) {
       const newShip: PlacedShip = {
         id: draggingShip.id,
         size: draggingShip.size,
         positions: previewShip.positions,
         isHorizontal: draggingShip.isHorizontal,
       };
-      
       if (draggingShip.isMoving) {
         onShipMove?.(draggingShip.id, newShip);
       } else {
         onShipPlace?.(newShip);
       }
     }
-    
     setDraggingShip(null);
     setPreviewShip(null);
     setPointerId(null);
-  }, [draggingShip, previewShip, pointerId, onShipPlace, onShipMove]);
+  }, [draggingShip, previewShip, pointerId, onShipMove, onShipPlace]);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    updatePreviewFromNativeEvent(e.nativeEvent);
+  }, [updatePreviewFromNativeEvent]);
+
+  // Обработчик отпускания указателя
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
+    finalizeFromNativeEvent(e.nativeEvent);
+  }, [finalizeFromNativeEvent]);
 
   // Обработчик поворота корабля
   const handleRotate = useCallback(() => {
@@ -304,12 +320,12 @@ export const ShipPlacementBoard: React.FC<ShipPlacementBoardProps> = ({
   return (
     <div className={`relative ${className}`}>
       {/* Верхние координаты (буквы) */}
-      <div className="absolute -top-6 left-0 right-0 flex justify-center">
+      <div className="absolute -top-6 left-0 right-0 hidden sm:flex justify-center">
         <div 
           className="grid grid-cols-10 gap-[var(--gap)]"
           style={{ 
             width: 'calc(10 * var(--cell) + 9 * var(--gap))',
-            '--cell': '34px',
+            '--cell': '28px',
             '--gap': '2px'
           } as React.CSSProperties}
         >
@@ -326,12 +342,12 @@ export const ShipPlacementBoard: React.FC<ShipPlacementBoardProps> = ({
       </div>
 
       {/* Левые координаты (цифры) */}
-      <div className="absolute -left-6 top-0 bottom-0 flex flex-col justify-center">
+      <div className="absolute -left-6 top-0 bottom-0 hidden sm:flex flex-col justify-center">
         <div 
           className="grid grid-rows-10 gap-[var(--gap)]"
           style={{ 
             height: 'calc(10 * var(--cell) + 9 * var(--gap))',
-            '--cell': '34px',
+            '--cell': '28px',
             '--gap': '2px'
           } as React.CSSProperties}
         >
@@ -350,9 +366,9 @@ export const ShipPlacementBoard: React.FC<ShipPlacementBoardProps> = ({
       {/* Основная сетка */}
       <motion.div
         ref={boardRef}
-        className="relative grid grid-cols-10 gap-[var(--gap)] rounded-card bg-bg-graphite ring-1 ring-edge shadow-steel p-[var(--pad)]"
+        className="relative grid grid-cols-10 gap-[var(--gap)] rounded-card bg-bg-graphite ring-1 ring-edge shadow-steel p-[var(--pad)] touch-none select-none"
         style={{ 
-          '--cell': '34px',
+          '--cell': '28px',
           '--gap': '2px',
           '--pad': '12px'
         } as React.CSSProperties}
@@ -370,7 +386,7 @@ export const ShipPlacementBoard: React.FC<ShipPlacementBoardProps> = ({
               <Cell
                 key={`${x}-${y}`}
                 state={cellState.hasShip ? 'ship' : 'idle'}
-                size="md"
+                size="sm"
                 onClick={() => handleCellClick(y, x)}
                 disabled={disabled}
                 className={`
@@ -392,7 +408,7 @@ export const ShipPlacementBoard: React.FC<ShipPlacementBoardProps> = ({
           return (
             <div
               key={ship.id}
-              className="absolute bg-sonar/20 border-2 border-sonar/50 rounded-sm cursor-grab active:cursor-grabbing"
+              className="absolute bg-sonar/20 border-2 border-sonar/50 rounded-sm cursor-grab active:cursor-grabbing z-10 touch-none"
               style={{
                 left: `calc(var(--pad) + ${minX} * (var(--cell) + var(--gap)))`,
                 top: `calc(var(--pad) + ${minY} * (var(--cell) + var(--gap)))`,

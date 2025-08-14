@@ -38,6 +38,9 @@ export const Board: React.FC<BoardProps> = ({
   isOpponent = false,
 }) => {
   const config = sizeConfig[size];
+  const pixelSizeMap = { sm: 28, md: 34, lg: 40, mini: 20 } as const;
+  const cellPx = pixelSizeMap[size];
+  const gapPx = 2; // matches gap-0.5
 
   const handleCellClick = (row: number, col: number) => {
     if (!disabled && onCellClick) {
@@ -56,13 +59,16 @@ export const Board: React.FC<BoardProps> = ({
       {showCoordinates && (
         <>
           {/* Верхние координаты (буквы) */}
-          <div className="absolute -top-6 left-0 right-0 flex justify-center">
-            <div className="grid grid-cols-10 gap-0.5" style={{ width: 'calc(10 * 36px + 9 * 2px)' }}>
-              {coordinates.letters.map((letter, index) => (
+          <div className="absolute -top-6 left-0 right-0 hidden sm:flex justify-center">
+            <div
+              className="grid grid-cols-10 gap-0.5"
+              style={{ width: `calc(10 * ${cellPx}px + 9 * ${gapPx}px)` }}
+            >
+              {coordinates.letters.map((letter) => (
                 <div
                   key={letter}
                   className="flex items-center justify-center text-caption font-mono text-mute"
-                  style={{ width: '36px', height: '24px' }}
+                  style={{ width: `${cellPx}px`, height: '24px' }}
                 >
                   {letter}
                 </div>
@@ -71,13 +77,16 @@ export const Board: React.FC<BoardProps> = ({
           </div>
 
           {/* Левые координаты (цифры) */}
-          <div className="absolute -left-6 top-0 bottom-0 flex flex-col justify-center">
-            <div className="grid grid-rows-10 gap-0.5" style={{ height: 'calc(10 * 36px + 9 * 2px)' }}>
-              {coordinates.numbers.map((number, index) => (
+          <div className="absolute -left-6 top-0 bottom-0 hidden sm:flex flex-col justify-center">
+            <div
+              className="grid grid-rows-10 gap-0.5"
+              style={{ height: `calc(10 * ${cellPx}px + 9 * ${gapPx}px)` }}
+            >
+              {coordinates.numbers.map((number) => (
                 <div
                   key={number}
                   className="flex items-center justify-center text-caption font-mono text-mute"
-                  style={{ width: '24px', height: '36px' }}
+                  style={{ width: '24px', height: `${cellPx}px` }}
                 >
                   {number}
                 </div>
