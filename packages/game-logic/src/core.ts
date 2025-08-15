@@ -230,7 +230,8 @@ export function placeFleet(
 
   const validation = validateFleet(fleet, state.rules.allowTouching);
   if (!validation.ok) {
-    throw new GameLogicError(GameError.INVALID_LAYOUT, `Invalid fleet layout: ${validation.reason}`);
+    const reason = (validation as { ok: false; reason: string }).reason;
+    throw new GameLogicError(GameError.INVALID_LAYOUT, `Invalid fleet layout: ${reason}`);
   }
 
   if (player === 'A') {

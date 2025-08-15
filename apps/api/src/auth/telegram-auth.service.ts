@@ -19,14 +19,11 @@ interface TelegramInitData {
 interface AuthResponse {
   sessionToken: string;
   user: {
-    id: number;
+    id: string;
     telegramId: number;
     firstName: string;
     lastName?: string;
     username?: string;
-    rating: number;
-    gamesPlayed: number;
-    gamesWon: number;
     createdAt: string;
   };
 }
@@ -70,15 +67,13 @@ export class TelegramAuthService {
     }
 
     // Extract user data
-    const user = {
-      id: parseInt(params.get('user') || '0'),
-      first_name: params.get('user') || '',
-      last_name: params.get('user') || undefined,
-      username: params.get('user') || undefined,
-      language_code: params.get('user') || undefined,
-    };
+    const userParam = params.get('user');
+    if (!userParam) {
+      throw new UnauthorizedException('Invalid initData: missing user');
+    }
+    const parsedUser = JSON.parse(userParam) as TelegramUser;
 
-    return { initData, user };
+    return { initData, user: parsedUser };
   }
 
   async authenticateUser(telegramData: TelegramInitData): Promise<AuthResponse> {
@@ -86,20 +81,17 @@ export class TelegramAuthService {
 
     // Find or create user
     let dbUser = await this.prisma.user.findUnique({
-      where: { telegramId: BigInt(user.id) },
+      where: { telegramId: user.id },
     });
 
     if (!dbUser) {
       // Create new user
       dbUser = await this.prisma.user.create({
         data: {
-          telegramId: BigInt(user.id),
+          telegramId: user.id,
           firstName: user.first_name,
           lastName: user.last_name,
           username: user.username,
-          rating: 1000,
-          gamesPlayed: 0,
-          gamesWon: 0,
         },
       });
     } else {
@@ -130,13 +122,10 @@ export class TelegramAuthService {
       sessionToken,
       user: {
         id: dbUser.id,
-        telegramId: Number(dbUser.telegramId),
+        telegramId: dbUser.telegramId,
         firstName: dbUser.firstName,
         lastName: dbUser.lastName,
         username: dbUser.username,
-        rating: dbUser.rating,
-        gamesPlayed: dbUser.gamesPlayed,
-        gamesWon: dbUser.gamesWon,
         createdAt: dbUser.createdAt.toISOString(),
       },
     };

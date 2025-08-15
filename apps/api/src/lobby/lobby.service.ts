@@ -35,7 +35,7 @@ export class LobbyService {
         inviteLink,
         players: {
           create: {
-            id: data.playerId,
+            playerId: data.playerId,
             name: data.playerName,
             avatar: data.playerAvatar,
             isReady: false,
@@ -52,7 +52,7 @@ export class LobbyService {
       id: lobby.id,
       status: lobby.status as any,
       players: lobby.players.map(p => ({
-        id: p.id,
+        id: p.playerId,
         name: p.name,
         avatar: p.avatar,
         isReady: p.isReady,
@@ -90,7 +90,7 @@ export class LobbyService {
       data: {
         players: {
           create: {
-            id: data.playerId,
+            playerId: data.playerId,
             name: data.playerName,
             avatar: data.playerAvatar,
             isReady: false,
@@ -130,7 +130,7 @@ export class LobbyService {
       id: lobby.id,
       status: lobby.status as any,
       players: lobby.players.map(p => ({
-        id: p.id,
+        id: p.playerId,
         name: p.name,
         avatar: p.avatar,
         isReady: p.isReady,
@@ -152,7 +152,7 @@ export class LobbyService {
       throw new NotFoundException('Лобби не найдено');
     }
 
-    const player = lobby.players.find(p => p.id === playerId);
+    const player = lobby.players.find(p => p.playerId === playerId);
     if (!player) {
       throw new NotFoundException('Игрок не найден в лобби');
     }
@@ -173,23 +173,21 @@ export class LobbyService {
     
     if (allReady && updatedLobby.players.length === 2) {
       // Создаем матч
-      const match = createMatch({
-        playerA: { id: updatedLobby.players[0].id, name: updatedLobby.players[0].name },
-        playerB: { id: updatedLobby.players[1].id, name: updatedLobby.players[1].name },
-      });
+             const matchId = randomUUID();
+      const matchState = createMatch(matchId);
+
 
       // Сохраняем матч в БД
-      const savedMatch = await this.prisma.match.create({
-        data: {
-          id: match.id,
-          status: match.status,
-          playerAId: match.playerA.id,
-          playerBId: match.playerB.id,
-          currentTurn: match.currentTurn,
-          rules: match.rules,
-          state: match as any,
-        },
-      });
+              const savedMatch = await this.prisma.match.create({
+          data: {
+            id: matchState.id,
+            status: matchState.status,
+            playerAId: updatedLobby.players[0].playerId,
+            playerBId: updatedLobby.players[1].playerId,
+            currentTurn: matchState.currentTurn,
+            state: matchState as any,
+          },
+        });
 
       // Обновляем статус лобби
       await this.prisma.lobby.update({
@@ -200,20 +198,20 @@ export class LobbyService {
         },
       });
 
-      return {
-        id: updatedLobby.id,
-        status: 'playing',
-        players: updatedLobby.players.map(p => ({
-          id: p.id,
-          name: p.name,
-          avatar: p.avatar,
-          isReady: p.isReady,
-          isHost: p.isHost,
-        })),
-        inviteLink: updatedLobby.inviteLink,
-        createdAt: updatedLobby.createdAt,
-        matchId: savedMatch.id,
-      };
+          return {
+      id: updatedLobby.id,
+      status: 'playing',
+      players: updatedLobby.players.map(p => ({
+        id: p.playerId,
+        name: p.name,
+        avatar: p.avatar,
+        isReady: p.isReady,
+        isHost: p.isHost,
+      })),
+      inviteLink: updatedLobby.inviteLink,
+      createdAt: updatedLobby.createdAt,
+      matchId: savedMatch.id,
+    };
     }
 
     return {
@@ -241,7 +239,7 @@ export class LobbyService {
       throw new NotFoundException('Лобби не найдено');
     }
 
-    const player = lobby.players.find(p => p.id === playerId);
+    const player = lobby.players.find(p => p.playerId === playerId);
     if (!player) {
       throw new NotFoundException('Игрок не найден в лобби');
     }
