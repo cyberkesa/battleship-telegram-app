@@ -4,6 +4,7 @@ export { Board, type BoardSize } from './components/Board';
 export { Ship, type ShipProps } from './components/Ship';
 export { ShipPlacementBoard, type PlacedShip, type Position } from './components/ShipPlacementBoard';
 export type { ShipPlacementBoardHandle } from './components/ShipPlacementBoard';
+export { GameBoard, type GameBoardHandle } from './components/GameBoard';
 export { Modal } from './components/Modal';
 export { RingTimer } from './components/RingTimer';
 export { LoadingScreen } from './components/LoadingScreen';

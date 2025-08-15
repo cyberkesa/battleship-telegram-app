@@ -6,7 +6,6 @@ import { HomeScreen } from './screens/HomeScreen';
 import { CreateLobbyScreen } from './screens/CreateLobbyScreen';
 import { LobbyScreen } from './screens/LobbyScreen';
 import { SetupScreen } from './screens/SetupScreen';
-import { QuickGameSetupScreen } from './screens/QuickGameSetupScreen';
 import { GameScreen } from './screens/GameScreen';
 import { MatchmakingScreen } from './screens/MatchmakingScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
@@ -30,7 +29,6 @@ function App() {
             
             {/* Расстановка кораблей */}
             <Route path="/setup/:matchId" element={<SetupScreen />} />
-            <Route path="/setup/computer" element={<QuickGameSetupScreen />} />
             
             {/* Игра */}
             <Route path="/game/:matchId" element={<GameScreen />} />

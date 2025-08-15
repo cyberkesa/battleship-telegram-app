@@ -1,9 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Button, ShipPlacementBoard, PlacedShip, Position, ShipPlacementBoardHandle } from '@battleship/ui';
+import { Button, GameBoard, PlacedShip, Position, GameBoardHandle, Ship, RingTimer } from '@battleship/ui';
 import { useGameStore } from '../stores/gameStore';
-import { randomFleet } from '@battleship/game-logic';
+import { useAuth } from '../providers/AuthProvider';
+import { randomFleet, validateFleet } from '@battleship/game-logic';
 import { 
   Ship as ShipIcon, 
   RotateCcw, 
@@ -14,24 +15,65 @@ import {
   AlertCircle
 } from 'lucide-react';
 
+// Константы
+const PLACEMENT_SECONDS = 80;
+
+// Устойчивый UUID генератор
+const safeUUID = () => globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2);
+
 // Правильные корабли по классическим правилам Морского боя
 const SHIP_TYPES = [
-  { size: 4, name: 'Линкор', count: 1, color: 'bg-torpedo' },
-  { size: 3, name: 'Крейсер', count: 2, color: 'bg-radio' },
-  { size: 2, name: 'Эсминец', count: 3, color: 'bg-sonar' },
-  { size: 1, name: 'Катер', count: 4, color: 'bg-info' },
-];
+  { size: 4, name: 'Линкор', count: 1, color: 'torpedo' as const },
+  { size: 3, name: 'Крейсер', count: 2, color: 'radio' as const },
+  { size: 2, name: 'Эсминец', count: 3, color: 'sonar' as const },
+  { size: 1, name: 'Катер', count: 4, color: 'info' as const },
+] as const;
+
+// Конвертер PlacedShip → Fleet для валидации
+const toFleet = (ps: PlacedShip[]) => ps.map(s => {
+  const minX = Math.min(...s.positions.map(p => p.x));
+  const minY = Math.min(...s.positions.map(p => p.y));
+  return { 
+    id: s.id, 
+    bow: { x: minX, y: minY }, 
+    length: s.size, 
+    horizontal: s.isHorizontal 
+  };
+});
 
 export const SetupScreen: React.FC = () => {
   const { matchId } = useParams<{ matchId: string }>();
   const navigate = useNavigate();
   const { setupBoard } = useGameStore();
+  useAuth(); // Для быстрой игры
   
   const [placedShips, setPlacedShips] = useState<PlacedShip[]>([]);
-  const [timeLeft] = useState(80);
+  const [timeLeft, setTimeLeft] = useState(PLACEMENT_SECONDS);
+  const [isGameStarted, setIsGameStarted] = useState(false);
 
-  // Подсчитываем доступные корабли
-  const getAvailableShips = () => {
+  // Определяем тип игры
+  const isQuickGame = matchId === 'computer';
+  const gameId = matchId ?? 'computer'; // Исправляем роутинг
+
+  // Таймер для быстрой игры
+  useEffect(() => {
+    if (isQuickGame && timeLeft > 0 && !isGameStarted) {
+      const timer = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            startGame();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [timeLeft, isGameStarted, isQuickGame]);
+
+  // Подсчитываем доступные корабли (оптимизировано)
+  const availableShips = React.useMemo(() => {
     const available = [];
     for (let i = 0; i < SHIP_TYPES.length; i++) {
       const shipType = SHIP_TYPES[i];
@@ -47,24 +89,23 @@ export const SetupScreen: React.FC = () => {
       }
     }
     return available;
-  };
+  }, [placedShips]);
+  const boardRef = useRef<GameBoardHandle | null>(null);
 
-  const availableShips = getAvailableShips();
-  const boardRef = useRef<ShipPlacementBoardHandle | null>(null);
-
-  const handleShipPlace = (ship: PlacedShip) => {
+  // Оптимизированные обработчики кораблей
+  const handleShipPlace = React.useCallback((ship: PlacedShip) => {
     setPlacedShips(prev => [...prev, ship]);
-  };
+  }, []);
 
-  const handleShipRemove = (shipId: string) => {
+  const handleShipRemove = React.useCallback((shipId: string) => {
     setPlacedShips(prev => prev.filter(ship => ship.id !== shipId));
-  };
+  }, []);
 
-  const handleShipMove = (oldShipId: string, newShip: PlacedShip) => {
+  const handleShipMove = React.useCallback((oldShipId: string, newShip: PlacedShip) => {
     setPlacedShips(prev => prev.map(ship => 
       ship.id === oldShipId ? newShip : ship
     ));
-  };
+  }, []);
 
   const handleRandomPlacement = () => {
     try {
@@ -83,7 +124,7 @@ export const SetupScreen: React.FC = () => {
       };
       
       const ships: PlacedShip[] = fleetShips.map((ship: any) => ({
-        id: crypto.randomUUID(),
+        id: safeUUID(), // Устойчивый UUID
         size: ship.length,
         positions: shipToPositions(ship),
         isHorizontal: ship.horizontal,
@@ -99,11 +140,25 @@ export const SetupScreen: React.FC = () => {
     setPlacedShips([]);
   };
 
-  const handleStartGame = () => {
-    if (placedShips.length === 10) {
-      setupBoard(matchId || 'quick-game', placedShips);
-      navigate(`/game/${matchId || 'quick-game'}`);
+  const startGame = () => {
+    if (isGameStarted) return;
+    if (placedShips.length !== 10) return;
+
+    // Валидация флота перед стартом
+    const v = validateFleet(toFleet(placedShips), false);
+    if (!(v as any).ok) {
+      // TODO: показать тост/баннер с причиной
+      console.error('Invalid fleet:', v);
+      return;
     }
+
+    setIsGameStarted(true);
+    setupBoard(gameId, placedShips);
+    navigate(`/game/${gameId}`);
+  };
+
+  const handleStartGame = () => {
+    startGame();
   };
 
   const isBoardComplete = placedShips.length === 10;
@@ -115,20 +170,31 @@ export const SetupScreen: React.FC = () => {
         <div className="flex items-center justify-between">
           <div className="flex-1 min-w-0">
             <h1 className="font-heading font-semibold text-h2 text-foam truncate">
-              Расстановка флота
+              {isQuickGame ? 'Быстрая игра' : 'Расстановка флота'}
             </h1>
             <p className="text-secondary text-mist truncate">
               Разместите {10 - placedShips.length} кораблей
             </p>
           </div>
           <div className="flex items-center gap-2 ml-4">
-            <Clock className="w-4 h-4 text-mist" />
-            <div className="text-right">
-              <div className="text-caption text-mist">Время</div>
-              <div className="font-mono font-semibold text-h3 text-sonar">
-                {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
-              </div>
-            </div>
+            {isQuickGame ? (
+              <RingTimer
+                duration={PLACEMENT_SECONDS}
+                currentTime={timeLeft}
+                size="sm"
+                className="text-sonar"
+              />
+            ) : (
+              <>
+                <Clock className="w-4 h-4 text-mist" />
+                <div className="text-right">
+                  <div className="text-caption text-mist">Время</div>
+                  <div className="font-mono font-semibold text-h3 text-sonar">
+                    {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -148,21 +214,40 @@ export const SetupScreen: React.FC = () => {
             {availableShips.map((ship) => (
               <div
                 key={ship.id}
-                className="p-3 rounded-lg border-2 border-edge hover:border-sonar/50 transition-all cursor-grab active:cursor-grabbing"
+                className="p-3 rounded-lg border-2 border-edge hover:border-sonar/50 transition-all cursor-grab active:cursor-grabbing touch-none"
                 style={{ 
                   '--cell': '28px',
                   '--gap': '2px'
                 } as React.CSSProperties}
+                role="button"
+                tabIndex={0}
                 onPointerDown={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.setPointerCapture?.(e.pointerId);
                   if (boardRef.current) {
                     boardRef.current.beginNewShipDrag(ship.size, e.nativeEvent);
                   }
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    // Симулируем pointer event для начала drag
+                    const fakeEvent = new PointerEvent('pointerdown', {
+                      clientX: 0,
+                      clientY: 0,
+                      pointerId: 1
+                    });
+                    if (boardRef.current) {
+                      boardRef.current.beginNewShipDrag(ship.size, fakeEvent);
+                    }
+                  }
+                }}
+                onContextMenu={(e) => e.preventDefault()}
               >
-                <div className="flex items-center gap-2">
-                  <div className={`w-4 h-4 ${ship.color} rounded-sm flex items-center justify-center`}>
-                    <ShipIcon className="w-3 h-3 text-white" />
-                  </div>
+                                  <div className="flex items-center gap-2 mb-3">
+                    <div className={`w-4 h-4 bg-${ship.color} rounded-sm flex items-center justify-center`}>
+                      <ShipIcon className="w-3 h-3 text-white" />
+                    </div>
                   <div className="text-left flex-1 min-w-0">
                     <div className="font-heading font-semibold text-body text-foam truncate">
                       {ship.name}
@@ -172,19 +257,13 @@ export const SetupScreen: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <div className="mt-2 flex justify-center">
-                  <div className="flex gap-[var(--gap)]">
-                    {Array.from({ length: ship.size }, (_, i) => (
-                      <div
-                        key={i}
-                        className={`w-6 h-6 border border-edge ${ship.color} ${
-                          i === 0 ? 'rounded-l-sm' : ''
-                        } ${
-                          i === ship.size - 1 ? 'rounded-r-sm' : ''
-                        }`}
-                      />
-                    ))}
-                  </div>
+                <div className="flex justify-center">
+                  <Ship
+                    size={ship.size as 1 | 2 | 3 | 4}
+                    isHorizontal={true}
+                    color={ship.color}
+                    className="scale-75"
+                  />
                 </div>
               </div>
             ))}
@@ -195,9 +274,12 @@ export const SetupScreen: React.FC = () => {
               <div className="flex items-center justify-center gap-2 text-sonar mb-2">
                 <CheckCircle className="w-5 h-5" />
                 <p className="font-heading font-semibold text-body">
-                  Все корабли размещены!
+                  Флот готов!
                 </p>
               </div>
+              <p className="text-caption text-mist">
+                Все корабли размещены правильно
+              </p>
             </div>
           )}
         </motion.div>
@@ -214,8 +296,9 @@ export const SetupScreen: React.FC = () => {
           </h3>
           
           <div className="flex justify-center">
-            <ShipPlacementBoard
+            <GameBoard
               ref={boardRef}
+              mode="placement"
               placedShips={placedShips}
               onShipPlace={handleShipPlace}
               onShipRemove={handleShipRemove}

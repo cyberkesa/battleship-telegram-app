@@ -12,6 +12,7 @@
   "dependencies": {
     "@battleship/shared-types": "1.0.0",
     "grammy": "^1.20.0",
+    "@grammyjs/runner": "^2.0.0",
     "dotenv": "^16.0.0"
   },
   "devDependencies": {
