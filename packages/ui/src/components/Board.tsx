@@ -15,19 +15,24 @@ interface BoardProps {
   isOpponent?: boolean;
 }
 
+const BOARD_SIZE = 10;
+
+// Единый источник размеров в пикселях
 const sizeConfig = {
-  sm: { cellSize: 'sm', gap: 'gap-0.5', padding: 'p-2' },
-  md: { cellSize: 'md', gap: 'gap-0.5', padding: 'p-2' },
-  lg: { cellSize: 'lg', gap: 'gap-0.5', padding: 'p-3' },
-  mini: { cellSize: 'mini', gap: 'gap-0.5', padding: 'p-1' },
-};
+  sm: { cellPx: 28, padPx: 8 },
+  md: { cellPx: 34, padPx: 12 },
+  lg: { cellPx: 40, padPx: 12 },
+  mini: { cellPx: 20, padPx: 6 },
+} as const;
+
+const gapPx = 2; // единый gap для всех размеров
 
 const coordinates = {
   letters: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'],
   numbers: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
 };
 
-export const Board: React.FC<BoardProps> = ({
+export const Board: React.FC<BoardProps> = React.memo(({
   size = 'md',
   cells,
   onCellClick,
@@ -38,37 +43,55 @@ export const Board: React.FC<BoardProps> = ({
   isOpponent = false,
 }) => {
   const config = sizeConfig[size];
-  const pixelSizeMap = { sm: 28, md: 34, lg: 40, mini: 20 } as const;
-  const cellPx = pixelSizeMap[size];
-  const gapPx = 2; // matches gap-0.5
+  const { cellPx, padPx } = config;
 
-  const handleCellClick = (row: number, col: number) => {
+  // Валидация размера поля в dev-режиме
+  if (process.env.NODE_ENV !== 'production') {
+    if (cells.length !== BOARD_SIZE || cells.some(r => r.length !== BOARD_SIZE)) {
+      console.warn('Board: expected 10x10 cells, got', cells.length, 'x', cells[0]?.length);
+    }
+  }
+
+  const handleCellClick = React.useCallback((row: number, col: number) => {
     if (!disabled && onCellClick) {
       onCellClick(row, col);
     }
-  };
+  }, [disabled, onCellClick]);
 
-  const handleCellLongPress = (row: number, col: number) => {
+  const handleCellLongPress = React.useCallback((row: number, col: number) => {
     if (!disabled && onCellLongPress) {
       onCellLongPress(row, col);
     }
-  };
+  }, [disabled, onCellLongPress]);
 
   return (
-    <div className={`relative ${className}`}>
+    <div 
+      className={`relative ${className}`}
+      style={{
+        // CSS-vars — единый источник размеров
+        ['--cell' as any]: `${cellPx}px`,
+        ['--gap' as any]: `${gapPx}px`,
+        ['--pad' as any]: `${padPx}px`,
+      }}
+      onContextMenu={(e) => e.preventDefault()}
+    >
       {showCoordinates && (
         <>
-          {/* Верхние координаты (буквы) */}
-          <div className="absolute -top-6 left-0 right-0 hidden sm:flex justify-center">
+          {/* Верхние координаты (буквы), сдвинуты на паддинг поля */}
+          <div className="absolute left-[var(--pad)] -top-6 right-0 flex justify-start pointer-events-none">
             <div
-              className="grid grid-cols-10 gap-0.5"
-              style={{ width: `calc(10 * ${cellPx}px + 9 * ${gapPx}px)` }}
+              className="grid grid-cols-10"
+              style={{
+                width: `calc(${BOARD_SIZE} * var(--cell) + ${BOARD_SIZE - 1} * var(--gap))`,
+                gap: 'var(--gap)',
+              }}
+              aria-hidden
             >
               {coordinates.letters.map((letter) => (
                 <div
                   key={letter}
                   className="flex items-center justify-center text-caption font-mono text-mute"
-                  style={{ width: `${cellPx}px`, height: '24px' }}
+                  style={{ width: 'var(--cell)', height: '24px' }}
                 >
                   {letter}
                 </div>
@@ -76,17 +99,21 @@ export const Board: React.FC<BoardProps> = ({
             </div>
           </div>
 
-          {/* Левые координаты (цифры) */}
-          <div className="absolute -left-6 top-0 bottom-0 hidden sm:flex flex-col justify-center">
+          {/* Левые координаты (цифры), сдвинуты на паддинг поля */}
+          <div className="absolute top-[var(--pad)] -left-6 bottom-0 flex flex-col justify-start pointer-events-none">
             <div
-              className="grid grid-rows-10 gap-0.5"
-              style={{ height: `calc(10 * ${cellPx}px + 9 * ${gapPx}px)` }}
+              className="grid grid-rows-10"
+              style={{
+                height: `calc(${BOARD_SIZE} * var(--cell) + ${BOARD_SIZE - 1} * var(--gap))`,
+                rowGap: 'var(--gap)',
+              }}
+              aria-hidden
             >
               {coordinates.numbers.map((number) => (
                 <div
                   key={number}
                   className="flex items-center justify-center text-caption font-mono text-mute"
-                  style={{ width: '24px', height: `${cellPx}px` }}
+                  style={{ width: '24px', height: 'var(--cell)' }}
                 >
                   {number}
                 </div>
@@ -98,10 +125,16 @@ export const Board: React.FC<BoardProps> = ({
 
       {/* Основная сетка */}
       <motion.div
-        className={`
-          grid grid-cols-10 gap-0.5 rounded-card bg-bg-graphite ring-1 ring-edge shadow-steel
-          ${config.padding}
-        `}
+        role="grid"
+        aria-rowcount={BOARD_SIZE}
+        aria-colcount={BOARD_SIZE}
+        className="relative grid grid-cols-10 rounded-card bg-bg-graphite ring-1 ring-edge shadow-steel"
+        style={{
+          gap: 'var(--gap)',
+          padding: 'var(--pad)',
+          // фиксируем высоту рядов
+          gridAutoRows: 'var(--cell)',
+        }}
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3, ease: "easeOut" }}
@@ -111,7 +144,7 @@ export const Board: React.FC<BoardProps> = ({
             <Cell
               key={`${rowIndex}-${colIndex}`}
               state={cellState}
-              size={config.cellSize as any}
+              size={size}
               onClick={() => handleCellClick(rowIndex, colIndex)}
               onLongPress={() => handleCellLongPress(rowIndex, colIndex)}
               disabled={disabled}
@@ -120,10 +153,13 @@ export const Board: React.FC<BoardProps> = ({
         )}
       </motion.div>
 
-      {/* Дополнительная рамка для противника */}
+      {/* Рамка противника — ниже координат, но поверх поля */}
       {isOpponent && (
-        <div className="absolute inset-0 rounded-card ring-2 ring-sonar/20 pointer-events-none" />
-      )}
+        <div
+          className="pointer-events-none absolute inset-[calc(var(--pad)-2px)] rounded-card ring-2 ring-sonar/20"
+          aria-hidden
+        />
+            )}
     </div>
   );
-};
+});

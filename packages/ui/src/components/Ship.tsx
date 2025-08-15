@@ -16,57 +16,84 @@ export interface ShipProps {
   onPointerUp?: (e: React.PointerEvent) => void;
 }
 
-export const Ship: React.FC<ShipProps> = ({
+// Константы для цветов кораблей
+const COLOR_CLASS: Record<NonNullable<ShipProps['color']>, string> = {
+  sonar: 'bg-sonar',
+  radio: 'bg-radio',
+  torpedo: 'bg-torpedo',
+  info: 'bg-info',
+};
+
+export const Ship: React.FC<ShipProps> = React.memo(({
   size,
   isHorizontal = true,
   isSelected = false,
   isDragging = false,
   isPlaced = false,
-  color = 'bg-sonar',
+  color = 'sonar',
   className = '',
   onClick,
-  onDragStart,
-  onDragEnd,
+  onPointerDown,
+  onPointerUp,
 }) => {
-  const shipCells = Array.from({ length: size }, (_, i) => i);
+  const cells = React.useMemo(() => Array.from({ length: size }, (_, i) => i), [size]);
+  const bgClass = COLOR_CLASS[color];
 
   return (
     <motion.div
+      role="button"
+      tabIndex={0}
+      aria-label={`Корабль ${size} клетки, ${isHorizontal ? 'горизонтально' : 'вертикально'}`}
       className={`
-        inline-flex cursor-pointer select-none
+        inline-flex select-none
         ${isHorizontal ? 'flex-row' : 'flex-col'}
+        ${isPlaced ? 'cursor-default' : 'cursor-pointer'}
         ${className}
       `}
-      draggable={!isPlaced}
-      onClick={onClick}
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
-      whileHover={!isPlaced ? { scale: 1.05 } : {}}
-      whileTap={!isPlaced ? { scale: 0.95 } : {}}
-      animate={{
-        scale: isSelected ? 1.1 : 1,
-        opacity: isDragging ? 0.5 : 1,
+      style={{
+        gap: 'var(--gap)',
+        WebkitTapHighlightColor: 'transparent',
       }}
-      transition={{ duration: 0.2 }}
-    >
-      {shipCells.map((index) => (
-        <div
-          key={index}
-          className={`
-            w-8 h-8 border-2 border-edge
-            ${color}
-            ${index === 0 ? 'rounded-l-sm' : ''}
-            ${index === size - 1 ? 'rounded-r-sm' : ''}
-            ${!isHorizontal && index === 0 ? 'rounded-t-sm' : ''}
-            ${!isHorizontal && index === size - 1 ? 'rounded-b-sm' : ''}
-            ${isSelected ? 'ring-2 ring-sonar ring-offset-1' : ''}
-            ${isPlaced ? 'opacity-80' : 'opacity-100'}
-          `}
-          style={{
-            boxShadow: isSelected ? '0 0 0 2px rgba(255, 200, 87, 0.5)' : 'none',
-          }}
-        />
-      ))}
-    </motion.div>
-  );
-};
+      onClick={onClick}
+      onPointerDown={onPointerDown}
+      onPointerUp={onPointerUp}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
+      whileHover={!isPlaced ? { scale: 1.04 } : {}}
+      whileTap={!isPlaced ? { scale: 0.98 } : {}}
+      animate={{
+        scale: isSelected ? 1.06 : 1,
+        opacity: isDragging ? 0.6 : 1,
+      }}
+      transition={{ duration: 0.15, ease: 'easeOut' }}
+          >
+        {cells.map((i) => {
+          // Скругления корректные: только по направлению ориентации
+          const rounded = isHorizontal
+            ? `${i === 0 ? 'rounded-l-sm' : ''} ${i === size - 1 ? 'rounded-r-sm' : ''}`
+            : `${i === 0 ? 'rounded-t-sm' : ''} ${i === size - 1 ? 'rounded-b-sm' : ''}`;
+
+          return (
+            <div
+              key={i}
+              data-seg
+              className={`
+                box-border
+                ${bgClass}
+                ${rounded}
+                ${isPlaced ? 'opacity-80' : 'opacity-100'}
+              `}
+              style={{
+                width: 'var(--cell)',
+                height: 'var(--cell)',
+              }}
+            />
+          );
+        })}
+      </motion.div>
+    );
+  });
