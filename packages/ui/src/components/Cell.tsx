@@ -35,16 +35,16 @@ const sizeClasses = {
 };
 
 const stateClasses = {
-  idle: 'bg-steel ring-1 ring-edge hover:ring-sonar/50 hover:bg-steel/80',
-  hover: 'bg-steel ring-2 ring-sonar/50 bg-sonar-sweep',
-  selected: 'bg-steel ring-2 ring-sonar shadow-sonar',
-  miss: 'bg-steel/60 ring-1 ring-edge',
-  hit: 'bg-torpedo ring-1 ring-torpedo shadow-torpedo',
-  sunk: 'bg-torpedo/80 ring-1 ring-torpedo',
-  disabled: 'bg-mute/30 ring-1 ring-edge/50 cursor-not-allowed',
-  ship: 'bg-mute/40 ring-1 ring-edge',
-  'ship-hit': 'bg-torpedo/60 ring-1 ring-torpedo',
-  'ship-sunk': 'bg-torpedo/80 ring-1 ring-torpedo',
+  idle: 'bg-game-water/20 ring-1 ring-border-light hover:ring-primary-400 hover:bg-game-water/30 transition-all duration-200',
+  hover: 'bg-primary-100 ring-2 ring-primary-400 shadow-game-glow',
+  selected: 'bg-primary-200 ring-2 ring-primary-500 shadow-lg',
+  miss: 'bg-game-miss/30 ring-1 ring-border-medium',
+  hit: 'bg-game-hit ring-1 ring-game-hit shadow-game-hit',
+  sunk: 'bg-game-sunk ring-1 ring-game-sunk shadow-game-hit',
+  disabled: 'bg-secondary-100/50 ring-1 ring-border-light/50 cursor-not-allowed',
+  ship: 'bg-game-ship/20 ring-1 ring-game-ship/50',
+  'ship-hit': 'bg-game-hit/60 ring-1 ring-game-hit',
+  'ship-sunk': 'bg-game-sunk/80 ring-1 ring-game-sunk',
 };
 
 export const Cell: React.FC<CellProps> = ({
@@ -90,7 +90,7 @@ export const Cell: React.FC<CellProps> = ({
           <motion.div
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="w-1 h-1 bg-foam rounded-full"
+            className="w-2 h-2 bg-game-miss rounded-full animate-miss-ripple"
           />
         );
       case 'hit':
@@ -98,7 +98,7 @@ export const Cell: React.FC<CellProps> = ({
           <motion.div
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="w-3 h-3 bg-foam transform rotate-45"
+            className="w-4 h-4 bg-white transform rotate-45 animate-hit-explosion"
             style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }}
           />
         );
@@ -107,20 +107,20 @@ export const Cell: React.FC<CellProps> = ({
           <motion.div
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="w-3 h-3 bg-foam transform rotate-45"
+            className="w-4 h-4 bg-white transform rotate-45 animate-hit-explosion"
             style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }}
           />
         );
       case 'ship':
         return (
-          <div className="w-full h-full bg-mute/20 rounded-sm" />
+          <div className="w-full h-full bg-game-ship/30 rounded-lg animate-ship-float" />
         );
       case 'ship-hit':
         return (
           <motion.div
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="w-3 h-3 bg-foam transform rotate-45"
+            className="w-4 h-4 bg-white transform rotate-45 animate-hit-explosion"
             style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }}
           />
         );
@@ -129,7 +129,7 @@ export const Cell: React.FC<CellProps> = ({
           <motion.div
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="w-3 h-3 bg-foam transform rotate-45"
+            className="w-4 h-4 bg-white transform rotate-45 animate-hit-explosion"
             style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }}
           />
         );
@@ -180,25 +180,25 @@ export const Cell: React.FC<CellProps> = ({
       onMouseLeave={handleMouseUp}
       onTouchStart={handleMouseDown}
       onTouchEnd={handleMouseUp}
-      whileHover={!disabled && !hasNoScale ? { scale: 1.02 } : {}}
-      whileTap={!disabled && !hasNoScale ? { scale: 0.98 } : {}}
+      whileHover={!disabled && !hasNoScale ? { scale: 1.05, y: -1 } : {}}
+      whileTap={!disabled && !hasNoScale ? { scale: 0.95 } : {}}
       animate={
         state === 'hit' || state === 'sunk' || state === 'ship-hit' || state === 'ship-sunk'
-          ? 'torpedo-hit'
+          ? 'hit-explosion'
           : state === 'miss'
-          ? 'miss-splash'
+          ? 'miss-ripple'
           : {}
       }
       variants={{
-        'torpedo-hit': {
-          scale: [1, 1.2, 1],
-          rotate: [0, 180, 45],
-          transition: { duration: 0.3, ease: "easeOut" }
+        'hit-explosion': {
+          scale: [1, 1.3, 1],
+          rotate: [0, 360],
+          transition: { duration: 0.4, ease: "easeOut" }
         },
-        'miss-splash': {
-          scale: [0, 1],
-          opacity: [0, 1],
-          transition: { duration: 0.2, ease: "easeOut" }
+        'miss-ripple': {
+          scale: [0, 1.2, 1],
+          opacity: [0, 0.6, 1],
+          transition: { duration: 0.3, ease: "easeOut" }
         }
       }}
     >

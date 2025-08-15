@@ -1,8 +1,7 @@
 import React, { useState, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { motion } from 'framer-motion';
 import { Cell, CellState } from './Cell';
-
-export type BoardSize = 'sm' | 'md' | 'lg' | 'mini';
+import { BoardSize, sizeConfig, gapPx, coordinates, BOARD_SIZE } from '../utils/boardConfig';
 
 export interface Position {
   x: number;
@@ -48,23 +47,6 @@ interface PreviewShip {
 export interface GameBoardHandle {
   beginNewShipDrag: (size: number, nativeEvent: PointerEvent) => void;
 }
-
-const BOARD_SIZE = 10;
-
-// Единый источник размеров в пикселях
-const sizeConfig = {
-  sm: { cellPx: 28, padPx: 8 },
-  md: { cellPx: 34, padPx: 12 },
-  lg: { cellPx: 40, padPx: 12 },
-  mini: { cellPx: 20, padPx: 6 },
-} as const;
-
-const gapPx = 2;
-
-const coordinates = {
-  letters: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'],
-  numbers: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
-};
 
 // Функция для вычисления координат клетки под курсором
 function getCellFromPointer(e: PointerEvent, boardEl: HTMLDivElement, cellPx: number, gap: number, pad: number): Position | null {
@@ -468,7 +450,7 @@ export const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({
             <div
               className="grid grid-cols-10"
               style={{
-                width: `calc(10 * var(--cell) + 9 * var(--gap))`,
+                width: `calc(${BOARD_SIZE} * var(--cell) + ${BOARD_SIZE - 1} * var(--gap))`,
                 gap: 'var(--gap)',
               }}
               aria-hidden
@@ -476,7 +458,7 @@ export const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({
               {coordinates.letters.map((letter) => (
                 <div
                   key={letter}
-                  className="flex items-center justify-center text-caption font-mono text-mute"
+                  className="flex items-center justify-center text-sm font-semibold text-text-secondary"
                   style={{ width: 'var(--cell)', height: '24px' }}
                 >
                   {letter}
@@ -490,7 +472,7 @@ export const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({
             <div
               className="grid grid-rows-10"
               style={{
-                height: `calc(10 * var(--cell) + 9 * var(--gap))`,
+                height: `calc(${BOARD_SIZE} * var(--cell) + ${BOARD_SIZE - 1} * var(--gap))`,
                 rowGap: 'var(--gap)',
               }}
               aria-hidden
@@ -498,7 +480,7 @@ export const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({
               {coordinates.numbers.map((number) => (
                 <div
                   key={number}
-                  className="flex items-center justify-center text-caption font-mono text-mute"
+                  className="flex items-center justify-center text-sm font-semibold text-text-secondary"
                   style={{ width: '24px', height: 'var(--cell)' }}
                 >
                   {number}
@@ -515,18 +497,11 @@ export const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({
         role="grid"
         aria-rowcount={BOARD_SIZE}
         aria-colcount={BOARD_SIZE}
-        className="relative rounded-card bg-bg-graphite ring-1 ring-edge shadow-steel touch-none select-none"
+        className="relative grid grid-cols-10 rounded-2xl bg-gradient-to-br from-game-water/10 to-game-water/5 ring-1 ring-border-light shadow-xl touch-none select-none backdrop-blur-sm"
         style={{
-          // Единый источник правды для размеров
-          ['--cell' as any]: `${cellPx}px`,
-          ['--gap' as any]: `${gapPx}px`,
-          ['--pad' as any]: `${padPx}px`,
-          display: 'grid',
-          gridTemplateColumns: 'repeat(10, var(--cell))',
-          gridAutoRows: 'var(--cell)',
           gap: 'var(--gap)',
           padding: 'var(--pad)',
-          justifyContent: 'center',
+          gridAutoRows: 'var(--cell)',
         }}
         onClickCapture={(e) => {
           // Перехватываем клики на уровне контейнера
@@ -574,7 +549,7 @@ export const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({
           return (
             <div
               key={ship.id}
-              className={`absolute bg-sonar/10 outline outline-2 outline-sonar/50 rounded-sm cursor-grab active:cursor-grabbing z-10 touch-none ${draggingShip?.id === ship.id ? 'opacity-40 pointer-events-none' : ''}`}
+              className={`absolute bg-gradient-to-r from-game-ship/20 to-game-ship/10 outline outline-2 outline-game-ship/50 rounded-lg cursor-grab active:cursor-grabbing z-10 touch-none shadow-md hover:shadow-lg transition-all duration-200 ${draggingShip?.id === ship.id ? 'opacity-40 pointer-events-none' : ''}`}
               style={{
                 boxSizing: 'border-box',
                 left: `calc(var(--pad) + ${minX} * (var(--cell) + var(--gap)))`,
@@ -622,11 +597,11 @@ export const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({
 
       {/* Инструкции для режима расстановки */}
       {mode === 'placement' && draggingShip && (
-        <div className="mt-4 p-3 bg-steel rounded-lg text-center">
-          <p className="text-body text-foam">
+        <div className="mt-4 p-4 bg-gradient-to-r from-primary-50 to-primary-100 rounded-xl text-center shadow-lg border border-primary-200">
+          <p className="text-base font-semibold text-text-primary">
             Перетащите корабль на поле
           </p>
-          <p className="text-caption text-mist mt-1">
+          <p className="text-sm text-text-secondary mt-1">
             Нажмите R для поворота • Двойной клик или долгий тап для удаления
           </p>
         </div>

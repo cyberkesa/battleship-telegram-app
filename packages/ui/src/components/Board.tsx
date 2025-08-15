@@ -1,8 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Cell, CellState } from './Cell';
-
-export type BoardSize = 'sm' | 'md' | 'lg' | 'mini';
+import { BoardSize, sizeConfig, gapPx, coordinates, BOARD_SIZE } from '../utils/boardConfig';
 
 interface BoardProps {
   size?: BoardSize;
@@ -14,23 +13,6 @@ interface BoardProps {
   showCoordinates?: boolean;
   isOpponent?: boolean;
 }
-
-const BOARD_SIZE = 10;
-
-// Единый источник размеров в пикселях
-const sizeConfig = {
-  sm: { cellPx: 28, padPx: 8 },
-  md: { cellPx: 34, padPx: 12 },
-  lg: { cellPx: 40, padPx: 12 },
-  mini: { cellPx: 20, padPx: 6 },
-} as const;
-
-const gapPx = 2; // единый gap для всех размеров
-
-const coordinates = {
-  letters: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'],
-  numbers: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
-};
 
 export const Board: React.FC<BoardProps> = React.memo(({
   size = 'md',

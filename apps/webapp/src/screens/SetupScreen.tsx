@@ -216,8 +216,8 @@ export const SetupScreen: React.FC = () => {
                 key={ship.id}
                 className="p-3 rounded-lg border-2 border-edge hover:border-sonar/50 transition-all cursor-grab active:cursor-grabbing touch-none"
                 style={{ 
-                  '--cell': '28px',
-                  '--gap': '2px'
+                  '--cell': 'var(--cell, 28px)',
+                  '--gap': 'var(--gap, 2px)'
                 } as React.CSSProperties}
                 role="button"
                 tabIndex={0}
