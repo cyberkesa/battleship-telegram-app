@@ -7,7 +7,7 @@ export interface ShipProps {
   isSelected?: boolean;
   isDragging?: boolean;
   isPlaced?: boolean;
-  color?: 'sonar' | 'radio' | 'torpedo' | 'info'; // варианты
+  color?: 'sonar' | 'radio' | 'torpedo' | 'info' | 'blue' | 'red' | 'cyan'; // варианты
   className?: string;
   onClick?: () => void;
   
@@ -18,10 +18,13 @@ export interface ShipProps {
 
 // Константы для цветов кораблей
 const COLOR_CLASS: Record<NonNullable<ShipProps['color']>, string> = {
-  sonar: 'bg-sonar',
-  radio: 'bg-radio',
-  torpedo: 'bg-torpedo',
-  info: 'bg-info',
+  sonar: 'bg-game-ship',
+  radio: 'bg-accent-blue',
+  torpedo: 'bg-accent-red',
+  info: 'bg-accent-cyan',
+  blue: 'bg-accent-blue',
+  red: 'bg-accent-red',
+  cyan: 'bg-accent-cyan',
 };
 
 export const Ship: React.FC<ShipProps> = React.memo(({
@@ -85,7 +88,9 @@ export const Ship: React.FC<ShipProps> = React.memo(({
                 box-border
                 ${bgClass}
                 ${rounded}
-                ${isPlaced ? 'opacity-80' : 'opacity-100'}
+                ${isPlaced ? 'opacity-90' : 'opacity-100'}
+                shadow-md hover:shadow-lg
+                ring-1 ring-black/10
               `}
               style={{
                 width: 'var(--cell)',

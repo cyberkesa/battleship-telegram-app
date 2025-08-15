@@ -23,10 +23,10 @@ const safeUUID = () => globalThis.crypto?.randomUUID?.() ?? Math.random().toStri
 
 // Правильные корабли по классическим правилам Морского боя
 const SHIP_TYPES = [
-  { size: 4, name: 'Линкор', count: 1, color: 'torpedo' as const },
-  { size: 3, name: 'Крейсер', count: 2, color: 'radio' as const },
+  { size: 4, name: 'Линкор', count: 1, color: 'red' as const },
+  { size: 3, name: 'Крейсер', count: 2, color: 'blue' as const },
   { size: 2, name: 'Эсминец', count: 3, color: 'sonar' as const },
-  { size: 1, name: 'Катер', count: 4, color: 'info' as const },
+  { size: 1, name: 'Катер', count: 4, color: 'cyan' as const },
 ] as const;
 
 // Конвертер PlacedShip → Fleet для валидации
@@ -245,7 +245,7 @@ export const SetupScreen: React.FC = () => {
                 onContextMenu={(e) => e.preventDefault()}
               >
                                   <div className="flex items-center gap-2 mb-3">
-                    <div className={`w-4 h-4 bg-${ship.color} rounded-sm flex items-center justify-center`}>
+                    <div className={`w-4 h-4 ${ship.color === 'sonar' ? 'bg-game-ship' : ship.color === 'red' ? 'bg-accent-red' : ship.color === 'blue' ? 'bg-accent-blue' : 'bg-accent-cyan'} rounded-sm flex items-center justify-center`}>
                       <ShipIcon className="w-3 h-3 text-white" />
                     </div>
                   <div className="text-left flex-1 min-w-0">
