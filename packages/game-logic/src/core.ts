@@ -34,6 +34,69 @@ export function shipCells(s: Ship): Coord[] {
   return cells;
 }
 
+// Получение всех соседних клеток для корабля (клетки, которые должны быть пустыми)
+export function getShipAdjacentCells(ship: Ship): Coord[] {
+  const shipOwnCells = shipCells(ship);
+  const adjacent = new Set<string>();
+  
+  const dirs = [-1, 0, 1];
+  for (const cell of shipOwnCells) {
+    for (const dy of dirs) {
+      for (const dx of dirs) {
+        if (dx === 0 && dy === 0) continue; // Пропускаем саму клетку корабля
+        
+        const adjCoord = { x: cell.x + dx, y: cell.y + dy };
+        if (inBounds(adjCoord)) {
+          adjacent.add(coordKey(adjCoord));
+        }
+      }
+    }
+  }
+  
+  // Исключаем клетки самого корабля из соседних
+  const shipKeys = new Set(shipOwnCells.map(coordKey));
+  const result: Coord[] = [];
+  
+  for (const key of adjacent) {
+    if (!shipKeys.has(key)) {
+      const [x, y] = key.split(',').map(Number);
+      result.push({ x, y });
+    }
+  }
+  
+  return result;
+}
+
+// Автоматическое открытие соседних клеток потопленного корабля
+export function revealAdjacentCells(
+  ship: Ship, 
+  targetBoard: Board, 
+  fogForAttacker: FogOfWar,
+  shipIndex: Map<string, string>
+): Coord[] {
+  const adjacentCells = getShipAdjacentCells(ship);
+  const revealedCells: Coord[] = [];
+  
+  for (const cell of adjacentCells) {
+    const key = coordKey(cell);
+    
+    // Проверяем, что в этой клетке точно нет корабля
+    const hasShip = shipIndex.has(key);
+    
+    // Проверяем, что мы ещё не стреляли в эту клетку
+    const alreadyFired = targetBoard.hits.has(key) || targetBoard.misses.has(key);
+    
+    // Если в клетке нет корабля и мы ещё не стреляли в неё
+    if (!hasShip && !alreadyFired) {
+      targetBoard.misses.add(key);
+      fogForAttacker[cell.y][cell.x] = CellMark.Miss;
+      revealedCells.push(cell);
+    }
+  }
+  
+  return revealedCells;
+}
+
 // Валидация флота
 export function validateFleet(fleet: Fleet, allowTouching = false): { ok: true } | { ok: false; reason: string } {
   if (fleet.length !== 10) return { ok: false, reason: 'FLEET_SIZE' };
@@ -164,13 +227,16 @@ export function applyMove(
     const sunkCoords = shipCells(ship);
     for (const c of sunkCoords) fogForAttacker[c.y][c.x] = CellMark.Sunk;
 
+    // Потопленный корабль открывает соседние клетки
+    const revealedCells = revealAdjacentCells(ship, targetBoard, fogForAttacker, shipIndex);
+
     // победа?
     const allSunk = (attacker === 'A' ? state.boardB : state.boardA)
       .ships.every(s => (attacker === 'A' ? state.boardB : state.boardA).sunkShipIds.has(s.id));
     if (allSunk) {
       state.status = MatchStatus.Finished;
       state.winner = attacker;
-      return { kind: MoveResultKind.Win, coord, shipId, sunkCoords };
+      return { kind: MoveResultKind.Win, coord, shipId, sunkCoords, revealedCells };
     }
 
     // право ещё хода при попадании — по правилу
@@ -178,7 +244,7 @@ export function applyMove(
       state.currentTurn = attacker === 'A' ? 'B' : 'A';
       state.turnNo++;
     }
-    return { kind: MoveResultKind.Sunk, coord, shipId, sunkCoords };
+    return { kind: MoveResultKind.Sunk, coord, shipId, sunkCoords, revealedCells };
   }
 
   // просто Хит

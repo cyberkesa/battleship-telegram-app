@@ -86,23 +86,26 @@ export function randomFleet(seed?: string, allowTouching = false): Fleet {
   throw new GameLogicError(GameError.RANDOM_PLACEMENT_FAILED, 'Failed to generate random fleet after 500 attempts');
 }
 
-// Создание флота по умолчанию (для тестов)
+// Создание флота по умолчанию (для тестов) - простая валидная расстановка
 export function createDefaultFleet(): Fleet {
   return [
-    // 4-палубный
-    { id: 'ship-4-1', bow: { x: 0, y: 0 }, length: 4, horizontal: true },
-    // 3-палубные
-    { id: 'ship-3-1', bow: { x: 0, y: 2 }, length: 3, horizontal: true },
-    { id: 'ship-3-2', bow: { x: 0, y: 4 }, length: 3, horizontal: true },
-    // 2-палубные
-    { id: 'ship-2-1', bow: { x: 0, y: 6 }, length: 2, horizontal: true },
-    { id: 'ship-2-2', bow: { x: 0, y: 8 }, length: 2, horizontal: true },
-    { id: 'ship-2-3', bow: { x: 3, y: 0 }, length: 2, horizontal: false },
-    // 2-палубные
-    { id: 'ship-1-1', bow: { x: 5, y: 0 }, length: 1, horizontal: true },
-    { id: 'ship-1-2', bow: { x: 7, y: 0 }, length: 1, horizontal: true },
-    { id: 'ship-1-3', bow: { x: 9, y: 0 }, length: 1, horizontal: true },
-    { id: 'ship-1-4', bow: { x: 5, y: 2 }, length: 1, horizontal: true }
+    // 1 четырехпалубный корабль (верх доски)
+    { id: 'ship-4-1', bow: { x: 1, y: 1 }, length: 4, horizontal: true },
+    
+    // 2 трехпалубных корабля
+    { id: 'ship-3-1', bow: { x: 1, y: 3 }, length: 3, horizontal: true },
+    { id: 'ship-3-2', bow: { x: 6, y: 1 }, length: 3, horizontal: false },
+    
+    // 3 двухпалубных корабля
+    { id: 'ship-2-1', bow: { x: 1, y: 5 }, length: 2, horizontal: true },
+    { id: 'ship-2-2', bow: { x: 4, y: 5 }, length: 2, horizontal: true },
+    { id: 'ship-2-3', bow: { x: 8, y: 1 }, length: 2, horizontal: false },
+    
+    // 4 однопалубных корабля
+    { id: 'ship-1-1', bow: { x: 1, y: 7 }, length: 1, horizontal: true },
+    { id: 'ship-1-2', bow: { x: 3, y: 7 }, length: 1, horizontal: true },
+    { id: 'ship-1-3', bow: { x: 5, y: 7 }, length: 1, horizontal: true },
+    { id: 'ship-1-4', bow: { x: 7, y: 7 }, length: 1, horizontal: true }
   ];
 }
 

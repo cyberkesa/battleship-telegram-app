@@ -10,7 +10,9 @@ import {
   applyMove,
   buildShipIndex,
   isShipSunk,
-  getPublicState
+  getPublicState,
+  getShipAdjacentCells,
+  revealAdjacentCells
 } from '../core';
 import { 
   randomFleet, 
@@ -121,7 +123,7 @@ describe('Game Logic Core', () => {
 
     test('should reject overlapping ships', () => {
       const fleet = createDefaultFleet().map((ship, i) => 
-        i === 1 ? { ...ship, bow: { x: 0, y: 0 } } : ship // Overlaps with first ship
+        i === 1 ? { ...ship, bow: { x: 1, y: 1 } } : ship // Overlaps with first ship at (1,1)
       );
       const result = validateFleet(fleet);
       expect(result.ok).toBe(false);
@@ -131,9 +133,20 @@ describe('Game Logic Core', () => {
     });
 
     test('should reject touching ships when not allowed', () => {
-      const fleet = createDefaultFleet().map((ship, i) => 
-        i === 1 ? { ...ship, bow: { x: 1, y: 0 } } : ship // Touches first ship
-      );
+      // Create a simple fleet with just 2 ships that touch each other
+      const fleet: Fleet = [
+        { id: 'ship1', bow: { x: 0, y: 0 }, length: 1, horizontal: true }, // at (0,0)
+        { id: 'ship2', bow: { x: 1, y: 0 }, length: 1, horizontal: true }, // at (1,0) - adjacent to ship1
+        // Fill out the rest to make valid composition
+        { id: 'ship3', bow: { x: 3, y: 0 }, length: 1, horizontal: true },
+        { id: 'ship4', bow: { x: 5, y: 0 }, length: 1, horizontal: true },
+        { id: 'ship5', bow: { x: 0, y: 2 }, length: 2, horizontal: true },
+        { id: 'ship6', bow: { x: 3, y: 2 }, length: 2, horizontal: true },
+        { id: 'ship7', bow: { x: 6, y: 2 }, length: 2, horizontal: true },
+        { id: 'ship8', bow: { x: 0, y: 4 }, length: 3, horizontal: true },
+        { id: 'ship9', bow: { x: 0, y: 6 }, length: 3, horizontal: true },
+        { id: 'ship10', bow: { x: 0, y: 8 }, length: 4, horizontal: true }
+      ];
       const result = validateFleet(fleet, false);
       expect(result.ok).toBe(false);
       if (!result.ok) {
@@ -142,9 +155,20 @@ describe('Game Logic Core', () => {
     });
 
     test('should allow touching ships when allowed', () => {
-      const fleet = createDefaultFleet().map((ship, i) => 
-        i === 1 ? { ...ship, bow: { x: 1, y: 0 } } : ship // Touches first ship
-      );
+      // Same touching fleet but with allowTouching=true
+      const fleet: Fleet = [
+        { id: 'ship1', bow: { x: 0, y: 0 }, length: 1, horizontal: true }, // at (0,0)
+        { id: 'ship2', bow: { x: 1, y: 0 }, length: 1, horizontal: true }, // at (1,0) - adjacent to ship1
+        // Fill out the rest to make valid composition
+        { id: 'ship3', bow: { x: 3, y: 0 }, length: 1, horizontal: true },
+        { id: 'ship4', bow: { x: 5, y: 0 }, length: 1, horizontal: true },
+        { id: 'ship5', bow: { x: 0, y: 2 }, length: 2, horizontal: true },
+        { id: 'ship6', bow: { x: 3, y: 2 }, length: 2, horizontal: true },
+        { id: 'ship7', bow: { x: 6, y: 2 }, length: 2, horizontal: true },
+        { id: 'ship8', bow: { x: 0, y: 4 }, length: 3, horizontal: true },
+        { id: 'ship9', bow: { x: 0, y: 6 }, length: 3, horizontal: true },
+        { id: 'ship10', bow: { x: 0, y: 8 }, length: 4, horizontal: true }
+      ];
       const result = validateFleet(fleet, true);
       expect(result.ok).toBe(true);
     });
@@ -237,6 +261,107 @@ describe('Game Logic Core', () => {
     });
   });
 
+  describe('Adjacent cells revelation', () => {
+    test('getShipAdjacentCells should return correct adjacent cells for horizontal ship', () => {
+      const ship: Ship = {
+        id: 'test-ship',
+        bow: { x: 2, y: 3 },
+        length: 3,
+        horizontal: true
+      };
+      
+      const adjacentCells = getShipAdjacentCells(ship);
+      
+      // Ожидаемые соседние клетки (исключая сам корабль: x2,3; x3,3; x4,3)
+      const expectedAdjacent = [
+        // Верхний ряд
+        { x: 1, y: 2 }, { x: 2, y: 2 }, { x: 3, y: 2 }, { x: 4, y: 2 }, { x: 5, y: 2 },
+        // Левая и правая стороны
+        { x: 1, y: 3 }, { x: 5, y: 3 },
+        // Нижний ряд
+        { x: 1, y: 4 }, { x: 2, y: 4 }, { x: 3, y: 4 }, { x: 4, y: 4 }, { x: 5, y: 4 }
+      ];
+      
+      expect(adjacentCells).toHaveLength(expectedAdjacent.length);
+      expectedAdjacent.forEach(coord => {
+        expect(adjacentCells).toContainEqual(coord);
+      });
+    });
+
+    test('getShipAdjacentCells should return correct adjacent cells for vertical ship', () => {
+      const ship: Ship = {
+        id: 'test-ship',
+        bow: { x: 3, y: 2 },
+        length: 3,
+        horizontal: false
+      };
+      
+      const adjacentCells = getShipAdjacentCells(ship);
+      
+      // Ожидаемые соседние клетки (исключая сам корабль: x3,2; x3,3; x3,4)
+      const expectedAdjacent = [
+        // Левый столбец
+        { x: 2, y: 1 }, { x: 2, y: 2 }, { x: 2, y: 3 }, { x: 2, y: 4 }, { x: 2, y: 5 },
+        // Верх и низ
+        { x: 3, y: 1 }, { x: 3, y: 5 },
+        // Правый столбец
+        { x: 4, y: 1 }, { x: 4, y: 2 }, { x: 4, y: 3 }, { x: 4, y: 4 }, { x: 4, y: 5 }
+      ];
+      
+      expect(adjacentCells).toHaveLength(expectedAdjacent.length);
+      expectedAdjacent.forEach(coord => {
+        expect(adjacentCells).toContainEqual(coord);
+      });
+    });
+
+    test('getShipAdjacentCells should handle edge cases correctly', () => {
+      // Корабль в углу доски
+      const cornerShip: Ship = {
+        id: 'corner-ship',
+        bow: { x: 0, y: 0 },
+        length: 1,
+        horizontal: true
+      };
+      
+      const adjacentCells = getShipAdjacentCells(cornerShip);
+      const expectedAdjacent = [
+        { x: 1, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }
+      ];
+      
+      expect(adjacentCells).toHaveLength(expectedAdjacent.length);
+      expectedAdjacent.forEach(coord => {
+        expect(adjacentCells).toContainEqual(coord);
+      });
+    });
+
+    test('revealAdjacentCells should mark adjacent cells as misses', () => {
+      const fleet = createDefaultFleet();
+      const board = makeBoard(fleet);
+      const fog = makeEmptyFog();
+      const shipIndex = buildShipIndex(fleet);
+      
+      // Берем первый корабль (4-палубный)
+      const ship = fleet[0];
+      
+      const revealedCells = revealAdjacentCells(ship, board, fog, shipIndex);
+      
+      expect(revealedCells.length).toBeGreaterThan(0);
+      
+      // Проверяем, что все открытые клетки помечены как промах
+      revealedCells.forEach(cell => {
+        const key = coordKey(cell);
+        expect(board.misses.has(key)).toBe(true);
+        expect(fog[cell.y][cell.x]).toBe(CellMark.Miss);
+      });
+      
+      // Проверяем, что в открытых клетках нет кораблей
+      revealedCells.forEach(cell => {
+        const key = coordKey(cell);
+        expect(shipIndex.has(key)).toBe(false);
+      });
+    });
+  });
+
   describe('Move application', () => {
     let match: any;
     let shipIndexA: Map<string, string>;
@@ -276,7 +401,7 @@ describe('Game Logic Core', () => {
       expect(match.currentTurn).toBe('A'); // Should keep turn due to repeatTurnOnHit
     });
 
-    test('should handle ship sinking correctly', () => {
+    test('should handle ship sinking correctly and reveal adjacent cells', () => {
       // Find a 1-length ship to sink
       const oneLengthShip = match.boardB.ships.find((s: Ship) => s.length === 1);
       const shipCell = shipCells(oneLengthShip)[0];
@@ -286,11 +411,21 @@ describe('Game Logic Core', () => {
       expect(result.kind).toBe(MoveResultKind.Sunk);
       expect(result.shipId).toBe(oneLengthShip.id);
       expect(result.sunkCoords).toEqual([shipCell]);
+      expect(result.revealedCells).toBeDefined();
+      expect(Array.isArray(result.revealedCells)).toBe(true);
       expect(match.boardB.sunkShipIds.has(oneLengthShip.id)).toBe(true);
       expect(match.fogForA[shipCell.y][shipCell.x]).toBe(CellMark.Sunk);
+      
+      // Проверяем, что соседние клетки автоматически открылись как промахи
+      if (result.revealedCells && result.revealedCells.length > 0) {
+        result.revealedCells.forEach(cell => {
+          expect(match.boardB.misses.has(coordKey(cell))).toBe(true);
+          expect(match.fogForA[cell.y][cell.x]).toBe(CellMark.Miss);
+        });
+      }
     });
 
-    test('should handle win correctly', () => {
+    test('should handle win correctly and reveal adjacent cells', () => {
       // Sink all ships except one
       const ships = match.boardB.ships;
       for (let i = 0; i < ships.length - 1; i++) {
@@ -309,6 +444,7 @@ describe('Game Logic Core', () => {
       const result = applyMove('A', lastCell, match, shipIndexA, shipIndexB);
       
       expect(result.kind).toBe(MoveResultKind.Win);
+      expect(result.revealedCells).toBeDefined();
       expect(match.status).toBe(MatchStatus.Finished);
       expect(match.winner).toBe('A');
     });

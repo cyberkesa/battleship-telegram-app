@@ -6,3 +6,6 @@ export * from './core';
 
 // Utilities
 export * from './utils';
+
+// AI opponent
+export * from './ai';
