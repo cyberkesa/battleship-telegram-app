@@ -411,16 +411,9 @@ export const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({
       return cells[y]?.[x] || 'idle';
     }
 
-    // Для режима расстановки вычисляем состояние
-    // Проверяем, есть ли корабль на этой позиции
-    const shipAtPosition = placedShips.find(ship =>
-      ship.positions.some(pos => pos.x === x && pos.y === y)
-    );
-
-    if (shipAtPosition) {
-      return 'ship';
-    }
-
+    // Для режима расстановки НЕ показываем корабли через состояние ячеек
+    // Они отображаются как абсолютно позиционированные элементы
+    
     // Проверяем, находится ли ячейка под превью корабля
     if (previewShip) {
       const isUnderPreview = previewShip.positions.some(pos => pos.x === x && pos.y === y);
@@ -430,7 +423,7 @@ export const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({
     }
 
     return 'idle';
-  }, [mode, cells, placedShips, previewShip]);
+  }, [mode, cells, previewShip]);
 
   return (
     <div 
@@ -549,7 +542,7 @@ export const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({
           return (
             <div
               key={ship.id}
-              className={`absolute bg-gradient-to-r from-game-ship/20 to-game-ship/10 outline outline-2 outline-game-ship/50 rounded-lg cursor-grab active:cursor-grabbing z-10 touch-none shadow-md hover:shadow-lg transition-all duration-200 ${draggingShip?.id === ship.id ? 'opacity-40 pointer-events-none' : ''}`}
+              className={`absolute bg-gradient-to-r from-game-ship/40 to-game-ship/20 outline outline-2 outline-game-ship/70 rounded-lg cursor-grab active:cursor-grabbing z-10 touch-none shadow-lg hover:shadow-xl transition-all duration-200 ${draggingShip?.id === ship.id ? 'opacity-40 pointer-events-none' : ''}`}
               style={{
                 boxSizing: 'border-box',
                 left: `calc(var(--pad) + ${minX} * (var(--cell) + var(--gap)))`,
