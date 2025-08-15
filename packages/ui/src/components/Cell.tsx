@@ -140,6 +140,7 @@ export const Cell: React.FC<CellProps> = ({
 
   const transitionClass = disabled ? 'transition-none' : 'transition-all duration-200';
   const fallbackPx = size === 'sm' ? 28 : size === 'lg' ? 40 : size === 'mini' ? 20 : 34;
+  const hasNoScale = className.includes('no-scale');
   const cellClassName = `
     grid place-items-center rounded-cell ${transitionClass}
     ${sizeClasses[size]}
@@ -179,8 +180,8 @@ export const Cell: React.FC<CellProps> = ({
       onMouseLeave={handleMouseUp}
       onTouchStart={handleMouseDown}
       onTouchEnd={handleMouseUp}
-      whileHover={!disabled ? { scale: 1.02 } : {}}
-      whileTap={!disabled ? { scale: 0.98 } : {}}
+      whileHover={!disabled && !hasNoScale ? { scale: 1.02 } : {}}
+      whileTap={!disabled && !hasNoScale ? { scale: 0.98 } : {}}
       animate={
         state === 'hit' || state === 'sunk' || state === 'ship-hit' || state === 'ship-sunk'
           ? 'torpedo-hit'

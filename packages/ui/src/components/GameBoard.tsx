@@ -182,6 +182,15 @@ export const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({
   const boardRef = useRef<HTMLDivElement>(null);
   const lastPointerRef = useRef<PointerEvent | null>(null);
   const longPressTimerRef = useRef<number | null>(null);
+  
+  // Флаги для предотвращения "скрытого клика после драга"
+  const justDroppedRef = useRef(false);
+  const draggingRef = useRef(false);
+  
+  // Синхронизируем флаг с состоянием драга
+  React.useEffect(() => {
+    draggingRef.current = !!draggingShip;
+  }, [draggingShip]);
 
   // Валидация размера поля в dev-режиме
   if (process.env.NODE_ENV !== 'production') {
@@ -208,10 +217,24 @@ export const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({
 
   // Обработчики для игрового режима
   const handleCellClick = useCallback((row: number, col: number) => {
+    // Игнорируем клики "после драга" и во время драга
+    if (justDroppedRef.current || draggingRef.current) return;
+    
+    if (mode === 'placement') {
+      // В режиме расстановки клик по кораблю удаляет его
+      const shipAtPosition = placedShips.find(ship =>
+        ship.positions.some(pos => pos.x === row && pos.y === col)
+      );
+      if (shipAtPosition) {
+        onShipRemove?.(shipAtPosition.id);
+        return;
+      }
+    }
+    
     if (!disabled && onCellClick) {
       onCellClick(row, col);
     }
-  }, [disabled, onCellClick]);
+  }, [disabled, onCellClick, mode, placedShips, onShipRemove]);
 
   const handleCellLongPress = useCallback((row: number, col: number) => {
     if (!disabled && onCellLongPress) {
@@ -289,6 +312,12 @@ export const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({
         onShipPlace?.(newShip);
       }
     }
+    
+    // Пометить, что был драг-дроп и возможно прилетит click
+    justDroppedRef.current = true;
+    setTimeout(() => {
+      justDroppedRef.current = false;
+    }, 80);
     
     // Очищаем состояние
     setDraggingShip(null);
@@ -439,7 +468,7 @@ export const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({
             <div
               className="grid grid-cols-10"
               style={{
-                width: `calc(${BOARD_SIZE} * var(--cell) + ${BOARD_SIZE - 1} * var(--gap))`,
+                width: `calc(10 * var(--cell) + 9 * var(--gap))`,
                 gap: 'var(--gap)',
               }}
               aria-hidden
@@ -461,7 +490,7 @@ export const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({
             <div
               className="grid grid-rows-10"
               style={{
-                height: `calc(${BOARD_SIZE} * var(--cell) + ${BOARD_SIZE - 1} * var(--gap))`,
+                height: `calc(10 * var(--cell) + 9 * var(--gap))`,
                 rowGap: 'var(--gap)',
               }}
               aria-hidden
@@ -486,17 +515,31 @@ export const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({
         role="grid"
         aria-rowcount={BOARD_SIZE}
         aria-colcount={BOARD_SIZE}
-        className="relative grid grid-cols-10 rounded-card bg-bg-graphite ring-1 ring-edge shadow-steel"
+        className="relative rounded-card bg-bg-graphite ring-1 ring-edge shadow-steel touch-none select-none"
         style={{
+          // Единый источник правды для размеров
+          ['--cell' as any]: `${cellPx}px`,
+          ['--gap' as any]: `${gapPx}px`,
+          ['--pad' as any]: `${padPx}px`,
+          display: 'grid',
+          gridTemplateColumns: 'repeat(10, var(--cell))',
+          gridAutoRows: 'var(--cell)',
           gap: 'var(--gap)',
           padding: 'var(--pad)',
-          // фиксируем высоту рядов
-          gridAutoRows: 'var(--cell)',
+          justifyContent: 'center',
+        }}
+        onClickCapture={(e) => {
+          // Перехватываем клики на уровне контейнера
+          if (draggingRef.current || justDroppedRef.current) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
         }}
         onPointerMove={handlePointerMove}
         onPointerLeave={() => {
           if (!draggingShip) setPreviewShip(null);
         }}
+        onContextMenu={(e) => e.preventDefault()}
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3, ease: "easeOut" }}
@@ -514,7 +557,7 @@ export const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({
                   onClick={() => handleCellClick(y, x)}
                   onLongPress={() => handleCellLongPress(y, x)}
                   disabled={disabled || (mode === 'placement' && !!draggingShip)}
-                  className={`${draggingShip ? 'pointer-events-none transition-none' : ''}`}
+                  className={`${draggingShip ? 'pointer-events-none transition-none' : ''} ${mode === 'placement' ? 'no-scale' : ''}`}
                 />
               );
             })}
