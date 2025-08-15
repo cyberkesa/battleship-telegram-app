@@ -39,6 +39,7 @@ export type MoveResult = {
   coord: Coord;
   shipId?: string;
   sunkCoords?: Coord[];     // клетки потопленного корабля
+  revealedCells?: Coord[];  // автоматически открытые соседние клетки при потоплении
 };
 
 export enum MatchStatus { 
