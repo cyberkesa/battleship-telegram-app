@@ -2,16 +2,18 @@ import React from 'react';
 import { motion } from 'framer-motion';
 
 export interface ShipProps {
-  size: number;
+  size: 1 | 2 | 3 | 4; // сузили тип — меньше ошибок
   isHorizontal?: boolean;
   isSelected?: boolean;
   isDragging?: boolean;
   isPlaced?: boolean;
-  color?: string;
+  color?: 'sonar' | 'radio' | 'torpedo' | 'info'; // варианты
   className?: string;
   onClick?: () => void;
-  onDragStart?: (e: React.DragEvent) => void;
-  onDragEnd?: (e: React.DragEvent) => void;
+  
+  // Pointer-подход вместо HTML5 DnD:
+  onPointerDown?: (e: React.PointerEvent) => void;
+  onPointerUp?: (e: React.PointerEvent) => void;
 }
 
 export const Ship: React.FC<ShipProps> = ({
