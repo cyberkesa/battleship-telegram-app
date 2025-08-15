@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Redis } from 'ioredis';
 import { PrismaService } from '../infra/prisma.service';
+import { createMatch as createInitialMatch } from '@battleship/game-logic';
+import { randomUUID } from 'crypto';
 
 interface JoinQueueRequest {
   mode: 'CLASSIC' | 'RAPID' | 'BLITZ';
@@ -21,7 +23,7 @@ export class MatchmakingService {
     this.redis = new Redis(process.env.REDIS_URL!);
   }
 
-  async joinQueue(userId: number, request: JoinQueueRequest): Promise<QueueResponse> {
+  async joinQueue(userId: string, request: JoinQueueRequest): Promise<QueueResponse> {
     const queueKey = `queue:${request.mode}`;
     const userKey = `user:${userId}`;
     
@@ -58,7 +60,7 @@ export class MatchmakingService {
     }
   }
 
-  async leaveQueue(userId: number, mode: string): Promise<QueueResponse> {
+  async leaveQueue(userId: string, mode: string): Promise<QueueResponse> {
     const queueKey = `queue:${mode}`;
     const userKey = `user:${userId}`;
     
@@ -80,7 +82,7 @@ export class MatchmakingService {
     }
   }
 
-  async findMatch(mode: string): Promise<{ player1: number; player2: number } | null> {
+  async findMatch(mode: string): Promise<{ player1: string; player2: string } | null> {
     const queueKey = `queue:${mode}`;
     
     try {
@@ -91,10 +93,10 @@ export class MatchmakingService {
         return null;
       }
 
-      const [player1, player2] = players.map(p => parseInt(p));
+      const [player1, player2] = players;
 
       // Remove both players from queue
-      await this.redis.zrem(queueKey, player1.toString(), player2.toString());
+      await this.redis.zrem(queueKey, player1, player2);
 
       // Clear user status
       await this.redis.del(`user:${player1}`, `user:${player2}`);
@@ -108,15 +110,20 @@ export class MatchmakingService {
     }
   }
 
-  async createMatch(player1Id: number, player2Id: number, mode: string): Promise<string> {
+  async createMatch(player1Id: string, player2Id: string, mode: string): Promise<string> {
     try {
+      const matchId = randomUUID();
+      const initialState = createInitialMatch(matchId);
+
       // Create match in database
       const match = await this.prisma.match.create({
         data: {
-          playerAId: player1Id,
-          playerBId: player2Id,
-          mode: mode as any,
-          status: 'AWAITING_SETUP',
+          id: initialState.id,
+          status: initialState.status,
+          currentTurn: initialState.currentTurn,
+          state: initialState as any,
+          playerA: { connect: { id: player1Id } },
+          playerB: { connect: { id: player2Id } },
         },
       });
 

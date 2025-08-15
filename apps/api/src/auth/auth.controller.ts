@@ -1,6 +1,7 @@
 import { Controller, Post, Body, UseGuards, Request, Get, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { TelegramAuthService } from './telegram-auth.service';
+import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -9,9 +10,9 @@ export class AuthController {
     private readonly telegramAuthService: TelegramAuthService,
   ) {}
 
-  @Post('verifyInitData')
+  @Post('telegram')
   @HttpCode(HttpStatus.OK)
-  async verifyInitData(@Body() body: { initData: string }): Promise<any> {
+  async authenticate(@Body() body: { initData: string }): Promise<any> {
     // Validate input
     if (!body.initData) {
       throw new Error('initData is required');
@@ -21,9 +22,17 @@ export class AuthController {
     const telegramData = await this.telegramAuthService.verifyInitData(body.initData);
     
     // Authenticate user
-    return this.telegramAuthService.authenticateUser(telegramData);
+    const result = await this.telegramAuthService.authenticateUser(telegramData);
+    return {
+      success: true,
+      data: {
+        token: result.sessionToken,
+        user: result.user,
+      },
+    };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('me')
   async getProfile(@Request() req: any) {
     try {
@@ -32,13 +41,10 @@ export class AuthController {
         success: true,
         data: {
           id: user.id,
-          telegramId: Number(user.telegramId),
+          telegramId: user.telegramId,
           username: user.username,
           firstName: user.firstName,
           lastName: user.lastName,
-          rating: user.rating,
-          gamesPlayed: user.gamesPlayed,
-          gamesWon: user.gamesWon,
           createdAt: user.createdAt.toISOString(),
         }
       };
