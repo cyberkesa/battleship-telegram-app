@@ -374,15 +374,18 @@ describe('Game Logic Core', () => {
       placeFleet(match, 'B', fleet);
       shipIndexA = buildShipIndex(match.boardA.ships);
       shipIndexB = buildShipIndex(match.boardB.ships);
+      // Ensure deterministic first turn for tests
+      match.currentTurn = 'A';
     });
 
     test('should handle miss correctly', () => {
-      const result = applyMove('A', { x: 5, y: 5 }, match, shipIndexA, shipIndexB);
+      // Pick a cell guaranteed to be empty in createDefaultFleet
+      const result = applyMove('A', { x: 9, y: 9 }, match, shipIndexA, shipIndexB);
       
       expect(result.kind).toBe(MoveResultKind.Miss);
-      expect(result.coord).toEqual({ x: 5, y: 5 });
-      expect(match.boardB.misses.has('5,5')).toBe(true);
-      expect(match.fogForA[5][5]).toBe(CellMark.Miss);
+      expect(result.coord).toEqual({ x: 9, y: 9 });
+      expect(match.boardB.misses.has('9,9')).toBe(true);
+      expect(match.fogForA[9][9]).toBe(CellMark.Miss);
       expect(match.currentTurn).toBe('B');
       expect(match.turnNo).toBe(2);
     });
@@ -419,7 +422,8 @@ describe('Game Logic Core', () => {
       // Проверяем, что соседние клетки автоматически открылись как промахи
       if (result.revealedCells && result.revealedCells.length > 0) {
         result.revealedCells.forEach(cell => {
-          expect(match.boardB.misses.has(coordKey(cell))).toBe(true);
+          const key = coordKey(cell);
+          expect(match.boardB.misses.has(key)).toBe(true);
           expect(match.fogForA[cell.y][cell.x]).toBe(CellMark.Miss);
         });
       }
@@ -459,9 +463,12 @@ describe('Game Logic Core', () => {
       // Fire at a cell first
       applyMove('A', { x: 0, y: 0 }, match, shipIndexA, shipIndexB);
       
-      // Try to fire at the same cell again
+      // Ensure it's still A's turn to test ALREADY_FIRED on the same target board
+      match.currentTurn = 'A';
+      
+      // Try to fire at the same cell again by the same attacker
       expect(() => {
-        applyMove('B', { x: 0, y: 0 }, match, shipIndexA, shipIndexB);
+        applyMove('A', { x: 0, y: 0 }, match, shipIndexA, shipIndexB);
       }).toThrow('Already fired at this coordinate');
     });
   });

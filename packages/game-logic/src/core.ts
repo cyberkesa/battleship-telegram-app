@@ -151,50 +151,49 @@ export function revealAdjacentCells(
 
 // Валидация флота
 export function validateFleet(fleet: Fleet, allowTouching = false): { ok: true } | { ok: false; reason: string } {
-  if (fleet.length !== 10) return { ok: false, reason: 'FLEET_SIZE' };
+	if (fleet.length !== 10) return { ok: false, reason: 'FLEET_SIZE' };
 
-  const expected = { 1: 4, 2: 3, 3: 2, 4: 1 } as Record<number, number>;
-  const byLen: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
+	const expected = { 1: 4, 2: 3, 3: 2, 4: 1 } as Record<number, number>;
+	const byLen: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
 
-  const occ = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(null as null | string));
-  const idByCell = new Map<string, string>();
+	const occ = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(null as null | string));
+	const idByCell = new Map<string, string>();
 
-  for (const sh of fleet) {
-    if (sh.length < 1 || sh.length > 4) return { ok: false, reason: 'BAD_LENGTH' };
-    const cells = shipCells(sh);
-    for (const c of cells) if (!inBounds(c)) return { ok: false, reason: 'OUT_OF_BOUNDS' };
-    // Континуальность: shipCells строит линейно — отдельная проверка не нужна, но защитимся
-    if (sh.horizontal === undefined) return { ok: false, reason: 'ORIENTATION' };
+	for (const sh of fleet) {
+		if (sh.length < 1 || sh.length > 4) return { ok: false, reason: 'BAD_LENGTH' };
+		const cells = shipCells(sh);
+		for (const c of cells) if (!inBounds(c)) return { ok: false, reason: 'OUT_OF_BOUNDS' };
+		if (sh.horizontal === undefined) return { ok: false, reason: 'ORIENTATION' };
 
-    for (const c of cells) {
-      if (occ[c.y][c.x]) return { ok: false, reason: 'OVERLAP' };
-      occ[c.y][c.x] = sh.id;
-      idByCell.set(coordKey(c), sh.id);
-    }
-    byLen[sh.length] = (byLen[sh.length] ?? 0) + 1;
-  }
+		for (const c of cells) {
+			if (occ[c.y][c.x]) return { ok: false, reason: 'OVERLAP' };
+			occ[c.y][c.x] = sh.id;
+			idByCell.set(coordKey(c), sh.id);
+		}
+		byLen[sh.length] = (byLen[sh.length] ?? 0) + 1;
+	}
 
-  // Проверка набора длин
-  for (const len of [1, 2, 3, 4]) {
-    if (byLen[len] ?? 0 !== expected[len]) return { ok: false, reason: 'WRONG_COMPOSITION' };
-  }
+	// 1) Проверка набора длин
+	for (const len of [1, 2, 3, 4]) {
+		if ((byLen[len] ?? 0) !== expected[len]) return { ok: false, reason: 'WRONG_COMPOSITION' };
+	}
 
-  // Запрет контактов (8 направлений)
-  if (!allowTouching) {
-    const dirs = [-1, 0, 1];
-    for (let y = 0; y < BOARD_SIZE; y++) for (let x = 0; x < BOARD_SIZE; x++) {
-      const id = occ[y][x]; if (!id) continue;
-      for (const dy of dirs) for (const dx of dirs) {
-        if (dx === 0 && dy === 0) continue;
-        const nx = x + dx, ny = y + dy;
-        if (nx < 0 || ny < 0 || nx >= BOARD_SIZE || ny >= BOARD_SIZE) continue;
-        const nid = occ[ny][nx];
-        if (nid && nid !== id) return { ok: false, reason: 'TOUCHING' };
-      }
-    }
-  }
+	// 2) Запрет контактов (8 направлений)
+	if (!allowTouching) {
+		const dirs = [-1, 0, 1];
+		for (let y = 0; y < BOARD_SIZE; y++) for (let x = 0; x < BOARD_SIZE; x++) {
+			const id = occ[y][x]; if (!id) continue;
+			for (const dy of dirs) for (const dx of dirs) {
+				if (dx === 0 && dy === 0) continue;
+				const nx = x + dx, ny = y + dy;
+				if (nx < 0 || ny < 0 || nx >= BOARD_SIZE || ny >= BOARD_SIZE) continue;
+				const nid = occ[ny][nx];
+				if (nid && nid !== id) return { ok: false, reason: 'TOUCHING' };
+			}
+		}
+	}
 
-  return { ok: true };
+	return { ok: true };
 }
 
 // Создание пустого тумана войны
