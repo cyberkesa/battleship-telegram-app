@@ -113,7 +113,12 @@ export class MatchmakingService {
   async createMatch(player1Id: string, player2Id: string, mode: string): Promise<string> {
     try {
       const matchId = randomUUID();
-      const initialState = createInitialMatch(matchId);
+      // const initialState = createInitialMatch(matchId);
+      const initialState = {
+        id: matchId,
+        status: 'in_progress',
+        currentTurn: 'A'
+      };
 
       // Create match in database
       const match = await this._prisma.match.create({
