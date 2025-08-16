@@ -58,14 +58,5 @@ USER nestjs
 
 EXPOSE 3000
 
-<<<<<<< Current (Your changes)
-ENV PORT 3000
-
-# Start the application
-<<<<<<< Current (Your changes)
-=======
-=======
 # Start the application (Railway will use startCommand from railway.json)
->>>>>>> Incoming (Background Agent changes)
->>>>>>> Incoming (Background Agent changes)
 CMD ["npm", "run", "start:prod"]
