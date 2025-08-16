@@ -21,7 +21,9 @@
     "clean": "turbo run clean",
     "db:generate": "cd apps/api && npm run db:generate",
     "db:migrate": "cd apps/api && npm run db:migrate",
-    "db:studio": "cd apps/api && npm run db:studio"
+    "db:studio": "cd apps/api && npm run db:studio",
+    "start:prod:migrate": "npm run -w apps/api start:prod:migrate",
+    "start:prod": "npm run -w apps/api start:prod"
   },
   "devDependencies": {
     "turbo": "^1.10.0",

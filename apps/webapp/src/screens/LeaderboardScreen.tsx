@@ -6,10 +6,7 @@ import {
   Trophy,
   Medal,
   Crown,
-  Star,
-  Flag,
-  TrendingUp,
-  Users
+  TrendingUp
 } from 'lucide-react';
 
 interface Player {

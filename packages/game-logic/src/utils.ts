@@ -39,7 +39,7 @@ function noTouch(cells: Coord[], occ: boolean[][]): boolean {
 }
 
 // Рандом-расстановка флота без касаний
-export function randomFleet(seed?: string, allowTouching = false): Fleet {
+export function randomFleet(_seed?: string, allowTouching = false): Fleet {
   // При желании используйте seedrandom(seed) для детерминизма
   const lengths = [4, 3, 3, 2, 2, 2, 1, 1, 1, 1];
   let tries = 0;

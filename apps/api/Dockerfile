@@ -7,9 +7,15 @@ FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Install dependencies based on the preferred package manager
-COPY package.json package-lock.json* ./
-RUN npm ci
+# Copy root and workspace manifests for better caching
+COPY package.json package-lock.json ./
+COPY apps/api/package.json apps/api/package.json
+COPY packages/shared-types/package.json packages/shared-types/package.json
+COPY packages/game-logic/package.json packages/game-logic/package.json
+COPY packages/contracts/package.json packages/contracts/package.json
+
+# Install dependencies (workspaces)
+RUN npm ci --ignore-scripts
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -17,34 +23,49 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Generate Prisma client
-RUN npx prisma generate
+# Build shared packages (so their dist/* is available)
+RUN npx tsc -p packages/shared-types/tsconfig.json \
+	&& npx tsc -p packages/game-logic/tsconfig.json \
+	&& npx tsc -p packages/contracts/tsconfig.json
 
-# Build the application
-RUN npm run build
+# Generate Prisma client for API schema
+RUN npx prisma generate --schema=apps/api/prisma/schema.prisma && npm rebuild
+
+# Build only the API workspace
+RUN npx tsc -p apps/api/tsconfig.json
 
 # Production image, copy all the files and run the app
 FROM base AS runner
-WORKDIR /app
+
+# Create user and set workdir to API package
+RUN addgroup --system --gid 1001 nodejs \
+	&& adduser --system --uid 1001 nestjs
+WORKDIR /app/apps/api
 
 ENV NODE_ENV production
+ENV PORT 3000
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nestjs
+# Copy built artifacts and necessary files
+COPY --from=builder /app/node_modules /app/node_modules
+COPY --from=builder /app/packages /app/packages
+COPY --from=builder /app/apps/api/dist ./dist
+COPY --from=builder /app/apps/api/package.json ./package.json
+COPY --from=builder /app/apps/api/prisma ./prisma
 
-# Copy the built application
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/prisma ./prisma
-
-# Change ownership of the app directory
+# Ownership and non-root user
 RUN chown -R nestjs:nodejs /app
 USER nestjs
 
 EXPOSE 3000
 
+<<<<<<< Current (Your changes)
 ENV PORT 3000
 
 # Start the application
+<<<<<<< Current (Your changes)
+=======
+=======
+# Start the application (Railway will use startCommand from railway.json)
+>>>>>>> Incoming (Background Agent changes)
+>>>>>>> Incoming (Background Agent changes)
 CMD ["npm", "run", "start:prod"]

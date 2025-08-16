@@ -9,7 +9,7 @@ interface AuthState {
   isLoading: boolean;
   error: string | null;
   initializeTelegram: () => Promise<void>;
-  authenticate: (initData: string) => Promise<void>;
+  authenticate: (_initData: string) => Promise<void>;
   logout: () => void;
   clearError: () => void;
 }

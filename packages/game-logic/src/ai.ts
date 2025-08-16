@@ -1,5 +1,5 @@
 import { Coord, FogOfWar, CellMark, MoveResultKind } from './types';
-import { BOARD_SIZE, inBounds, coordKey } from './core';
+import { BOARD_SIZE, inBounds } from './core';
 
 // Уровни сложности ИИ
 export enum AILevel {

@@ -5,12 +5,12 @@ import { PrismaService } from '../infra/prisma.service';
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly jwtService: JwtService,
+    private readonly _prisma: PrismaService,
+    private readonly _jwtService: JwtService,
   ) {}
 
   async validateUser(userId: string) {
-    const user = await this.prisma.user.findUnique({
+    const user = await this._prisma.user.findUnique({
       where: { id: userId },
     });
 

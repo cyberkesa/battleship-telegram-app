@@ -34,7 +34,7 @@ export const MatchmakingScreen: React.FC = () => {
   }, [currentMatch, navigate, getQueueStatus]);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
 
     if (isInQueue) {
       interval = setInterval(() => {

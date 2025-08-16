@@ -31,8 +31,8 @@ interface AuthResponse {
 @Injectable()
 export class TelegramAuthService {
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly jwtService: JwtService,
+    private readonly _prisma: PrismaService,
+    private readonly _jwtService: JwtService,
   ) {}
 
   async verifyInitData(initData: string): Promise<TelegramInitData> {
@@ -80,13 +80,13 @@ export class TelegramAuthService {
     const { user } = telegramData;
 
     // Find or create user
-    let dbUser = await this.prisma.user.findUnique({
+    let dbUser = await this._prisma.user.findUnique({
       where: { telegramId: user.id },
     });
 
     if (!dbUser) {
       // Create new user
-      dbUser = await this.prisma.user.create({
+      dbUser = await this._prisma.user.create({
         data: {
           telegramId: user.id,
           firstName: user.first_name,
@@ -96,7 +96,7 @@ export class TelegramAuthService {
       });
     } else {
       // Update existing user info
-      dbUser = await this.prisma.user.update({
+      dbUser = await this._prisma.user.update({
         where: { id: dbUser.id },
         data: {
           firstName: user.first_name,
@@ -113,7 +113,7 @@ export class TelegramAuthService {
       username: dbUser.username,
     };
 
-    const sessionToken = this.jwtService.sign(payload, {
+    const sessionToken = this._jwtService.sign(payload, {
       expiresIn: '24h',
       secret: process.env.JWT_SECRET,
     });
@@ -133,12 +133,12 @@ export class TelegramAuthService {
 
   async validateToken(token: string): Promise<any> {
     try {
-      const payload = this.jwtService.verify(token, {
+      const payload = this._jwtService.verify(token, {
         secret: process.env.JWT_SECRET,
       });
       
       // Check if user still exists
-      const user = await this.prisma.user.findUnique({
+      const user = await this._prisma.user.findUnique({
         where: { id: payload.sub },
       });
 

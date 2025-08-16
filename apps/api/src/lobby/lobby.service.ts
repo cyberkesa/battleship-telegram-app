@@ -22,13 +22,13 @@ export interface Lobby {
 
 @Injectable()
 export class LobbyService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly _prisma: PrismaService) {}
 
   async createLobby(data: { playerId: string; playerName: string; playerAvatar?: string }): Promise<Lobby> {
     const lobbyId = randomUUID();
     const inviteLink = `${process.env.FRONTEND_URL}/lobby/${lobbyId}`;
 
-    const lobby = await this.prisma.lobby.create({
+    const lobby = await this._prisma.lobby.create({
       data: {
         id: lobbyId,
         status: 'waiting',
@@ -64,7 +64,7 @@ export class LobbyService {
   }
 
   async joinLobby(data: { lobbyId: string; playerId: string; playerName: string; playerAvatar?: string }): Promise<Lobby> {
-    const lobby = await this.prisma.lobby.findUnique({
+    const lobby = await this._prisma.lobby.findUnique({
       where: { id: data.lobbyId },
       include: { players: true },
     });
@@ -85,7 +85,7 @@ export class LobbyService {
       throw new BadRequestException('Вы уже в этом лобби');
     }
 
-    const updatedLobby = await this.prisma.lobby.update({
+    const updatedLobby = await this._prisma.lobby.update({
       where: { id: data.lobbyId },
       data: {
         players: {
@@ -117,7 +117,7 @@ export class LobbyService {
   }
 
   async getLobbyStatus(lobbyId: string): Promise<Lobby> {
-    const lobby = await this.prisma.lobby.findUnique({
+    const lobby = await this._prisma.lobby.findUnique({
       where: { id: lobbyId },
       include: { players: true },
     });
@@ -143,7 +143,7 @@ export class LobbyService {
   }
 
   async setPlayerReady(lobbyId: string, playerId: string): Promise<Lobby> {
-    const lobby = await this.prisma.lobby.findUnique({
+    const lobby = await this._prisma.lobby.findUnique({
       where: { id: lobbyId },
       include: { players: true },
     });
@@ -158,13 +158,13 @@ export class LobbyService {
     }
 
     // Обновляем статус готовности игрока
-    await this.prisma.lobbyPlayer.update({
+    await this._prisma.lobbyPlayer.update({
       where: { id: player.id },
       data: { isReady: true },
     });
 
     // Проверяем, готовы ли все игроки
-    const updatedLobby = await this.prisma.lobby.findUnique({
+    const updatedLobby = await this._prisma.lobby.findUnique({
       where: { id: lobbyId },
       include: { players: true },
     });
@@ -178,7 +178,7 @@ export class LobbyService {
 
 
       // Сохраняем матч в БД
-              const savedMatch = await this.prisma.match.create({
+              const savedMatch = await this._prisma.match.create({
           data: {
             id: matchState.id,
             status: matchState.status,
@@ -190,7 +190,7 @@ export class LobbyService {
         });
 
       // Обновляем статус лобби
-      await this.prisma.lobby.update({
+      await this._prisma.lobby.update({
         where: { id: lobbyId },
         data: {
           status: 'playing',
@@ -230,7 +230,7 @@ export class LobbyService {
   }
 
   async leaveLobby(lobbyId: string, playerId: string): Promise<void> {
-    const lobby = await this.prisma.lobby.findUnique({
+    const lobby = await this._prisma.lobby.findUnique({
       where: { id: lobbyId },
       include: { players: true },
     });
@@ -245,17 +245,17 @@ export class LobbyService {
     }
 
     // Удаляем игрока из лобби
-    await this.prisma.lobbyPlayer.delete({
+    await this._prisma.lobbyPlayer.delete({
       where: { id: player.id },
     });
 
     // Если лобби пустое, удаляем его
-    const remainingPlayers = await this.prisma.lobbyPlayer.count({
+    const remainingPlayers = await this._prisma.lobbyPlayer.count({
       where: { lobbyId },
     });
 
     if (remainingPlayers === 0) {
-      await this.prisma.lobby.delete({
+      await this._prisma.lobby.delete({
         where: { id: lobbyId },
       });
     }

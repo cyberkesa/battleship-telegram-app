@@ -6,8 +6,8 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 @Controller('auth')
 export class AuthController {
   constructor(
-    private readonly authService: AuthService,
-    private readonly telegramAuthService: TelegramAuthService,
+    private readonly _authService: AuthService,
+    private readonly _telegramAuthService: TelegramAuthService,
   ) {}
 
   @Post('telegram')
@@ -19,10 +19,10 @@ export class AuthController {
     }
     
     // Verify Telegram initData
-    const telegramData = await this.telegramAuthService.verifyInitData(body.initData);
+    const telegramData = await this._telegramAuthService.verifyInitData(body.initData);
     
     // Authenticate user
-    const result = await this.telegramAuthService.authenticateUser(telegramData);
+    const result = await this._telegramAuthService.authenticateUser(telegramData);
     return {
       success: true,
       data: {
@@ -36,7 +36,7 @@ export class AuthController {
   @Get('me')
   async getProfile(@Request() req: any) {
     try {
-      const user = await this.authService.validateUser(req.user.sub);
+      const user = await this._authService.validateUser(req.user.sub);
       return {
         success: true,
         data: {

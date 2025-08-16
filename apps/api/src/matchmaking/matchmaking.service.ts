@@ -19,7 +19,7 @@ export class MatchmakingService {
   private readonly logger = new Logger(MatchmakingService.name);
   private readonly redis: Redis;
 
-  constructor(private readonly prisma: PrismaService) {
+  constructor(private readonly _prisma: PrismaService) {
     this.redis = new Redis(process.env.REDIS_URL!);
   }
 
@@ -66,7 +66,7 @@ export class MatchmakingService {
     
     try {
       // Remove from queue
-      const removed = await this.redis.zrem(queueKey, userId.toString());
+      await this.redis.zrem(queueKey, userId.toString());
       
       // Remove user status
       await this.redis.del(userKey);
@@ -116,7 +116,7 @@ export class MatchmakingService {
       const initialState = createInitialMatch(matchId);
 
       // Create match in database
-      const match = await this.prisma.match.create({
+      const match = await this._prisma.match.create({
         data: {
           id: initialState.id,
           status: initialState.status,

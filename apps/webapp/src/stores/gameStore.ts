@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { api } from '../services/api';
-import { GameStatus, Position, GameEvent } from '@battleship/shared-types';
+import { Position, GameEvent } from '@battleship/shared-types';
 
 interface GameState {
   currentMatch: any | null;
@@ -14,15 +14,15 @@ interface GameState {
   leaveQueue: () => Promise<void>;
   getQueueStatus: () => Promise<void>;
   getActiveMatch: () => Promise<void>;
-  setupBoard: (matchId: string, ships: any[]) => Promise<void>;
-  makeMove: (matchId: string, position: Position) => Promise<void>;
-  getGameState: (matchId: string) => Promise<void>;
-  addEvent: (event: GameEvent) => void;
+  setupBoard: (_matchId: string, _ships: any[]) => Promise<void>;
+  makeMove: (_matchId: string, _position: Position) => Promise<void>;
+  getGameState: (_matchId: string) => Promise<void>;
+  addEvent: (_event: GameEvent) => void;
   clearEvents: () => void;
   clearError: () => void;
 }
 
-export const useGameStore = create<GameState>((set, get) => ({
+export const useGameStore = create<GameState>((set) => ({
   currentMatch: null,
   isInQueue: false,
   isLoading: false,
@@ -125,7 +125,15 @@ export const useGameStore = create<GameState>((set, get) => ({
       const response = await api.post(`/game/${matchId}/setup`, { ships });
       
       if (response.data.success) {
-        set({ isLoading: false });
+        set({ 
+          isLoading: false,
+          currentMatch: {
+            id: response.data.data.matchId,
+            status: response.data.data.status,
+            currentTurn: response.data.data.currentTurn
+          }
+        });
+        return response.data.data.matchId; // Return the actual match ID
       } else {
         set({ 
           isLoading: false, 

@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 
 // Константы
-const PLACEMENT_SECONDS = 80;
+const PLACEMENT_SECONDS = 60;
 
 // Устойчивый UUID генератор
 const safeUUID = () => globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2);
@@ -95,7 +95,7 @@ export const SetupScreen: React.FC = () => {
     try {
       const fleetShips = randomFleet();
       
-      const shipToPositions = (ship: any): Position[] => {
+      const shipToPositions = (ship: { bow: Position; length: number; horizontal: boolean }): Position[] => {
         const positions: Position[] = [];
         for (let i = 0; i < ship.length; i++) {
           if (ship.horizontal) {
@@ -107,11 +107,11 @@ export const SetupScreen: React.FC = () => {
         return positions;
       };
       
-      const ships: PlacedShip[] = fleetShips.map((ship: any) => ({
-        id: safeUUID(), // Устойчивый UUID
+      const ships: PlacedShip[] = fleetShips.map((ship) => ({
+        id: safeUUID(),
         size: ship.length,
-        positions: shipToPositions(ship),
-        isHorizontal: ship.horizontal,
+        positions: shipToPositions(ship as any),
+        isHorizontal: (ship as any).horizontal,
       }));
       
       setPlacedShips(ships);
@@ -124,7 +124,7 @@ export const SetupScreen: React.FC = () => {
     setPlacedShips([]);
   };
 
-  const startGame = (overridePlaced?: PlacedShip[]) => {
+  const startGame = async (overridePlaced?: PlacedShip[]) => {
     if (isGameStarted) return;
 
     // Валидация флота перед стартом
@@ -132,15 +132,18 @@ export const SetupScreen: React.FC = () => {
     const fleet = toFleet(source);
     const v = validateFleet(fleet, false);
     if (!(v as any).ok) {
-      // TODO: показать тост/баннер с причиной
       console.error('Invalid fleet:', v);
       return;
     }
 
     setIsGameStarted(true);
-    // Отправляем нормализованный флот на бэкенд
-    setupBoard(gameId, fleet);
-    navigate(`/game/${gameId}`);
+    try {
+      await setupBoard(gameId, fleet);
+      navigate(`/game/${gameId}`);
+    } catch (e) {
+      console.error('Failed to setup board:', e);
+      setIsGameStarted(false);
+    }
   };
 
   const handleStartGame = () => {
@@ -150,6 +153,7 @@ export const SetupScreen: React.FC = () => {
   // Валидация для UX: кнопка активна только при валидной расстановке
   const fleetValidation = React.useMemo(() => validateFleet(toFleet(placedShips), false), [placedShips]);
   const isBoardComplete = (fleetValidation as any).ok === true;
+  const remainingShips = SHIP_TYPES.reduce((acc, t) => acc + t.count, 0) - placedShips.length;
 
   // Таймер для быстрой игры: авто-старт с автосборкой, если пользователь не успел
   useEffect(() => {
@@ -202,7 +206,7 @@ export const SetupScreen: React.FC = () => {
               {isQuickGame ? 'Быстрая игра' : 'Расстановка флота'}
             </h1>
             <p className="text-secondary text-mist truncate">
-              {isBoardComplete ? 'Флот готов' : `Разместите ${10 - placedShips.length} кораблей`}
+              {isBoardComplete ? 'Флот готов' : remainingShips > 0 ? `Разместите ${remainingShips} кораблей` : 'Проверьте корректность расположения'}
             </p>
           </div>
           <div className="flex items-center gap-2 ml-4">
@@ -260,19 +264,8 @@ export const SetupScreen: React.FC = () => {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    // Старт перетаскивания из центра поля для клавиатуры
-                    const rootEl = boardWrapperRef.current?.querySelector('div');
-                    const rect = rootEl?.getBoundingClientRect();
-                    const cx = rect ? rect.left + rect.width / 2 : 0;
-                    const cy = rect ? rect.top + rect.height / 2 : 0;
-                    const fakeEvent = new PointerEvent('pointerdown', {
-                      clientX: cx,
-                      clientY: cy,
-                      pointerId: Date.now() % 1000,
-                    });
-                    if (boardRef.current) {
-                      boardRef.current.beginNewShipDrag(ship.size, fakeEvent);
-                    }
+                    // Вместо фиктивного перетаскивания с клавиатуры — фокус на поле и подсказка про R для поворота
+                    (boardWrapperRef.current as HTMLDivElement | null)?.focus?.();
                   }
                 }}
                 onContextMenu={(e) => e.preventDefault()}
@@ -302,7 +295,7 @@ export const SetupScreen: React.FC = () => {
             ))}
           </div>
 
-          {availableShips.length === 0 && (
+          {availableShips.length === 0 && isBoardComplete && (
             <div className="text-center py-4">
               <div className="flex items-center justify-center gap-2 text-sonar mb-2">
                 <CheckCircle className="w-5 h-5" />
@@ -386,7 +379,7 @@ export const SetupScreen: React.FC = () => {
             ) : (
               <>
                 <AlertCircle className="w-4 h-4" />
-                Разместите еще {10 - placedShips.length} кораблей
+                {remainingShips > 0 ? `Разместите еще ${remainingShips} кораблей` : 'Исправьте расположение кораблей'}
               </>
             )}
           </Button>

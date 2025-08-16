@@ -1,17 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Button, Modal } from '@battleship/ui';
+import { Button } from '@battleship/ui';
 import { useAuth } from '../providers/AuthProvider';
 import { 
   UserPlus,
   Copy,
   Share,
-  Users,
   Clock,
   ArrowLeft,
   CheckCircle,
-  AlertCircle
+  Users
 } from 'lucide-react';
 
 export const CreateLobbyScreen: React.FC = () => {
@@ -19,7 +18,7 @@ export const CreateLobbyScreen: React.FC = () => {
   const { user } = useAuth();
   const [lobbyId, setLobbyId] = useState<string>('');
   const [isCreating, setIsCreating] = useState(false);
-  const [showInstructions, setShowInstructions] = useState(false);
+
   const [copied, setCopied] = useState(false);
 
   const handleCreateLobby = async () => {
@@ -54,7 +53,7 @@ export const CreateLobbyScreen: React.FC = () => {
       
       localStorage.setItem(`lobby_${newLobbyId}`, JSON.stringify(lobby));
       setLobbyId(newLobbyId);
-      setShowInstructions(true);
+
     } catch (err: any) {
       console.error('Ошибка создания лобби:', err);
     } finally {

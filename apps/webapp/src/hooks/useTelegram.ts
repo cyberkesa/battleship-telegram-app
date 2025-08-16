@@ -1,3 +1,5 @@
+/// <reference types="vite/client" />
+
 import { useEffect, useState } from 'react';
 
 interface TelegramUser {
@@ -27,14 +29,14 @@ interface TelegramWebApp {
     hide: () => void;
     enable: () => void;
     disable: () => void;
-    setText: (text: string) => void;
-    onClick: (callback: () => void) => void;
+    setText: (_text: string) => void;
+    onClick: (_callback: () => void) => void;
   };
   BackButton: {
     isVisible: boolean;
     show: () => void;
     hide: () => void;
-    onClick: (callback: () => void) => void;
+    onClick: (_callback: () => void) => void;
   };
   themeParams: {
     bg_color: string;
@@ -48,6 +50,7 @@ interface TelegramWebApp {
 }
 
 declare global {
+  // eslint-disable-next-line no-unused-vars
   interface Window {
     Telegram: {
       WebApp: TelegramWebApp;
@@ -78,11 +81,11 @@ export const useTelegram = () => {
     }
   }, []);
 
-  const showMainButton = (text: string, callback: () => void) => {
+  const showMainButton = (_text: string, _callback: () => void) => {
     if (window.Telegram?.WebApp) {
       const tg = window.Telegram.WebApp;
-      tg.MainButton.setText(text);
-      tg.MainButton.onClick(callback);
+      tg.MainButton.setText(_text);
+      tg.MainButton.onClick(_callback);
       tg.MainButton.show();
     }
   };
@@ -93,10 +96,10 @@ export const useTelegram = () => {
     }
   };
 
-  const showBackButton = (callback: () => void) => {
+  const showBackButton = (_callback: () => void) => {
     if (window.Telegram?.WebApp) {
       const tg = window.Telegram.WebApp;
-      tg.BackButton.onClick(callback);
+      tg.BackButton.onClick(_callback);
       tg.BackButton.show();
     }
   };

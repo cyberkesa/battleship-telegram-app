@@ -9,7 +9,6 @@ import {
   Play, 
   CheckCircle, 
   Clock, 
-  Users, 
   Crown,
   User,
   AlertCircle
@@ -234,7 +233,7 @@ export const LobbyScreen: React.FC = () => {
             Игроки
           </h3>
           
-          {lobby.players.map((player, index) => (
+          {lobby.players.map((player) => (
             <div
               key={player.id}
               className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-4"

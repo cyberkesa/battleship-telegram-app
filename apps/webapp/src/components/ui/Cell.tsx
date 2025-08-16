@@ -55,7 +55,7 @@ export const Cell: React.FC<CellProps> = ({
   children,
 }) => {
   const [isLongPress, setIsLongPress] = React.useState(false);
-  const longPressTimer = React.useRef<NodeJS.Timeout>();
+  const longPressTimer = React.useRef<ReturnType<typeof setTimeout>>();
 
   const handleMouseDown = () => {
     if (onLongPress) {

@@ -22,8 +22,8 @@ interface BoardProps {
   misses?: Position[];
   size?: CellSize;
   showShips?: boolean;
-  onCellClick?: (position: Position) => void;
-  onCellLongPress?: (position: Position) => void;
+  onCellClick?: (_position: Position) => void;
+  onCellLongPress?: (_position: Position) => void;
   disabled?: boolean;
   className?: string;
   title?: string;
@@ -35,8 +35,6 @@ const ROWS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
 export const Board: React.FC<BoardProps> = ({
   ships = [],
   shots = [],
-  hits = [],
-  misses = [],
   size = 'md',
   showShips = false,
   onCellClick,
@@ -46,7 +44,6 @@ export const Board: React.FC<BoardProps> = ({
   title,
 }) => {
   const getCellState = (x: number, y: number): CellState => {
-    const position = { x, y };
     
     // Check if this position was shot
     const wasShot = shots.some(shot => shot.x === x && shot.y === y);
@@ -80,15 +77,15 @@ export const Board: React.FC<BoardProps> = ({
     return 'miss';
   };
 
-  const handleCellClick = (x: number, y: number) => {
+  const handleCellClick = (_x: number, _y: number) => {
     if (!disabled && onCellClick) {
-      onCellClick({ x, y });
+      onCellClick({ x: _x, y: _y });
     }
   };
 
-  const handleCellLongPress = (x: number, y: number) => {
+  const handleCellLongPress = (_x: number, _y: number) => {
     if (!disabled && onCellLongPress) {
-      onCellLongPress({ x, y });
+      onCellLongPress({ x: _x, y: _y });
     }
   };
 

@@ -4,7 +4,76 @@ import { motion } from 'framer-motion';
 import { Button, Board } from '@battleship/ui';
 import { useGameStore } from '../stores/gameStore';
 import { useAuth } from '../providers/AuthProvider';
-import { Position, GameStatus } from '@battleship/shared-types';
+import { Position } from '@battleship/shared-types';
+import { CellState } from '@battleship/ui';
+
+// Convert fog of war to cell states
+const convertFogToCellStates = (fog: any[][]): CellState[][] => {
+  const board = Array(10).fill(null).map(() => Array(10).fill('idle'));
+  
+  for (let y = 0; y < 10; y++) {
+    for (let x = 0; x < 10; x++) {
+      const cell = fog[y][x];
+      if (cell === 'H') { // Hit
+        board[y][x] = 'hit';
+      } else if (cell === 'M') { // Miss
+        board[y][x] = 'miss';
+      } else if (cell === 'S') { // Sunk
+        board[y][x] = 'sunk';
+      }
+    }
+  }
+  
+  return board;
+};
+
+// Convert player board data to cell states
+const convertPlayerBoardToCellStates = (hits: Set<string>, misses: Set<string>, ships: any[]): CellState[][] => {
+  const board = Array(10).fill(null).map(() => Array(10).fill('idle'));
+  
+  // Mark ships
+  ships.forEach(ship => {
+    // Generate ship positions based on bow, length, and orientation
+    const positions = [];
+    for (let i = 0; i < ship.length; i++) {
+      if (ship.horizontal) {
+        positions.push({ x: ship.bow.x + i, y: ship.bow.y });
+      } else {
+        positions.push({ x: ship.bow.x, y: ship.bow.y + i });
+      }
+    }
+    
+    positions.forEach((pos: any) => {
+      board[pos.y][pos.x] = 'ship';
+    });
+  });
+  
+  // Mark hits and misses
+  hits.forEach(hitKey => {
+    const [x, y] = hitKey.split(',').map(Number);
+    board[y][x] = 'ship-hit';
+  });
+  
+  misses.forEach(missKey => {
+    const [x, y] = missKey.split(',').map(Number);
+    board[y][x] = 'miss';
+  });
+  
+  return board;
+};
+
+interface GameState {
+  id: string;
+  status: string;
+  currentTurn: string;
+  winner: string | null;
+  playerRole: string;
+  publicState: {
+    fog: any[][];
+    board: any;
+  };
+  turnNo: number;
+}
 
 export const GameScreen: React.FC = () => {
   const { matchId } = useParams<{ matchId: string }>();
@@ -18,8 +87,7 @@ export const GameScreen: React.FC = () => {
     getGameState 
   } = useGameStore();
 
-  const [playerBoard, setPlayerBoard] = useState<any>(null);
-  const [opponentBoard, setOpponentBoard] = useState<any>(null);
+  const [gameState, setGameState] = useState<GameState | null>(null);
   const [isMyTurn, setIsMyTurn] = useState(false);
 
   useEffect(() => {
@@ -30,78 +98,65 @@ export const GameScreen: React.FC = () => {
 
   useEffect(() => {
     if (currentMatch && user) {
-      // Determine if it's current user's turn
-      setIsMyTurn(currentMatch.currentTurn === user.id);
-      
-      // Set up boards (this would come from the API)
-      // For now, using placeholder data
-      setPlayerBoard({
-        id: 'player-board',
-        playerId: user.id,
-        ships: [],
-        shots: [],
-        hits: [],
-        misses: []
-      });
-      
-      setOpponentBoard({
-        id: 'opponent-board',
-        playerId: 'opponent',
-        ships: [],
-        shots: [],
-        hits: [],
-        misses: []
-      });
+      // For computer games, player is always 'A'
+      setIsMyTurn(currentMatch.currentTurn === 'A');
     }
   }, [currentMatch, user]);
+
+  // Poll for game state updates
+  useEffect(() => {
+    if (!matchId) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/game/${matchId}/state`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setGameState(data.data);
+            setIsMyTurn(data.data.currentTurn === 'A');
+          }
+        }
+      } catch (error) {
+        console.error('Failed to poll game state:', error);
+      }
+    }, 1000);
+
+    return () => clearInterval(pollInterval);
+  }, [matchId]);
 
   const handleCellClick = async (position: Position) => {
     if (!isMyTurn || !matchId) return;
 
     try {
-      const result = await makeMove(matchId, position);
-      if (result) {
-        // Update opponent board with the result
-        const newOpponentBoard = { ...opponentBoard };
-        newOpponentBoard.shots.push(position);
-        
-        if (result.hit) {
-          newOpponentBoard.hits.push(position);
-        } else {
-          newOpponentBoard.misses.push(position);
-        }
-        
-        setOpponentBoard(newOpponentBoard);
-        setIsMyTurn(false);
-      }
+      await makeMove(matchId, position);
+      // Refresh game state after move
+      setTimeout(() => {
+        getGameState(matchId);
+      }, 500);
     } catch (error) {
       console.error('Failed to make move:', error);
     }
   };
 
   const getOpponentName = () => {
-    if (!currentMatch || !user) return 'Противник';
-    
-    if (currentMatch.playerA.id === user.id) {
-      return currentMatch.playerB.firstName || 'Противник';
-    } else {
-      return currentMatch.playerA.firstName || 'Противник';
-    }
+    return 'Компьютер';
   };
 
   const getGameStatusText = () => {
-    if (!currentMatch) return 'Загрузка...';
+    if (!gameState) return 'Загрузка...';
     
-    switch (currentMatch.status) {
-      case GameStatus.SETTING_UP:
-        return 'Ожидание готовности игроков...';
-      case GameStatus.PLAYING:
-        return isMyTurn ? 'Ваш ход' : `Ход ${getOpponentName()}`;
-      case GameStatus.FINISHED:
-        return currentMatch.winner === user?.id ? 'Победа!' : 'Поражение';
-      default:
-        return 'Игра в процессе...';
+    if (gameState.status === 'finished') {
+      return gameState.winner === 'A' ? 'Победа!' : 'Поражение';
     }
+    
+    return isMyTurn ? 'Ваш ход' : 'Ход компьютера';
   };
 
   if (isLoading) {
@@ -115,7 +170,7 @@ export const GameScreen: React.FC = () => {
     );
   }
 
-  if (!currentMatch) {
+  if (!gameState) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -191,13 +246,11 @@ export const GameScreen: React.FC = () => {
               Ваше поле
             </h3>
             <div className="flex justify-center">
-              {playerBoard && (
-                <Board
-                  cells={playerBoard?.cells || []}
-                  disabled={true}
-                  size="sm"
-                />
-              )}
+              <Board
+                cells={convertPlayerBoardToCellStates(gameState.publicState.board.hits, gameState.publicState.board.misses, gameState.publicState.board.ships)}
+                disabled={true}
+                size="sm"
+              />
             </div>
           </div>
 
@@ -207,15 +260,13 @@ export const GameScreen: React.FC = () => {
               Поле противника
             </h3>
             <div className="flex justify-center">
-              {opponentBoard && (
-                <Board
-                  cells={opponentBoard?.cells || []}
-                  onCellClick={handleCellClick}
-                  disabled={!isMyTurn || currentMatch.status !== GameStatus.PLAYING}
-                  size="sm"
-                  isOpponent={true}
-                />
-              )}
+              <Board
+                cells={convertFogToCellStates(gameState.publicState.fog)}
+                onCellClick={(row, col) => handleCellClick({ x: col, y: row })}
+                disabled={!isMyTurn || gameState.status !== 'in_progress'}
+                size="sm"
+                isOpponent={true}
+              />
             </div>
           </div>
         </div>

@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { TelegramProvider } from './providers/TelegramProvider';
 import { AuthProvider } from './providers/AuthProvider';

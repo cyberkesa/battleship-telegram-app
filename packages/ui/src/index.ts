@@ -8,3 +8,4 @@ export type { PlacedShip, Position } from './components/GameBoard';
 export { Modal } from './components/Modal';
 export { RingTimer } from './components/RingTimer';
 export { LoadingScreen } from './components/LoadingScreen';
+export { LoadingSpinner } from './components/LoadingSpinner';

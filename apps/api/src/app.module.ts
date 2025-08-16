@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { AuthModule } from './auth/auth.module';
 import { MatchmakingModule } from './matchmaking/matchmaking.module';
 import { LobbyModule } from './lobby/lobby.module';
+import { GameModule } from './game/game.module';
 import { PrismaService } from './infra/prisma.service';
 
 @Module({
@@ -14,6 +15,7 @@ import { PrismaService } from './infra/prisma.service';
     AuthModule,
     MatchmakingModule,
     LobbyModule,
+    GameModule,
   ],
   controllers: [AppController],
   providers: [PrismaService],
