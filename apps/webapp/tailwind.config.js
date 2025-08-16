@@ -55,7 +55,7 @@ export default {
         },
         game: {
           water: '#0ea5e9',
-          ship: '#6366f1',
+          ship: '#4f46e5', // Более яркий индиго для лучшей видимости
           hit: '#ef4444',
           miss: '#94a3b8',
           sunk: '#dc2626',

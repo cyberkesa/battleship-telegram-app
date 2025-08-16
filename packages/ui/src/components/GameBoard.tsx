@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, forwardRef, useImperativeHandle }
 import { motion } from 'framer-motion';
 import { Cell, CellState } from './Cell';
 import { BoardSize, sizeConfig, gapPx, coordinates, BOARD_SIZE } from '../utils/boardConfig';
-import { validatePlacementAgainstFleet } from '@battleship/game-logic';
+
 
 export interface Position {
 	x: number;
@@ -287,22 +287,9 @@ export const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({...props}
 		const start = getBowFromPointer(cellPos, draggingShip);
 		const positions = generateShipPositions(start, draggingShip.size, draggingShip.isHorizontal);
 
-		// Используем центральную валидацию из game-logic
-		try {
-			const existingFleet = toFleet(placedShips);
-			const candidate = {
-				id: draggingShip.id,
-				bow: { x: start.x, y: start.y },
-				length: draggingShip.size,
-				horizontal: draggingShip.isHorizontal,
-			};
-			const validation = validatePlacementAgainstFleet(existingFleet, candidate, false, draggingShip.isMoving ? draggingShip.id : undefined);
-			setPreviewShip({ positions, isValid: validation.ok });
-		} catch {
-			// Fallback на локальную проверку, если что-то пошло не так
-			const isValid = validateShipPlacement(positions, placedShips, draggingShip.isMoving ? draggingShip.id : undefined);
-			setPreviewShip({ positions, isValid });
-		}
+		// Используем локальную валидацию
+		const isValid = validateShipPlacement(positions, placedShips, draggingShip.isMoving ? draggingShip.id : undefined);
+		setPreviewShip({ positions, isValid });
 	}, [draggingShip, placedShips, pointerId, getBowFromPointer, cellPx, gapPx, padPx, toFleet]);
 
 	const finalizeFromNativeEvent = useCallback((nativeEvent: PointerEvent) => {
@@ -596,17 +583,17 @@ export const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({...props}
                     return (
                         <div
                             key={ship.id}
-                            className={`absolute bg-gradient-to-r from-game-ship/40 to-game-ship/20 outline outline-2 outline-game-ship/70 rounded-lg cursor-grab active:cursor-grabbing z-10 touch-none ${draggingShip?.id === ship.id ? 'opacity-40 pointer-events-none' : ''}`}
+                            className={`absolute bg-gradient-to-r from-game-ship/95 to-game-ship/75 outline outline-2 outline-game-ship rounded-lg cursor-grab active:cursor-grabbing z-10 touch-none shadow-lg border border-game-ship/30 ${draggingShip?.id === ship.id ? 'opacity-40 pointer-events-none' : ''}`}
                             style={{
                                 boxSizing: 'border-box',
-                                left: `calc(var(--pad) + ${minX} * (var(--cell) + var(--gap)))`,
-                                top: `calc(var(--pad) + ${minY} * (var(--cell) + var(--gap)))`,
+                                left: `calc(var(--pad, 12px) + ${minX} * (var(--cell, 34px) + var(--gap, 2px)))`,
+                                top: `calc(var(--pad, 12px) + ${minY} * (var(--cell, 34px) + var(--gap, 2px)))`,
                                 width: ship.isHorizontal
-                                    ? `calc(${maxX - minX + 1} * var(--cell) + ${maxX - minX} * var(--gap))`
-                                    : 'var(--cell)',
+                                    ? `calc(${maxX - minX + 1} * var(--cell, 34px) + ${maxX - minX} * var(--gap, 2px))`
+                                    : 'var(--cell, 34px)',
                                 height: ship.isHorizontal
-                                    ? 'var(--cell)'
-                                    : `calc(${maxY - minY + 1} * var(--cell) + ${maxY - minY} * var(--gap))`,
+                                    ? 'var(--cell, 34px)'
+                                    : `calc(${maxY - minY + 1} * var(--cell, 34px) + ${maxY - minY} * var(--gap, 2px))`,
                             }}
                             onPointerDown={(e) => {
                                 handleShipPointerDown(ship)(e);
