@@ -1,11 +1,11 @@
 // Types
-export * from './types';
+export * from './types.js';
 
 // Core game logic
-export * from './core';
+export * from './core.js';
 
 // Utilities
-export * from './utils';
+export * from './utils.js';
 
 // AI opponent
-export * from './ai';
+export * from './ai.js';
