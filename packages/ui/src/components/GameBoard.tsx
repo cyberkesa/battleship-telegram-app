@@ -205,7 +205,7 @@ export const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({
     if (mode === 'placement') {
       // В режиме расстановки клик по кораблю удаляет его
       const shipAtPosition = placedShips.find(ship =>
-        ship.positions.some(pos => pos.x === row && pos.y === col)
+        ship.positions.some(pos => pos.x === col && pos.y === row)
       );
       if (shipAtPosition) {
         onShipRemove?.(shipAtPosition.id);
@@ -276,6 +276,11 @@ export const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({
       setDraggingShip(null);
       setPreviewShip(null);
       setPointerId(null);
+      // гарантированно очищаем таймер долгого тапа
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
       return;
     }
     
@@ -305,11 +310,21 @@ export const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({
     setDraggingShip(null);
     setPreviewShip(null);
     setPointerId(null);
+    // гарантированно очищаем таймер долгого тапа
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
   }, [draggingShip, previewShip, pointerId, onShipMove, onShipPlace]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     if (mode !== 'placement') return;
     lastPointerRef.current = e.nativeEvent;
+    // при движении отменяем таймер долгого тапа, чтобы не удалять при реальном перетаскивании
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
     updatePreviewFromNativeEvent(e.nativeEvent);
   }, [mode, updatePreviewFromNativeEvent]);
 
@@ -381,6 +396,10 @@ export const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({
       document.removeEventListener('pointermove', onMove);
       document.removeEventListener('pointerup', onUp);
       document.removeEventListener('pointercancel', onCancel);
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
     };
   }, [draggingShip, mode, updatePreviewFromNativeEvent, finalizeFromNativeEvent]);
 
@@ -506,6 +525,10 @@ export const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({
         onPointerMove={handlePointerMove}
         onPointerLeave={() => {
           if (!draggingShip) setPreviewShip(null);
+          if (longPressTimerRef.current) {
+            clearTimeout(longPressTimerRef.current);
+            longPressTimerRef.current = null;
+          }
         }}
         onContextMenu={(e) => e.preventDefault()}
         initial={{ opacity: 0, scale: 0.95 }}
@@ -556,10 +579,7 @@ export const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({
               }}
               onPointerDown={(e) => {
                 handleShipPointerDown(ship)(e);
-                // Начинаем таймер длинного тапа для удаления
-                longPressTimerRef.current = window.setTimeout(() => {
-                  onShipRemove?.(ship.id);
-                }, 550);
+                // таймер долгого тапа запускается в handleShipPointerDown, дублировать не нужно
               }}
               onPointerUp={() => {
                 if (longPressTimerRef.current) {
