@@ -122,7 +122,7 @@ export const CreateLobbyScreen: React.FC = () => {
   return (
     <div className="min-h-screen bg-bg-deep text-foam" style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
       {/* Header */}
-      <div className="bg-steel border-b border-edge/50 px-6 py-4">
+      <div className="bg-steel border-b border-edge/50 px-6 py-4" style={{ paddingTop: 'max(env(safe-area-inset-top), 12px)' }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button

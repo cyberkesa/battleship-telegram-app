@@ -182,7 +182,7 @@ export const LobbyScreen: React.FC = () => {
   return (
     <div className="min-h-screen bg-bg-deep text-foam" style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
       {/* Header */}
-      <div className="bg-steel border-b border-edge/50 px-4 py-3">
+      <div className="bg-steel border-b border-edge/50 px-4 py-4" style={{ paddingTop: 'max(env(safe-area-inset-top), 12px)' }}>
         <div className="flex items-center justify-between">
           <div className="flex-1 min-w-0">
             <h1 className="font-heading font-semibold text-h2 text-foam truncate">
@@ -204,7 +204,7 @@ export const LobbyScreen: React.FC = () => {
         </div>
       </div>
 
-      <div className="p-4 space-y-4 sm:space-y-6">
+      <div className="p-4 space-y-6 sm:space-y-8">
         {/* Status */}
         <div className="bg-bg-graphite rounded-card ring-1 ring-edge p-4">
           <div className="flex items-center justify-between">

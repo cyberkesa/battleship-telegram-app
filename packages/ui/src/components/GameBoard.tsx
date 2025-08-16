@@ -470,6 +470,8 @@ export const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({...props}
 				['--cell' as any]: adaptiveSizeConfig[size].cellPx,
 				['--gap' as any]: `${gapPx}px`,
 				['--pad' as any]: adaptiveSizeConfig[size].padPx,
+				overscrollBehaviorX: 'contain',
+				overscrollBehaviorY: 'none',
 			}}
 			onContextMenu={(e) => e.preventDefault()}
 		>
@@ -532,6 +534,9 @@ export const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({...props}
 					gap: 'var(--gap)',
 					padding: 'var(--pad)',
 					gridAutoRows: 'var(--cell)',
+					WebkitUserSelect: 'none',
+					userSelect: 'none',
+					WebkitTouchCallout: 'none',
 				}}
 				onClickCapture={(e) => {
 					// Перехватываем клики на уровне контейнера

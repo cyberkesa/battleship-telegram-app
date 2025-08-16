@@ -186,7 +186,7 @@ export const GameScreen: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-tg-bg p-4" style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-2xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-tg-text mb-2">

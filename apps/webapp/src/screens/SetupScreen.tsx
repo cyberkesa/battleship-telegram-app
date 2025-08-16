@@ -253,7 +253,7 @@ export const SetupScreen: React.FC = () => {
     // Основной контейнер с минимальной высотой экрана и темным фоном
     <div className="min-h-screen bg-bg-deep text-foam" style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
       {/* Заголовок страницы */}
-      <div className="bg-steel border-b border-edge/50 px-6 py-4">
+      <div className="bg-steel border-b border-edge/50 px-6 py-4" style={{ paddingTop: 'max(env(safe-area-inset-top), 12px)' }}>
         <div className="flex items-center justify-between">
           <div className="flex-1 min-w-0">
             {/* Динамический заголовок в зависимости от типа игры */}
@@ -292,9 +292,9 @@ export const SetupScreen: React.FC = () => {
       </div>
 
       {/* Основной контент страницы */}
-      <div className="p-6 space-y-6 sm:space-y-8">
+      <div className="p-6 space-y-8 sm:space-y-10">
         {/* Секция выбора кораблей */}
-        <div className="bg-bg-graphite rounded-card ring-1 ring-edge p-6">
+        <div className="bg-bg-graphite rounded-card ring-1 ring-edge p-6 sm:p-7">
           <h3 className="font-heading font-semibold text-h3 text-foam mb-4">
             Корабли
           </h3>
@@ -376,7 +376,7 @@ export const SetupScreen: React.FC = () => {
         </div>
 
         {/* Секция игрового поля */}
-        <div className="bg-bg-graphite rounded-card ring-1 ring-edge p-6">
+        <div className="bg-bg-graphite rounded-card ring-1 ring-edge p-6 sm:p-7">
           <h3 className="font-heading font-semibold text-h3 text-foam mb-4">
             Поле
           </h3>
