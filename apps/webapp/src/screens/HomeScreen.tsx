@@ -76,7 +76,7 @@ export const HomeScreen: React.FC = () => {
   return (
           <div className="min-h-screen bg-bg-deep text-foam" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       {/* Header */}
-      <div className="bg-steel border-b border-edge/50 px-4 py-3" style={{ paddingTop: 'max(env(safe-area-inset-top), 12px)' }}>
+      <div className="bg-steel border-b border-edge/50 px-4 py-4" style={{ paddingTop: 'max(env(safe-area-inset-top), 12px)' }}>
         <div className="flex items-center justify-between">
           <div className="flex-1 min-w-0">
             <h1 className="font-heading font-bold text-h1 text-foam truncate">
@@ -118,7 +118,7 @@ export const HomeScreen: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="p-4 pb-6 space-y-6">
+      <div className="p-4 pb-8 space-y-8">
         {/* Hero Section */}
         <div className="text-center py-8">
           <div className="mb-6 px-2">
