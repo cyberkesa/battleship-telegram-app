@@ -75,9 +75,9 @@ export const HomeScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-bg-deep text-foam">
+          <div className="min-h-screen bg-bg-deep text-foam" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       {/* Header */}
-      <div className="bg-steel border-b border-edge/50 px-4 py-3">
+      <div className="bg-steel border-b border-edge/50 px-4 py-3" style={{ paddingTop: 'max(env(safe-area-inset-top), 12px)' }}>
         <div className="flex items-center justify-between">
           <div className="flex-1 min-w-0">
             <h1 className="font-heading font-bold text-h1 text-foam truncate">
@@ -119,14 +119,14 @@ export const HomeScreen: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="p-4 space-y-6">
+      <div className="p-4 pb-6 space-y-6">
         {/* Hero Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center py-8"
         >
-          <div className="mb-6">
+          <div className="mb-6 px-2">
             <div className="w-24 h-24 bg-sonar rounded-full mx-auto mb-4 flex items-center justify-center">
               <Flag className="w-12 h-12 text-white" />
             </div>
@@ -143,7 +143,7 @@ export const HomeScreen: React.FC = () => {
             variant="primary"
             size="lg"
             onClick={handleStartGame}
-            className="flex items-center gap-2 mx-auto"
+            className="flex items-center gap-2 mx-auto w-full max-w-xs"
           >
             <Play className="w-5 h-5" />
             Начать игру
@@ -155,7 +155,7 @@ export const HomeScreen: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                     className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4"
         >
           <button
             onClick={handleLeaderboard}
@@ -203,7 +203,7 @@ export const HomeScreen: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-4"
+                     className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-4 sm:p-5"
         >
           <h3 className="font-heading font-semibold text-h3 text-foam mb-3">
             Правила игры
@@ -235,7 +235,7 @@ export const HomeScreen: React.FC = () => {
         onClose={() => setShowGameModes(false)}
         title="Выберите режим игры"
       >
-        <div className="space-y-3">
+        <div className="space-y-3 p-1">
           {GAME_MODES.map((mode) => (
             <button
               key={mode.id}
