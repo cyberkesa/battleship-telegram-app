@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Redis } from 'ioredis';
 import { PrismaService } from '../infra/prisma.service';
-import { createMatch as createInitialMatch } from '@battleship/game-logic';
+// import { createMatch as createInitialMatch } from '@battleship/game-logic';
 import { randomUUID } from 'crypto';
 
 interface JoinQueueRequest {

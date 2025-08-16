@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../infra/prisma.service';
-import { createMatch } from '@battleship/game-logic';
+// import { createMatch } from '@battleship/game-logic';
 import { randomUUID } from 'crypto';
 
 export interface LobbyPlayer {
@@ -174,7 +174,12 @@ export class LobbyService {
     if (allReady && updatedLobby.players.length === 2) {
       // Создаем матч
              const matchId = randomUUID();
-      const matchState = createMatch(matchId);
+      // const matchState = createMatch(matchId);
+      const matchState = {
+        id: matchId,
+        status: 'in_progress',
+        currentTurn: 'A'
+      };
 
 
       // Сохраняем матч в БД
