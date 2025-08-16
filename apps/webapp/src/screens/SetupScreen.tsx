@@ -55,23 +55,6 @@ export const SetupScreen: React.FC = () => {
   const isQuickGame = matchId === 'computer';
   const gameId = matchId ?? 'computer'; // Исправляем роутинг
 
-  // Таймер для быстрой игры
-  useEffect(() => {
-    if (isQuickGame && timeLeft > 0 && !isGameStarted) {
-      const timer = setInterval(() => {
-        setTimeLeft(prev => {
-          if (prev <= 1) {
-            startGame();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
-      return () => clearInterval(timer);
-    }
-  }, [timeLeft, isGameStarted, isQuickGame]);
-
   // Подсчитываем доступные корабли (оптимизировано)
   const availableShips = React.useMemo(() => {
     const available = [];
@@ -91,6 +74,7 @@ export const SetupScreen: React.FC = () => {
     return available;
   }, [placedShips]);
   const boardRef = useRef<GameBoardHandle | null>(null);
+  const boardWrapperRef = useRef<HTMLDivElement | null>(null);
 
   // Оптимизированные обработчики кораблей
   const handleShipPlace = React.useCallback((ship: PlacedShip) => {
@@ -140,12 +124,13 @@ export const SetupScreen: React.FC = () => {
     setPlacedShips([]);
   };
 
-  const startGame = () => {
+  const startGame = (overridePlaced?: PlacedShip[]) => {
     if (isGameStarted) return;
-    if (placedShips.length !== 10) return;
 
     // Валидация флота перед стартом
-    const v = validateFleet(toFleet(placedShips), false);
+    const source = overridePlaced ?? placedShips;
+    const fleet = toFleet(source);
+    const v = validateFleet(fleet, false);
     if (!(v as any).ok) {
       // TODO: показать тост/баннер с причиной
       console.error('Invalid fleet:', v);
@@ -153,7 +138,8 @@ export const SetupScreen: React.FC = () => {
     }
 
     setIsGameStarted(true);
-    setupBoard(gameId, placedShips);
+    // Отправляем нормализованный флот на бэкенд
+    setupBoard(gameId, fleet);
     navigate(`/game/${gameId}`);
   };
 
@@ -161,7 +147,50 @@ export const SetupScreen: React.FC = () => {
     startGame();
   };
 
-  const isBoardComplete = placedShips.length === 10;
+  // Валидация для UX: кнопка активна только при валидной расстановке
+  const fleetValidation = React.useMemo(() => validateFleet(toFleet(placedShips), false), [placedShips]);
+  const isBoardComplete = (fleetValidation as any).ok === true;
+
+  // Таймер для быстрой игры: авто-старт с автосборкой, если пользователь не успел
+  useEffect(() => {
+    if (!isQuickGame || isGameStarted) return;
+
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          if (!isBoardComplete) {
+            // Автосборка: генерируем и сразу запускаем без гонок состояния
+            try {
+              const fleetShips = randomFleet();
+              const ships: PlacedShip[] = fleetShips.map((ship: any) => {
+                const positions: Position[] = Array.from({ length: ship.length }, (_, i) => (
+                  ship.horizontal 
+                    ? { x: ship.bow.x + i, y: ship.bow.y } 
+                    : { x: ship.bow.x, y: ship.bow.y + i }
+                ));
+                return {
+                  id: safeUUID(),
+                  size: ship.length,
+                  positions,
+                  isHorizontal: ship.horizontal,
+                } as PlacedShip;
+              });
+              setPlacedShips(ships);
+              startGame(ships);
+            } catch (e) {
+              console.error('Failed to autogenerate fleet:', e);
+            }
+          } else {
+            startGame();
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isQuickGame, isGameStarted, isBoardComplete]);
 
   return (
     <div className="min-h-screen bg-bg-deep text-foam">
@@ -173,7 +202,7 @@ export const SetupScreen: React.FC = () => {
               {isQuickGame ? 'Быстрая игра' : 'Расстановка флота'}
             </h1>
             <p className="text-secondary text-mist truncate">
-              Разместите {10 - placedShips.length} кораблей
+              {isBoardComplete ? 'Флот готов' : `Разместите ${10 - placedShips.length} кораблей`}
             </p>
           </div>
           <div className="flex items-center gap-2 ml-4">
@@ -190,7 +219,7 @@ export const SetupScreen: React.FC = () => {
                 <div className="text-right">
                   <div className="text-caption text-mist">Время</div>
                   <div className="font-mono font-semibold text-h3 text-sonar">
-                    {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+                    —
                   </div>
                 </div>
               </>
@@ -223,19 +252,23 @@ export const SetupScreen: React.FC = () => {
                 tabIndex={0}
                 onPointerDown={(e) => {
                   e.preventDefault();
-                  e.currentTarget.setPointerCapture?.(e.pointerId);
+                  // Исключаем pointer capture — перетаскивание ведёт сам GameBoard
                   if (boardRef.current) {
-                    boardRef.current.beginNewShipDrag(ship.size, e.nativeEvent);
+                    boardRef.current.beginNewShipDrag(ship.size, e.nativeEvent as PointerEvent);
                   }
                 }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    // Симулируем pointer event для начала drag
+                    // Старт перетаскивания из центра поля для клавиатуры
+                    const rootEl = boardWrapperRef.current?.querySelector('div');
+                    const rect = rootEl?.getBoundingClientRect();
+                    const cx = rect ? rect.left + rect.width / 2 : 0;
+                    const cy = rect ? rect.top + rect.height / 2 : 0;
                     const fakeEvent = new PointerEvent('pointerdown', {
-                      clientX: 0,
-                      clientY: 0,
-                      pointerId: 1
+                      clientX: cx,
+                      clientY: cy,
+                      pointerId: Date.now() % 1000,
                     });
                     if (boardRef.current) {
                       boardRef.current.beginNewShipDrag(ship.size, fakeEvent);
@@ -244,10 +277,10 @@ export const SetupScreen: React.FC = () => {
                 }}
                 onContextMenu={(e) => e.preventDefault()}
               >
-                                  <div className="flex items-center gap-2 mb-3">
-                    <div className={`w-4 h-4 ${ship.color === 'sonar' ? 'bg-game-ship' : ship.color === 'red' ? 'bg-accent-red' : ship.color === 'blue' ? 'bg-accent-blue' : 'bg-accent-cyan'} rounded-sm flex items-center justify-center`}>
-                      <ShipIcon className="w-3 h-3 text-white" />
-                    </div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className={`w-4 h-4 ${ship.color === 'sonar' ? 'bg-game-ship' : ship.color === 'red' ? 'bg-accent-red' : ship.color === 'blue' ? 'bg-accent-blue' : 'bg-accent-cyan'} rounded-sm flex items-center justify-center`}>
+                    <ShipIcon className="w-3 h-3 text-white" />
+                  </div>
                   <div className="text-left flex-1 min-w-0">
                     <div className="font-heading font-semibold text-body text-foam truncate">
                       {ship.name}
@@ -296,7 +329,8 @@ export const SetupScreen: React.FC = () => {
           </h3>
           
           <div className="flex justify-center">
-            <GameBoard
+            <div ref={boardWrapperRef}>
+              <GameBoard
               ref={boardRef}
               mode="placement"
               placedShips={placedShips}
@@ -304,6 +338,7 @@ export const SetupScreen: React.FC = () => {
               onShipRemove={handleShipRemove}
               onShipMove={handleShipMove}
             />
+            </div>
           </div>
         </motion.div>
 
