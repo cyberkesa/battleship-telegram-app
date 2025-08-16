@@ -580,7 +580,7 @@ export const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({...props}
 					return (
 						<div
 							key={ship.id}
-							className={`absolute z-10 touch-none ${draggingShip?.id === ship.id ? 'opacity-40 pointer-events-none' : 'cursor-grab active:cursor-grabbing'}`}
+							className={`absolute z-10 touch-none transform-none transition-none ${draggingShip?.id === ship.id ? 'opacity-40 pointer-events-none' : 'cursor-grab active:cursor-grabbing'}`}
 							style={{
 								left: `calc(var(--pad, 12px) + ${minX} * (var(--cell, 34px) + var(--gap, 2px)))`,
 								top: `calc(var(--pad, 12px) + ${minY} * (var(--cell, 34px) + var(--gap, 2px)))`,
