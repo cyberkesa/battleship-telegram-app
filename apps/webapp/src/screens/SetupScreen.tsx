@@ -251,7 +251,7 @@ export const SetupScreen: React.FC = () => {
   // Рендер компонента
   return (
     // Основной контейнер с минимальной высотой экрана и темным фоном
-    <div className="min-h-screen bg-bg-deep text-foam">
+    <div className="min-h-screen bg-bg-deep text-foam" style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
       {/* Заголовок страницы */}
       <div className="bg-steel border-b border-edge/50 px-4 py-3">
         <div className="flex items-center justify-between">

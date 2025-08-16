@@ -70,13 +70,14 @@ export const Modal: React.FC<ModalProps> = ({
           {/* Modal */}
           <div
             className={`
-              relative w-full max-w-md bg-bg-graphite rounded-modal
-              ring-1 ring-edge border border-edge/50
+              relative w-full max-w-md max-h-[calc(100vh-2rem)] bg-bg-graphite rounded-modal
+              ring-1 ring-edge border border-edge/50 overflow-y-auto
               ${className}
             `}
+            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
           >
             {/* Заголовок */}
-            <div className="flex items-center justify-between p-6 pb-4 border-b border-edge/50">
+            <div className="sticky top-0 bg-bg-graphite z-10 flex items-center justify-between p-6 pb-4 border-b border-edge/50" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
               <h2 className="font-heading font-semibold text-h3 text-foam">
                 {title}
               </h2>

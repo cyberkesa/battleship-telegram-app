@@ -1,6 +1,6 @@
 import React from 'react';
 import { Cell, CellState } from './Cell';
-import { BoardSize, sizeConfig, gapPx, coordinates, BOARD_SIZE } from '../utils/boardConfig';
+import { BoardSize, adaptiveSizeConfig, gapPx, coordinates, BOARD_SIZE } from '../utils/boardConfig';
 
 interface BoardProps {
   size?: BoardSize;
@@ -23,8 +23,7 @@ export const Board: React.FC<BoardProps> = React.memo(({
   showCoordinates = true,
   isOpponent = false,
 }) => {
-  const config = sizeConfig[size];
-  const { cellPx, padPx } = config;
+  const { cellPx, padPx } = adaptiveSizeConfig[size];
 
   // Валидация размера поля в dev-режиме
   if (process.env.NODE_ENV !== 'production') {
@@ -47,12 +46,12 @@ export const Board: React.FC<BoardProps> = React.memo(({
 
   return (
     <div 
-      className={`relative ${className}`}
+      className={`relative overflow-x-auto max-w-full ${className}`}
       style={{
-        // CSS-vars — единый источник размеров
-        ['--cell' as any]: `${cellPx}px`,
+        // CSS-vars — единый источник размеров с адаптивными значениями
+        ['--cell' as any]: cellPx,
         ['--gap' as any]: `${gapPx}px`,
-        ['--pad' as any]: `${padPx}px`,
+        ['--pad' as any]: padPx,
       }}
       onContextMenu={(e) => e.preventDefault()}
     >

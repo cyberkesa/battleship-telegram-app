@@ -118,7 +118,7 @@ export const LeaderboardScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-bg-deep text-foam">
+    <div className="min-h-screen bg-bg-deep text-foam" style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
       {/* Header */}
       <div className="bg-steel border-b border-edge/50 px-4 py-3">
         <div className="flex items-center justify-between">
