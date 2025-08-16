@@ -22,7 +22,7 @@
     "db:generate": "cd apps/api && npm run db:generate",
     "db:migrate": "cd apps/api && npm run db:migrate",
     "db:studio": "cd apps/api && npm run db:studio",
-    "start:prod:migrate": "cd apps/api && npx prisma migrate deploy && node dist/apps/api/src/main.js",
+    "start:prod:migrate": "cd apps/api && npx prisma migrate deploy && node /app/apps/api/dist/apps/api/src/main.js",
     "start:prod": "npm run -w apps/api start:prod"
   },
   "devDependencies": {
