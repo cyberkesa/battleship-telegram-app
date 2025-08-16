@@ -43,6 +43,15 @@ export const LobbyScreen: React.FC = () => {
   const [isReady, setIsReady] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
 
+  const botUsername = import.meta.env.VITE_TELEGRAM_BOT_USERNAME;
+  const buildLobbyDeepLink = (id: string) => {
+    if (botUsername) {
+      const payload = `join:${id}`;
+      return `https://t.me/${botUsername}?startapp=${encodeURIComponent(payload)}`;
+    }
+    return `${window.location.origin}/lobby/${id}`;
+  };
+
   // Загружаем лобби из localStorage
   useEffect(() => {
     if (!lobbyId) {
@@ -128,10 +137,9 @@ export const LobbyScreen: React.FC = () => {
   const handleCopyInviteLink = () => {
     if (!lobbyId) return;
     
-    const inviteLink = `${window.location.origin}/lobby/${lobbyId}`;
+    const inviteLink = buildLobbyDeepLink(lobbyId);
     navigator.clipboard.writeText(inviteLink);
     
-    // Можно добавить toast уведомление
     alert('Ссылка скопирована в буфер обмена!');
   };
 

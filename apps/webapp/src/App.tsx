@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { TelegramProvider } from './providers/TelegramProvider';
 import { AuthProvider } from './providers/AuthProvider';
 import { HomeScreen } from './screens/HomeScreen';
@@ -11,11 +12,29 @@ import { ProfileScreen } from './screens/ProfileScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { LeaderboardScreen } from './screens/LeaderboardScreen';
 
+function DeepLinkHandler() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    const tg: any = (window as any).Telegram?.WebApp;
+    const startParam: string | undefined = tg?.initDataUnsafe?.start_param;
+    if (startParam) {
+      if (startParam.startsWith('join:')) {
+        const id = startParam.slice('join:'.length);
+        if (id) {
+          navigate(`/lobby/${id}`, { replace: true });
+        }
+      }
+    }
+  }, [navigate]);
+  return null;
+}
+
 function App() {
   return (
     <TelegramProvider>
       <AuthProvider>
         <BrowserRouter>
+          <DeepLinkHandler />
           <Routes>
             {/* Главная страница */}
             <Route path="/" element={<HomeScreen />} />

@@ -21,6 +21,26 @@ export const CreateLobbyScreen: React.FC = () => {
 
   const [copied, setCopied] = useState(false);
 
+  const botUsername = import.meta.env.VITE_TELEGRAM_BOT_USERNAME;
+
+  const buildLobbyDeepLink = (id: string) => {
+    if (botUsername) {
+      const payload = `join:${id}`;
+      return `https://t.me/${botUsername}?startapp=${encodeURIComponent(payload)}`;
+    }
+    return `${window.location.origin}/lobby/${id}`;
+  };
+
+  const openTelegramShare = (deepLink: string, text: string) => {
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(deepLink)}&text=${encodeURIComponent(text)}`;
+    const tg: any = (window as any).Telegram?.WebApp;
+    if (tg?.openTelegramLink) {
+      tg.openTelegramLink(shareUrl);
+      return true;
+    }
+    return false;
+  };
+
   const handleCreateLobby = async () => {
     if (!user) return;
 
@@ -62,7 +82,7 @@ export const CreateLobbyScreen: React.FC = () => {
   };
 
   const handleCopyLink = async () => {
-    const link = `${window.location.origin}/lobby/${lobbyId}`;
+    const link = buildLobbyDeepLink(lobbyId);
     try {
       await navigator.clipboard.writeText(link);
       setCopied(true);
@@ -73,19 +93,22 @@ export const CreateLobbyScreen: React.FC = () => {
   };
 
   const handleShare = async () => {
-    const link = `${window.location.origin}/lobby/${lobbyId}`;
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Присоединяйся к игре Морской бой',
-          text: 'Приглашаю тебя сыграть в Морской бой!',
-          url: link
-        });
-      } catch (err) {
-        console.error('Ошибка шаринга:', err);
+    const deepLink = buildLobbyDeepLink(lobbyId);
+    const text = 'Приглашаю тебя сыграть в Морской бой!';
+    if (!openTelegramShare(deepLink, text)) {
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: 'Присоединяйся к игре Морской бой',
+            text,
+            url: deepLink
+          });
+        } catch (err) {
+          console.error('Ошибка шаринга:', err);
+        }
+      } else {
+        handleCopyLink();
       }
-    } else {
-      handleCopyLink();
     }
   };
 

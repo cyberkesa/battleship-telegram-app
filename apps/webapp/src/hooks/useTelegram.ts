@@ -15,6 +15,7 @@ interface TelegramWebApp {
   initDataUnsafe: {
     user?: TelegramUser;
     query_id?: string;
+    start_param?: string;
   };
   ready: () => void;
   expand: () => void;
@@ -47,6 +48,8 @@ interface TelegramWebApp {
     button_text_color: string;
     secondary_bg_color: string;
   };
+  openTelegramLink?: (url: string) => void;
+  openLink?: (url: string, options?: { try_instant_view?: boolean }) => void;
 }
 
 declare global {
@@ -62,6 +65,7 @@ export const useTelegram = () => {
   const [user, setUser] = useState<TelegramUser | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [initData, setInitData] = useState<string>('');
+  const [startParam, setStartParam] = useState<string>('');
 
   useEffect(() => {
     if (window.Telegram?.WebApp) {
@@ -77,6 +81,9 @@ export const useTelegram = () => {
       }
       
       setInitData(tg.initData);
+      if (tg.initDataUnsafe.start_param) {
+        setStartParam(tg.initDataUnsafe.start_param);
+      }
       setIsReady(true);
     }
   }, []);
@@ -120,6 +127,7 @@ export const useTelegram = () => {
     user,
     isReady,
     initData,
+    startParam,
     showMainButton,
     hideMainButton,
     showBackButton,
