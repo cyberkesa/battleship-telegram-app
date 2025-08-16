@@ -8,6 +8,14 @@ export const sizeConfig = {
   mini: { cellPx: 20, padPx: 6 },
 } as const;
 
+// Адаптивные CSS значения для использования в стилях
+export const adaptiveSizeConfig = {
+  sm: { cellPx: 'min(6vw, 28px)', padPx: 'min(2vw, 8px)' },
+  md: { cellPx: 'min(7vw, 34px)', padPx: 'min(3vw, 12px)' },
+  lg: { cellPx: 'min(8vw, 40px)', padPx: 'min(3vw, 12px)' },
+  mini: { cellPx: 'min(4vw, 20px)', padPx: 'min(1.5vw, 6px)' },
+} as const;
+
 export const gapPx = 2;
 
 // Координаты для поля 10x10

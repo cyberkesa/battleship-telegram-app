@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 	import { Cell, CellState } from './Cell';
 	import { Ship } from './Ship';
-	import { BoardSize, sizeConfig, gapPx, coordinates, BOARD_SIZE } from '../utils/boardConfig';
+	import { BoardSize, sizeConfig, adaptiveSizeConfig, gapPx, coordinates, BOARD_SIZE } from '../utils/boardConfig';
 
 
 export interface Position {
@@ -464,12 +464,12 @@ export const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({...props}
 
 	return (
 		<div 
-			className={`relative ${className}`}
+			className={`relative overflow-x-auto max-w-full ${className}`}
 			style={{
-				// CSS-vars — единый источник размеров
-				['--cell' as any]: `${cellPx}px`,
+				// CSS-vars — единый источник размеров с адаптивными значениями
+				['--cell' as any]: adaptiveSizeConfig[size].cellPx,
 				['--gap' as any]: `${gapPx}px`,
-				['--pad' as any]: `${padPx}px`,
+				['--pad' as any]: adaptiveSizeConfig[size].padPx,
 			}}
 			onContextMenu={(e) => e.preventDefault()}
 		>
@@ -624,7 +624,7 @@ export const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({...props}
 										return (
 											<div
 												key={`${pos.x}-${pos.y}`}
-												className={`w-[var(--cell)] h-[var(--cell)] bg-game-ship shadow-lg ring-1 ring-inset ring-black/10 ${rounded}`}
+												className={`w-[var(--cell)] h-[var(--cell)] bg-gradient-to-br from-game-ship to-game-ship/80 shadow-lg ring-2 ring-inset ring-game-ship/50 border border-game-ship/30 ${rounded}`}
 											/>
 										);
 									})}
