@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 
 export type CellState = 
   | 'idle' 
@@ -36,12 +35,12 @@ const sizeClasses = {
 };
 
 const stateClasses = {
-  idle: 'bg-game-water/20 ring-1 ring-border-light hover:ring-primary-400 hover:bg-game-water/30 transition-all duration-200',
-  hover: 'bg-primary-100 ring-2 ring-primary-400 shadow-game-glow',
-  selected: 'bg-primary-200 ring-2 ring-primary-500 shadow-lg',
+  idle: 'bg-game-water/20 ring-1 ring-border-light hover:ring-primary-400 hover:bg-game-water/30 transition-colors duration-150',
+  hover: 'bg-primary-100 ring-2 ring-primary-400',
+  selected: 'bg-primary-200 ring-2 ring-primary-500',
   miss: 'bg-game-miss/30 ring-1 ring-border-medium',
-  hit: 'bg-game-hit ring-1 ring-game-hit shadow-game-hit',
-  sunk: 'bg-game-sunk ring-1 ring-game-sunk shadow-game-hit',
+  hit: 'bg-game-hit ring-1 ring-game-hit',
+  sunk: 'bg-game-sunk ring-1 ring-game-sunk',
   disabled: 'bg-secondary-100/50 ring-1 ring-border-light/50 cursor-not-allowed',
   ship: 'bg-game-ship/20 ring-1 ring-game-ship/50',
   'ship-hit': 'bg-game-hit/60 ring-1 ring-game-hit',
@@ -89,26 +88,20 @@ export const Cell: React.FC<CellProps> = ({
     switch (state) {
       case 'miss':
         return (
-          <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
+          <div
             className="w-2 h-2 bg-game-miss rounded-full animate-miss-ripple"
           />
         );
       case 'hit':
         return (
-          <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
+          <div
             className="w-4 h-4 bg-white transform rotate-45 animate-hit-explosion"
             style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }}
           />
         );
       case 'sunk':
         return (
-          <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
+          <div
             className="w-4 h-4 bg-white transform rotate-45 animate-hit-explosion"
             style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }}
           />
@@ -119,18 +112,14 @@ export const Cell: React.FC<CellProps> = ({
         );
       case 'ship-hit':
         return (
-          <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
+          <div
             className="w-4 h-4 bg-white transform rotate-45 animate-hit-explosion"
             style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }}
           />
         );
       case 'ship-sunk':
         return (
-          <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
+          <div
             className="w-4 h-4 bg-white transform rotate-45 animate-hit-explosion"
             style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }}
           />
@@ -140,7 +129,7 @@ export const Cell: React.FC<CellProps> = ({
     }
   };
 
-  const transitionClass = disabled ? 'transition-none' : 'transition-all duration-200';
+  const transitionClass = disabled ? 'transition-none' : 'transition-colors duration-150';
   const fallbackPx = size === 'sm' ? 28 : size === 'lg' ? 40 : size === 'mini' ? 20 : 34;
   const hasNoScale = className.includes('no-scale');
   const cellClassName = `
@@ -173,7 +162,7 @@ export const Cell: React.FC<CellProps> = ({
 
   // Иначе используем motion.div для анимаций
   return (
-    <motion.div
+    <div
       className={cellClassName}
       style={{ width: `var(--cell, ${fallbackPx}px)`, height: `var(--cell, ${fallbackPx}px)` }}
       onClick={handleClick}
@@ -182,29 +171,8 @@ export const Cell: React.FC<CellProps> = ({
       onMouseLeave={handleMouseUp}
       onTouchStart={handleMouseDown}
       onTouchEnd={handleMouseUp}
-      whileHover={!disabled && !hasNoScale ? { scale: 1.05, y: -1 } : {}}
-      whileTap={!disabled && !hasNoScale ? { scale: 0.95 } : {}}
-      animate={
-        state === 'hit' || state === 'sunk' || state === 'ship-hit' || state === 'ship-sunk'
-          ? 'hit-explosion'
-          : state === 'miss'
-          ? 'miss-ripple'
-          : {}
-      }
-      variants={{
-        'hit-explosion': {
-          scale: [1, 1.3, 1],
-          rotate: [0, 360],
-          transition: { duration: 0.4, ease: "easeOut" }
-        },
-        'miss-ripple': {
-          scale: [0, 1.2, 1],
-          opacity: [0, 0.6, 1],
-          transition: { duration: 0.3, ease: "easeOut" }
-        }
-      }}
     >
       {getCellContent()}
-    </motion.div>
+    </div>
   );
 };

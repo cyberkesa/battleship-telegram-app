@@ -538,101 +538,98 @@ export const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({...props}
 			)}
 
 			{/* Основная сетка */}
-			<motion.div
-				ref={boardRef}
-				role="grid"
-				aria-rowcount={BOARD_SIZE}
-				aria-colcount={BOARD_SIZE}
-				className="relative grid grid-cols-10 rounded-2xl bg-gradient-to-br from-game-water/10 to-game-water/5 ring-1 ring-border-light shadow-xl touch-none select-none backdrop-blur-sm"
-				style={{
-					gap: 'var(--gap)',
-					padding: 'var(--pad)',
-					gridAutoRows: 'var(--cell)',
-				}}
-				onClickCapture={(e) => {
-					// Перехватываем клики на уровне контейнера
-					if (draggingRef.current || justDroppedRef.current) {
-						e.preventDefault();
-						e.stopPropagation();
-					}
-				}}
-				onPointerMove={handlePointerMove}
-				onPointerLeave={() => {
-					if (!draggingShip) setPreviewShip(null);
-					if (longPressTimerRef.current) {
-						clearTimeout(longPressTimerRef.current);
-						longPressTimerRef.current = null;
-					}
-				}}
-				onContextMenu={(e) => e.preventDefault()}
-				initial={{ opacity: 0, scale: 0.95 }}
-				animate={{ opacity: 1, scale: 1 }}
-				transition={{ duration: 0.3, ease: "easeOut" }}
-			>
-				{/* Ячейки сетки */}
-				{Array.from({ length: BOARD_SIZE }, (_, y) => (
-					<React.Fragment key={y}>
-						{Array.from({ length: BOARD_SIZE }, (_, x) => {
-							const cellState = getCellState(x, y);
-							return (
-								<Cell
-									key={`${x}-${y}`}
-									state={cellState}
-									size={size}
-									onClick={() => handleCellClick(y, x)}
-									onLongPress={() => handleCellLongPress(y, x)}
-									disabled={disabled || (mode === 'placement' && !!draggingShip)}
-									className={`${draggingShip ? 'pointer-events-none transition-none' : ''} ${mode === 'placement' ? 'no-scale' : ''}`}
-								/>
-							);
-						})}
-					</React.Fragment>
-				))}
+			<div
+                ref={boardRef}
+                role="grid"
+                aria-rowcount={BOARD_SIZE}
+                aria-colcount={BOARD_SIZE}
+                className="relative grid grid-cols-10 rounded-2xl bg-gradient-to-br from-game-water/10 to-game-water/5 ring-1 ring-border-light touch-none select-none"
+                style={{
+                    gap: 'var(--gap)',
+                    padding: 'var(--pad)',
+                    gridAutoRows: 'var(--cell)',
+                }}
+                onClickCapture={(e) => {
+                    // Перехватываем клики на уровне контейнера
+                    if (draggingRef.current || justDroppedRef.current) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+                }}
+                onPointerMove={handlePointerMove}
+                onPointerLeave={() => {
+                    if (!draggingShip) setPreviewShip(null);
+                    if (longPressTimerRef.current) {
+                        clearTimeout(longPressTimerRef.current);
+                        longPressTimerRef.current = null;
+                    }
+                }}
+                onContextMenu={(e) => e.preventDefault()}
+            >
+                {/* Ячейки сетки */}
+                {Array.from({ length: BOARD_SIZE }, (_, y) => (
+                    <React.Fragment key={y}>
+                        {Array.from({ length: BOARD_SIZE }, (_, x) => {
+                            const cellState = getCellState(x, y);
+                            return (
+                                <Cell
+                                    key={`${x}-${y}`}
+                                    state={cellState}
+                                    size={size}
+                                    onClick={() => handleCellClick(y, x)}
+                                    onLongPress={() => handleCellLongPress(y, x)}
+                                    disabled={disabled || (mode === 'placement' && !!draggingShip)}
+                                    className={`${draggingShip ? 'pointer-events-none transition-none' : ''} ${mode === 'placement' ? 'no-scale' : ''}`}
+                                />
+                            );
+                        })}
+                    </React.Fragment>
+                ))}
 
-				{/* Абсолютно позиционированные корабли (только в режиме расстановки) */}
-				{mode === 'placement' && placedShips.map((ship) => {
-					const minX = Math.min(...ship.positions.map(p => p.x));
-					const minY = Math.min(...ship.positions.map(p => p.y));
-					const maxX = Math.max(...ship.positions.map(p => p.x));
-					const maxY = Math.max(...ship.positions.map(p => p.y));
-					
-					return (
-						<div
-							key={ship.id}
-							className={`absolute bg-gradient-to-r from-game-ship/40 to-game-ship/20 outline outline-2 outline-game-ship/70 rounded-lg cursor-grab active:cursor-grabbing z-10 touch-none shadow-lg hover:shadow-xl transition-all duration-200 ${draggingShip?.id === ship.id ? 'opacity-40 pointer-events-none' : ''}`}
-							style={{
-								boxSizing: 'border-box',
-								left: `calc(var(--pad) + ${minX} * (var(--cell) + var(--gap)))`,
-								top: `calc(var(--pad) + ${minY} * (var(--cell) + var(--gap)))`,
-								width: ship.isHorizontal
-									? `calc(${maxX - minX + 1} * var(--cell) + ${maxX - minX} * var(--gap))`
-									: 'var(--cell)',
-								height: ship.isHorizontal
-									? 'var(--cell)'
-									: `calc(${maxY - minY + 1} * var(--cell) + ${maxY - minY} * var(--gap))`,
-							}}
-							onPointerDown={(e) => {
-								handleShipPointerDown(ship)(e);
-								// таймер долгого тапа запускается в handleShipPointerDown, дублировать не нужно
-							}}
-							onPointerUp={() => {
-								if (longPressTimerRef.current) {
-									clearTimeout(longPressTimerRef.current);
-									longPressTimerRef.current = null;
-								}
-							}}
-							onPointerLeave={() => {
-								if (longPressTimerRef.current) {
-									clearTimeout(longPressTimerRef.current);
-									longPressTimerRef.current = null;
-								}
-							}}
-							onDoubleClick={() => onShipRemove?.(ship.id)}
-							onContextMenu={(e) => { e.preventDefault(); }}
-						/>
-					);
-				})}
-			</motion.div>
+                {/* Абсолютно позиционированные корабли (только в режиме расстановки) */}
+                {mode === 'placement' && placedShips.map((ship) => {
+                    const minX = Math.min(...ship.positions.map(p => p.x));
+                    const minY = Math.min(...ship.positions.map(p => p.y));
+                    const maxX = Math.max(...ship.positions.map(p => p.x));
+                    const maxY = Math.max(...ship.positions.map(p => p.y));
+                    
+                    return (
+                        <div
+                            key={ship.id}
+                            className={`absolute bg-gradient-to-r from-game-ship/40 to-game-ship/20 outline outline-2 outline-game-ship/70 rounded-lg cursor-grab active:cursor-grabbing z-10 touch-none ${draggingShip?.id === ship.id ? 'opacity-40 pointer-events-none' : ''}`}
+                            style={{
+                                boxSizing: 'border-box',
+                                left: `calc(var(--pad) + ${minX} * (var(--cell) + var(--gap)))`,
+                                top: `calc(var(--pad) + ${minY} * (var(--cell) + var(--gap)))`,
+                                width: ship.isHorizontal
+                                    ? `calc(${maxX - minX + 1} * var(--cell) + ${maxX - minX} * var(--gap))`
+                                    : 'var(--cell)',
+                                height: ship.isHorizontal
+                                    ? 'var(--cell)'
+                                    : `calc(${maxY - minY + 1} * var(--cell) + ${maxY - minY} * var(--gap))`,
+                            }}
+                            onPointerDown={(e) => {
+                                handleShipPointerDown(ship)(e);
+                                // таймер долгого тапа запускается в handleShipPointerDown, дублировать не нужно
+                            }}
+                            onPointerUp={() => {
+                                if (longPressTimerRef.current) {
+                                    clearTimeout(longPressTimerRef.current);
+                                    longPressTimerRef.current = null;
+                                }
+                            }}
+                            onPointerLeave={() => {
+                                if (longPressTimerRef.current) {
+                                    clearTimeout(longPressTimerRef.current);
+                                    longPressTimerRef.current = null;
+                                }
+                            }}
+                            onDoubleClick={() => onShipRemove?.(ship.id)}
+                            onContextMenu={(e) => { e.preventDefault(); }}
+                        />
+                    );
+                })}
+            </div>
 
 			{/* Рамка противника — ниже координат, но поверх поля */}
 			{isOpponent && (

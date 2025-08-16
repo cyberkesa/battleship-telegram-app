@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { Button, GameBoard, PlacedShip, Position, GameBoardHandle, Ship, RingTimer } from '@battleship/ui';
 import { useGameStore } from '../stores/gameStore';
 import { useAuth } from '../providers/AuthProvider';
@@ -236,11 +235,7 @@ export const SetupScreen: React.FC = () => {
 
       <div className="p-4 space-y-4 sm:space-y-6">
         {/* Ship selection */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-4"
-        >
+        <div className="bg-bg-graphite rounded-card ring-1 ring-edge p-4">
           <h3 className="font-heading font-semibold text-h3 text-foam mb-4">
             Корабли
           </h3>
@@ -310,15 +305,10 @@ export const SetupScreen: React.FC = () => {
               </p>
             </div>
           )}
-        </motion.div>
+        </div>
 
         {/* Game board */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-4"
-        >
+        <div className="bg-bg-graphite rounded-card ring-1 ring-edge p-4">
           <h3 className="font-heading font-semibold text-h3 text-foam mb-4">
             Поле
           </h3>
@@ -335,15 +325,10 @@ export const SetupScreen: React.FC = () => {
             />
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Actions */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="space-y-3"
-        >
+        <div className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Button
               variant="secondary"
@@ -385,7 +370,7 @@ export const SetupScreen: React.FC = () => {
               </>
             )}
           </Button>
-        </motion.div>
+        </div>
       </div>
     </div>
   );

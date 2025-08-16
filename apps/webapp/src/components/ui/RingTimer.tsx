@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 
 interface RingTimerProps {
   timeLeft: number; // seconds
@@ -24,35 +23,35 @@ export const RingTimer: React.FC<RingTimerProps> = ({
 
   // Color based on time remaining
   const getStrokeColor = () => {
-    if (progress > 0.5) return '#00E08C'; // sonar
-    if (progress > 0.2) return '#FFC857'; // amber
-    return '#FF3B3B'; // torpedo
+    if (progress > 0.5) return '#2563EB'; // sonar -> blue
+    if (progress > 0.2) return '#F59E0B'; // amber
+    return '#DC2626'; // torpedo red
   };
 
   const strokeColor = getStrokeColor();
 
   return (
-    <motion.div
+    <div
       className={`relative ${className}`}
       style={{ width: size, height: size }}
     >
       <svg
         width={size}
         height={size}
-        className="transform -rotate-90"
+        className="-rotate-90"
       >
         {/* Background circle */}
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="#273140"
+          stroke="#E2E8F0"
           strokeWidth={strokeWidth}
           fill="transparent"
         />
         
         {/* Progress circle */}
-        <motion.circle
+        <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
@@ -61,9 +60,7 @@ export const RingTimer: React.FC<RingTimerProps> = ({
           fill="transparent"
           strokeLinecap="round"
           strokeDasharray={strokeDasharray}
-          initial={{ strokeDashoffset: circumference }}
-          animate={{ strokeDashoffset }}
-          transition={{ duration: 0.1, ease: 'linear' }}
+          style={{ transition: 'stroke-dashoffset 100ms linear', strokeDashoffset }}
         />
       </svg>
       
@@ -73,23 +70,6 @@ export const RingTimer: React.FC<RingTimerProps> = ({
           {Math.ceil(timeLeft)}
         </span>
       </div>
-      
-      {/* Warning pulse animation */}
-      {progress <= 0.2 && (
-        <motion.div
-          className="absolute inset-0 rounded-full"
-          style={{ border: `2px solid ${strokeColor}` }}
-          animate={{ 
-            scale: [1, 1.1, 1],
-            opacity: [0.3, 0.8, 0.3]
-          }}
-          transition={{ 
-            duration: 1,
-            repeat: Infinity,
-            ease: 'easeInOut'
-          }}
-        />
-      )}
-    </motion.div>
+    </div>
   );
 };

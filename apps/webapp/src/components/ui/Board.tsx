@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { Cell, CellState, CellSize } from './Cell';
 
 interface Position {
@@ -90,12 +89,7 @@ export const Board: React.FC<BoardProps> = ({
   };
 
   return (
-    <motion.div
-      className={`inline-block ${className}`}
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.3 }}
-    >
+    <div className={`inline-block ${className}`}>
       {title && (
         <div className="text-center mb-3">
           <h3 className="text-foam font-sans font-semibold text-lg">{title}</h3>
@@ -136,6 +130,6 @@ export const Board: React.FC<BoardProps> = ({
           ))}
         </div>
       ))}
-    </motion.div>
+    </div>
   );
 };

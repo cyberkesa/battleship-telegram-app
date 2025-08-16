@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { Button } from './Button';
 
@@ -59,32 +58,22 @@ export const Modal: React.FC<ModalProps> = ({
   };
 
   return (
-    <AnimatePresence>
+    <>
       {isOpen && (
-        <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-        >
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Backdrop */}
           <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/30"
             onClick={handleBackdropClick}
           />
-
+ 
           {/* Modal */}
-          <motion.div
+          <div
             className={`
               relative w-full max-w-md bg-bg-graphite rounded-modal
-              ring-1 ring-edge shadow-steel border border-edge/50
+              ring-1 ring-edge border border-edge/50
               ${className}
             `}
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
           >
             {/* Заголовок */}
             <div className="flex items-center justify-between p-6 pb-4 border-b border-edge/50">
@@ -130,9 +119,9 @@ export const Modal: React.FC<ModalProps> = ({
                 )}
               </div>
             )}
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       )}
-    </AnimatePresence>
+    </>
   );
 };

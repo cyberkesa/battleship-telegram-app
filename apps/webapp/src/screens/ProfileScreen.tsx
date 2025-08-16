@@ -1,6 +1,5 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { useAuth } from '../providers/AuthProvider';
 import { 
   ArrowLeft,
@@ -60,11 +59,7 @@ export const ProfileScreen: React.FC = () => {
 
       <div className="p-4 space-y-6">
         {/* Profile Info */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-4"
-        >
+        <div className="bg-bg-graphite rounded-card ring-1 ring-edge p-4">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 bg-sonar rounded-full flex items-center justify-center">
               <User className="w-8 h-8 text-white" />
@@ -84,16 +79,11 @@ export const ProfileScreen: React.FC = () => {
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Main Stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="grid grid-cols-2 gap-4"
-        >
-          <div className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-bg-graphite rounded-card ring-1 ring-edge p-4">
             <div className="flex items-center gap-2 mb-2">
               <Trophy className="w-5 h-5 text-sonar" />
               <span className="font-heading font-semibold text-body text-foam">
@@ -108,7 +98,7 @@ export const ProfileScreen: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-4">
+          <div className="bg-bg-graphite rounded-card ring-1 ring-edge p-4">
             <div className="flex items-center gap-2 mb-2">
               <Target className="w-5 h-5 text-torpedo" />
               <span className="font-heading font-semibold text-body text-foam">
@@ -122,15 +112,10 @@ export const ProfileScreen: React.FC = () => {
               успешность
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Detailed Stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-4"
-        >
+        <div className="bg-bg-graphite rounded-card ring-1 ring-edge p-4">
           <h3 className="font-heading font-semibold text-h3 text-foam mb-4">
             Детальная статистика
           </h3>
@@ -176,15 +161,10 @@ export const ProfileScreen: React.FC = () => {
               </span>
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Achievements */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-4"
-        >
+        <div className="bg-bg-graphite rounded-card ring-1 ring-edge p-4">
           <h3 className="font-heading font-semibold text-h3 text-foam mb-4">
             Достижения
           </h3>
@@ -238,7 +218,7 @@ export const ProfileScreen: React.FC = () => {
               </p>
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
     </div>
   );

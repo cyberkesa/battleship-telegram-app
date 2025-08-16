@@ -7,9 +7,9 @@
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: dark light;
-  color: var(--tg-theme-text-color, #E6EEF7);
-  background-color: var(--tg-theme-bg-color, #0B0F14);
+  color-scheme: light;
+  color: var(--tg-theme-text-color, #0F172A);
+  background-color: var(--tg-theme-bg-color, #FFFFFF);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -26,7 +26,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: linear-gradient(180deg, #0B0F14 0%, #121821 100%);
+  background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
 }
 
 #root {
@@ -47,14 +47,14 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--tg-theme-secondary-bg-color, #111820);
+  background: var(--tg-theme-secondary-bg-color, #F1F5F9);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--tg-theme-hint-color, #93A3B3);
+  background: var(--tg-theme-hint-color, #94A3B8);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--tg-theme-text-color, #E6EEF7);
+  background: var(--tg-theme-text-color, #0F172A);
 }

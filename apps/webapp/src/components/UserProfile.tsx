@@ -21,7 +21,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onLogout }) => {
   const winRate = user.gamesPlayed > 0 ? ((user.gamesWon / user.gamesPlayed) * 100).toFixed(1) : '0.0';
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
       <div className="flex items-center space-x-4 mb-6">
         <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
           {user.firstName.charAt(0).toUpperCase()}

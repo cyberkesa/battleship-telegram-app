@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 
 interface TurnBadgeProps {
   isMyTurn: boolean;
@@ -13,7 +12,7 @@ export const TurnBadge: React.FC<TurnBadgeProps> = ({
   className = '',
 }) => {
   return (
-    <motion.div
+    <div
       className={`
         flex items-center gap-2 px-3 py-2 rounded-lg
         ${isMyTurn 
@@ -22,25 +21,13 @@ export const TurnBadge: React.FC<TurnBadgeProps> = ({
         }
         ${className}
       `}
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
     >
-      {/* Pulse indicator */}
-      <motion.div
+      {/* Indicator */}
+      <div
         className={`
           w-2 h-2 rounded-full
           ${isMyTurn ? 'bg-sonar' : 'bg-mute'}
         `}
-        animate={isMyTurn ? {
-          scale: [1, 1.2, 1],
-          opacity: [0.5, 1, 0.5]
-        } : {}}
-        transition={{
-          duration: 2,
-          repeat: Infinity,
-          ease: 'easeInOut'
-        }}
       />
       
       {/* Text */}
@@ -54,6 +41,6 @@ export const TurnBadge: React.FC<TurnBadgeProps> = ({
           {Math.ceil(timeLeft)}с
         </span>
       )}
-    </motion.div>
+    </div>
   );
 };

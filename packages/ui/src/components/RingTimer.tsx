@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 
 interface RingTimerProps {
   duration: number; // в секундах
@@ -44,21 +43,21 @@ export const RingTimer: React.FC<RingTimerProps> = ({
       <svg
         width={config.size}
         height={config.size}
-        className="transform -rotate-90"
+        className="-rotate-90"
       >
         {/* Фоновый круг */}
         <circle
           cx={config.size / 2}
           cy={config.size / 2}
           r={radius}
-          stroke="#273140"
+          stroke="#E2E8F0"
           strokeWidth={config.stroke}
           fill="transparent"
-          opacity={0.3}
+          opacity={1}
         />
         
         {/* Прогресс */}
-        <motion.circle
+        <circle
           cx={config.size / 2}
           cy={config.size / 2}
           r={radius}
@@ -67,9 +66,7 @@ export const RingTimer: React.FC<RingTimerProps> = ({
           fill="transparent"
           strokeLinecap="round"
           strokeDasharray={strokeDasharray}
-          initial={{ strokeDashoffset: circumference }}
-          animate={{ strokeDashoffset }}
-          transition={{ duration: 0.1, ease: "linear" }}
+          style={{ transition: 'stroke-dashoffset 100ms linear', strokeDashoffset }}
         />
       </svg>
 
@@ -82,21 +79,7 @@ export const RingTimer: React.FC<RingTimerProps> = ({
         </div>
       )}
 
-      {/* Пульсация при критическом времени */}
-      {currentTime <= 10 && currentTime > 0 && (
-        <motion.div
-          className="absolute inset-0 rounded-full ring-2 ring-torpedo/30"
-          animate={{
-            scale: [1, 1.1, 1],
-            opacity: [0.3, 0.6, 0.3],
-          }}
-          transition={{
-            duration: 1,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-      )}
+      {/* Без пульсации для строгого UI */}
     </div>
   );
 };

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { Button, Modal } from '@battleship/ui';
 import { useAuth } from '../providers/AuthProvider';
 import { 
@@ -121,11 +120,7 @@ export const HomeScreen: React.FC = () => {
       {/* Main Content */}
       <div className="p-4 pb-6 space-y-6">
         {/* Hero Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center py-8"
-        >
+        <div className="text-center py-8">
           <div className="mb-6 px-2">
             <div className="w-24 h-24 bg-sonar rounded-full mx-auto mb-4 flex items-center justify-center">
               <Flag className="w-12 h-12 text-white" />
@@ -148,18 +143,13 @@ export const HomeScreen: React.FC = () => {
             <Play className="w-5 h-5" />
             Начать игру
           </Button>
-        </motion.div>
+        </div>
 
         {/* Quick Actions */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-                     className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4"
-        >
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <button
             onClick={handleLeaderboard}
-            className="p-4 bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel hover:ring-sonar/50 transition-all"
+            className="p-4 bg-bg-graphite rounded-card ring-1 ring-edge"
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-torpedo rounded-lg flex items-center justify-center">
@@ -179,7 +169,7 @@ export const HomeScreen: React.FC = () => {
 
           <button
             onClick={handleProfile}
-            className="p-4 bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel hover:ring-sonar/50 transition-all"
+            className="p-4 bg-bg-graphite rounded-card ring-1 ring-edge"
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-radio rounded-lg flex items-center justify-center">
@@ -196,15 +186,10 @@ export const HomeScreen: React.FC = () => {
               <Globe className="w-4 h-4 text-radio" />
             </div>
           </button>
-        </motion.div>
+        </div>
 
         {/* Game Rules */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-                     className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-4 sm:p-5"
-        >
+        <div className="bg-bg-graphite rounded-card ring-1 ring-edge p-4 sm:p-5">
           <h3 className="font-heading font-semibold text-h3 text-foam mb-3">
             Правила игры
           </h3>
@@ -226,7 +211,7 @@ export const HomeScreen: React.FC = () => {
               <p>На ход дается 5 секунд, на расстановку 80 секунд</p>
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
 
       {/* Game Modes Modal */}

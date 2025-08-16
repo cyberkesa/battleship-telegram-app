@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 
 import { 
   ArrowLeft,
@@ -62,10 +61,8 @@ export const SettingsScreen: React.FC = () => {
 
       <div className="p-4 space-y-6">
         {/* Language Settings */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-4"
+        <div
+          className="bg-bg-graphite rounded-card ring-1 ring-edge p-4"
         >
           <h3 className="font-heading font-semibold text-h3 text-foam mb-4">
             Язык
@@ -103,14 +100,11 @@ export const SettingsScreen: React.FC = () => {
               </button>
             ))}
           </div>
-        </motion.div>
+        </div>
 
         {/* Game Settings */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-4"
+        <div
+          className="bg-bg-graphite rounded-card ring-1 ring-edge p-4"
         >
           <h3 className="font-heading font-semibold text-h3 text-foam mb-4">
             Игровые настройки
@@ -155,16 +149,11 @@ export const SettingsScreen: React.FC = () => {
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Other Settings */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="space-y-3"
-        >
-          <button className="w-full p-4 bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel hover:ring-sonar/50 transition-all text-left">
+        <div className="space-y-3">
+          <button className="w-full p-4 bg-bg-graphite rounded-card ring-1 ring-edge text-left">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-torpedo rounded-lg flex items-center justify-center">
                 <Shield className="w-5 h-5 text-white" />
@@ -180,7 +169,7 @@ export const SettingsScreen: React.FC = () => {
             </div>
           </button>
 
-          <button className="w-full p-4 bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel hover:ring-sonar/50 transition-all text-left">
+          <button className="w-full p-4 bg-bg-graphite rounded-card ring-1 ring-edge text-left">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-radio rounded-lg flex items-center justify-center">
                 <HelpCircle className="w-5 h-5 text-white" />
@@ -196,7 +185,7 @@ export const SettingsScreen: React.FC = () => {
             </div>
           </button>
 
-          <button className="w-full p-4 bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel hover:ring-sonar/50 transition-all text-left">
+          <button className="w-full p-4 bg-bg-graphite rounded-card ring-1 ring-edge text-left">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-info rounded-lg flex items-center justify-center">
                 <Info className="w-5 h-5 text-white" />
@@ -211,7 +200,7 @@ export const SettingsScreen: React.FC = () => {
               </div>
             </div>
           </button>
-        </motion.div>
+        </div>
       </div>
     </div>
   );

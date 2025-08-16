@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
 export type ButtonSize = 'sm' | 'md' | 'lg';
@@ -16,17 +15,17 @@ interface ButtonProps {
 }
 
 const variantClasses = {
-  primary: 'ring-1 ring-sonar bg-deep hover:bg-steel text-foam shadow-steel',
+  primary: 'ring-1 ring-sonar bg-deep hover:bg-steel text-foam',
   secondary: 'ring-1 ring-edge bg-graphite hover:bg-steel text-foam',
-  danger: 'bg-torpedo text-black hover:opacity-90',
+  danger: 'bg-torpedo text-white hover:opacity-90',
   ghost: 'text-foam hover:bg-steel/50',
-};
+} as const;
 
 const sizeClasses = {
   sm: 'px-3 py-2 text-sm',
   md: 'px-5 py-3 text-base',
   lg: 'px-6 py-4 text-lg',
-};
+} as const;
 
 export const Button: React.FC<ButtonProps> = ({
   variant = 'primary',
@@ -39,10 +38,10 @@ export const Button: React.FC<ButtonProps> = ({
   icon,
 }) => {
   return (
-    <motion.button
+    <button
       className={`
-        relative rounded-lg font-sans font-medium transition-all duration-200
-        focus:outline-none focus:ring-2 focus:ring-sonar/50 focus:ring-offset-2 focus:ring-offset-deep
+        relative rounded-lg font-sans font-medium transition-colors duration-150
+        focus:outline-none focus:ring-2 focus:ring-sonar/40 focus:ring-offset-2 focus:ring-offset-deep
         disabled:opacity-50 disabled:cursor-not-allowed
         ${variantClasses[variant]}
         ${sizeClasses[size]}
@@ -50,23 +49,17 @@ export const Button: React.FC<ButtonProps> = ({
       `}
       onClick={onClick}
       disabled={disabled || loading}
-      whileHover={!disabled && !loading ? { scale: 1.02 } : {}}
-      whileTap={!disabled && !loading ? { scale: 0.98 } : {}}
     >
       {loading && (
-        <motion.div
-          className="absolute inset-0 flex items-center justify-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        >
+        <div className="absolute inset-0 flex items-center justify-center">
           <div className="w-4 h-4 border-2 border-foam/30 border-t-foam rounded-full animate-spin" />
-        </motion.div>
+        </div>
       )}
       
       <div className={`flex items-center justify-center gap-2 ${loading ? 'opacity-0' : ''}`}>
         {icon && <span className="flex-shrink-0">{icon}</span>}
         {children}
       </div>
-    </motion.button>
+    </button>
   );
 };

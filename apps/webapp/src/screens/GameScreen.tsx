@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { Button, Board } from '@battleship/ui';
 import { useGameStore } from '../stores/gameStore';
 import { useAuth } from '../providers/AuthProvider';
@@ -187,12 +186,7 @@ export const GameScreen: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-tg-bg p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="max-w-2xl mx-auto"
-      >
+      <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-tg-text mb-2">
@@ -229,13 +223,9 @@ export const GameScreen: React.FC = () => {
 
         {/* Error message */}
         {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4"
-          >
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             {error}
-          </motion.div>
+          </div>
         )}
 
         {/* Game boards */}
@@ -288,7 +278,7 @@ export const GameScreen: React.FC = () => {
             Кликайте по полю противника, чтобы сделать выстрел
           </p>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 };

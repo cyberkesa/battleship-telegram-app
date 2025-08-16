@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { Button, LoadingScreen } from '@battleship/ui';
 import { useAuth } from '../providers/AuthProvider';
 import { 
@@ -207,11 +206,7 @@ export const LobbyScreen: React.FC = () => {
 
       <div className="p-4 space-y-4 sm:space-y-6">
         {/* Status */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-4"
-        >
+        <div className="bg-bg-graphite rounded-card ring-1 ring-edge p-4">
           <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
               <h3 className="font-heading font-semibold text-h3 text-foam truncate">
@@ -228,15 +223,10 @@ export const LobbyScreen: React.FC = () => {
               </p>
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Players */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="space-y-3"
-        >
+        <div className="space-y-3">
           <h3 className="font-heading font-semibold text-h3 text-foam">
             Игроки
           </h3>
@@ -244,7 +234,7 @@ export const LobbyScreen: React.FC = () => {
           {lobby.players.map((player) => (
             <div
               key={player.id}
-              className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-4"
+              className="bg-bg-graphite rounded-card ring-1 ring-edge p-4"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -292,15 +282,10 @@ export const LobbyScreen: React.FC = () => {
               </div>
             </div>
           )}
-        </motion.div>
+        </div>
 
         {/* Actions */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="space-y-3"
-        >
+        <div className="space-y-3">
           {/* Invite link */}
           <Button
             variant="secondary"
@@ -355,7 +340,7 @@ export const LobbyScreen: React.FC = () => {
               )}
             </Button>
           )}
-        </motion.div>
+        </div>
       </div>
     </div>
   );

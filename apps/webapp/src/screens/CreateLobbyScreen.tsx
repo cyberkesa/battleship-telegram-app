@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { Button } from '@battleship/ui';
 import { useAuth } from '../providers/AuthProvider';
 import { 
@@ -146,11 +145,7 @@ export const CreateLobbyScreen: React.FC = () => {
 
       <div className="p-4 space-y-6">
         {/* Instructions */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-4"
-        >
+        <div className="bg-bg-graphite rounded-card ring-1 ring-edge p-4">
           <h3 className="font-heading font-semibold text-h3 text-foam mb-3">
             Как играть с другом
           </h3>
@@ -180,15 +175,10 @@ export const CreateLobbyScreen: React.FC = () => {
               <p>После расстановки начнется игра с таймером 5 секунд на ход</p>
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Create Lobby */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-4"
-        >
+        <div className="bg-bg-graphite rounded-card ring-1 ring-edge p-4">
           <h3 className="font-heading font-semibold text-h3 text-foam mb-4">
             Создать лобби
           </h3>
@@ -252,15 +242,10 @@ export const CreateLobbyScreen: React.FC = () => {
               </Button>
             </div>
           )}
-        </motion.div>
+        </div>
 
         {/* Game Info */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-4"
-        >
+        <div className="bg-bg-graphite rounded-card ring-1 ring-edge p-4">
           <h3 className="font-heading font-semibold text-h3 text-foam mb-3">
             Информация об игре
           </h3>
@@ -278,7 +263,7 @@ export const CreateLobbyScreen: React.FC = () => {
               <span>Игроков: 2</span>
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
     </div>
   );

@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 
 export interface ShipProps {
   size: 1 | 2 | 3 | 4; // сузили тип — меньше ошибок
@@ -43,7 +42,7 @@ export const Ship: React.FC<ShipProps> = React.memo(({
   const bgClass = COLOR_CLASS[color];
 
   return (
-    <motion.div
+    <div
       role="button"
       tabIndex={0}
       aria-label={`Корабль ${size} клетки, ${isHorizontal ? 'горизонтально' : 'вертикально'}`}
@@ -66,13 +65,6 @@ export const Ship: React.FC<ShipProps> = React.memo(({
           onClick?.();
         }
       }}
-      whileHover={!isPlaced ? { scale: 1.04 } : {}}
-      whileTap={!isPlaced ? { scale: 0.98 } : {}}
-      animate={{
-        scale: isSelected ? 1.06 : 1,
-        opacity: isDragging ? 0.6 : 1,
-      }}
-      transition={{ duration: 0.15, ease: 'easeOut' }}
           >
         {cells.map((i) => {
           // Скругления корректные: только по направлению ориентации
@@ -89,7 +81,6 @@ export const Ship: React.FC<ShipProps> = React.memo(({
                 ${bgClass}
                 ${rounded}
                 ${isPlaced ? 'opacity-90' : 'opacity-100'}
-                shadow-md hover:shadow-lg
                 ring-1 ring-black/10
               `}
               style={{
@@ -99,6 +90,6 @@ export const Ship: React.FC<ShipProps> = React.memo(({
             />
           );
         })}
-      </motion.div>
+      </div>
     );
   });

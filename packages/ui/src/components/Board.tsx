@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { Cell, CellState } from './Cell';
 import { BoardSize, sizeConfig, gapPx, coordinates, BOARD_SIZE } from '../utils/boardConfig';
 
@@ -106,20 +105,17 @@ export const Board: React.FC<BoardProps> = React.memo(({
       )}
 
       {/* Основная сетка */}
-      <motion.div
+      <div
         role="grid"
         aria-rowcount={BOARD_SIZE}
         aria-colcount={BOARD_SIZE}
-        className="relative grid grid-cols-10 rounded-card bg-bg-graphite ring-1 ring-edge shadow-steel"
+        className="relative grid grid-cols-10 rounded-card bg-bg-graphite ring-1 ring-edge"
         style={{
           gap: 'var(--gap)',
           padding: 'var(--pad)',
           // фиксируем высоту рядов
           gridAutoRows: 'var(--cell)',
         }}
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
       >
         {cells.map((row, rowIndex) =>
           row.map((cellState, colIndex) => (
@@ -133,7 +129,7 @@ export const Board: React.FC<BoardProps> = React.memo(({
             />
           ))
         )}
-      </motion.div>
+      </div>
 
       {/* Рамка противника — ниже координат, но поверх поля */}
       {isOpponent && (

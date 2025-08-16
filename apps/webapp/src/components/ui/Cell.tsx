@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 
 export type CellState = 
   | 'idle' 
@@ -33,14 +32,14 @@ const sizeClasses = {
 };
 
 const stateClasses = {
-  idle: 'bg-steel ring-1 ring-edge hover:ring-sonar/50 hover:bg-steel/80',
-  hover: 'bg-steel ring-2 ring-sonar/50 bg-sonar-sweep',
-  selected: 'bg-steel ring-2 ring-sonar shadow-sonar',
-  miss: 'bg-steel/60 ring-1 ring-edge',
-  hit: 'bg-torpedo ring-1 ring-torpedo shadow-torpedo',
+  idle: 'bg-steel ring-1 ring-edge hover:bg-steel',
+  hover: 'bg-steel ring-2 ring-sonar/40',
+  selected: 'bg-steel ring-2 ring-sonar',
+  miss: 'bg-steel/70 ring-1 ring-edge',
+  hit: 'bg-torpedo ring-1 ring-torpedo',
   sunk: 'bg-torpedo/80 ring-1 ring-torpedo',
   disabled: 'bg-mute/30 ring-1 ring-edge/50 cursor-not-allowed',
-  ship: 'bg-mute/40 ring-1 ring-edge',
+  ship: 'bg-mute/20 ring-1 ring-edge',
   'ship-hit': 'bg-torpedo/60 ring-1 ring-torpedo',
   'ship-sunk': 'bg-torpedo/80 ring-1 ring-torpedo',
 };
@@ -82,62 +81,26 @@ export const Cell: React.FC<CellProps> = ({
   const getCellContent = () => {
     switch (state) {
       case 'miss':
-        return (
-          <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="w-1 h-1 bg-foam rounded-full"
-          />
-        );
+        return <div className="w-1 h-1 bg-foam rounded-full" />;
       case 'hit':
-        return (
-          <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="w-3 h-3 bg-foam transform rotate-45"
-            style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }}
-          />
-        );
+        return <div className="w-3 h-3 bg-foam rotate-45" style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }} />;
       case 'sunk':
-        return (
-          <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="w-3 h-3 bg-foam transform rotate-45"
-            style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }}
-          />
-        );
+        return <div className="w-3 h-3 bg-foam rotate-45" style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }} />;
       case 'ship':
-        return (
-          <div className="w-full h-full bg-mute/20 rounded-sm" />
-        );
+        return <div className="w-full h-full bg-mute/20 rounded-sm" />;
       case 'ship-hit':
-        return (
-          <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="w-3 h-3 bg-foam transform rotate-45"
-            style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }}
-          />
-        );
+        return <div className="w-3 h-3 bg-foam rotate-45" style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }} />;
       case 'ship-sunk':
-        return (
-          <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="w-3 h-3 bg-foam transform rotate-45"
-            style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }}
-          />
-        );
+        return <div className="w-3 h-3 bg-foam rotate-45" style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }} />;
       default:
         return children;
     }
   };
 
   return (
-    <motion.div
+    <div
       className={`
-        grid place-items-center rounded-cell transition-all duration-200
+        grid place-items-center rounded-cell transition-colors duration-150
         ${sizeClasses[size]}
         ${stateClasses[state]}
         ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}
@@ -149,17 +112,8 @@ export const Cell: React.FC<CellProps> = ({
       onMouseLeave={handleMouseUp}
       onTouchStart={handleMouseDown}
       onTouchEnd={handleMouseUp}
-      whileHover={!disabled ? { scale: 1.05 } : {}}
-      whileTap={!disabled ? { scale: 0.95 } : {}}
-      animate={
-        state === 'hit' || state === 'sunk' || state === 'ship-hit' || state === 'ship-sunk'
-          ? 'torpedo-hit'
-          : state === 'miss'
-          ? 'miss-splash'
-          : {}
-      }
     >
       {getCellContent()}
-    </motion.div>
+    </div>
   );
 };

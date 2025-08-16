@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { Button } from '@battleship/ui';
 import { useGameStore } from '../stores/gameStore';
 
@@ -67,22 +66,10 @@ export const MatchmakingScreen: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-tg-bg p-6">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="max-w-md mx-auto"
-      >
+      <div className="max-w-md mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="text-4xl mb-4"
-          >
-            🔍
-          </motion.div>
+          <div className="text-4xl mb-4">🔍</div>
           <h1 className="text-2xl font-bold text-tg-text mb-2">
             Поиск противника
           </h1>
@@ -92,21 +79,12 @@ export const MatchmakingScreen: React.FC = () => {
         </div>
 
         {/* Search status */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className="bg-tg-secondary-bg rounded-lg p-6 mb-6"
-        >
+        <div className="bg-tg-secondary-bg rounded-lg p-6 mb-6">
           {isInQueue ? (
             <div className="text-center">
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                className="mb-4"
-              >
-                <div className="w-8 h-8 border-2 border-tg-button border-t-transparent rounded-full"></div>
-              </motion.div>
+              <div className="mb-4">
+                <div className="w-8 h-8 border-2 border-tg-button border-t-transparent rounded-full animate-spin"></div>
+              </div>
               <h3 className="text-lg font-semibold text-tg-text mb-2">
                 Поиск противника
               </h3>
@@ -130,26 +108,17 @@ export const MatchmakingScreen: React.FC = () => {
               </p>
             </div>
           )}
-        </motion.div>
+        </div>
 
         {/* Error message */}
         {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4"
-          >
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             {error}
-          </motion.div>
+          </div>
         )}
 
         {/* Action buttons */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="space-y-4"
-        >
+        <div className="space-y-4">
           {isInQueue ? (
             <Button
               onClick={handleLeaveQueue}
@@ -176,20 +145,15 @@ export const MatchmakingScreen: React.FC = () => {
           >
             Назад
           </Button>
-        </motion.div>
+        </div>
 
         {/* Tips */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-          className="mt-8 text-center"
-        >
+        <div className="mt-8 text-center">
           <p className="text-tg-hint text-sm">
             Обычно поиск занимает 10-30 секунд
           </p>
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
     </div>
   );
 };

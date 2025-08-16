@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { 
   ArrowLeft,
   Trophy,
@@ -144,11 +143,7 @@ export const LeaderboardScreen: React.FC = () => {
 
       <div className="p-4 space-y-6">
         {/* Period Selector */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-4"
-        >
+        <div className="bg-bg-graphite rounded-card ring-1 ring-edge p-4">
           <h3 className="font-heading font-semibold text-h3 text-foam mb-4">
             Период
           </h3>
@@ -208,22 +203,14 @@ export const LeaderboardScreen: React.FC = () => {
               </div>
             </button>
           </div>
-        </motion.div>
+        </div>
 
         {/* Top Players */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="space-y-3"
-        >
-          {PLAYERS.slice(0, 10).map((player, index) => (
-            <motion.div
+        <div className="space-y-3">
+          {PLAYERS.slice(0, 10).map((player) => (
+            <div
               key={player.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 + index * 0.05 }}
-              className={`p-4 rounded-card ring-1 ring-edge shadow-steel transition-all ${
+              className={`p-4 rounded-card ring-1 ring-edge ${
                 player.isCurrentUser 
                   ? 'bg-sonar/10 ring-sonar/50' 
                   : getRankColor(player.rank)
@@ -270,17 +257,12 @@ export const LeaderboardScreen: React.FC = () => {
                   </div>
                 </div>
               </div>
-            </motion.div>
+            </div>
           ))}
-        </motion.div>
+        </div>
 
         {/* Stats Summary */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-bg-graphite rounded-card ring-1 ring-edge shadow-steel p-4"
-        >
+        <div className="bg-bg-graphite rounded-card ring-1 ring-edge p-4">
           <h3 className="font-heading font-semibold text-h3 text-foam mb-4">
             Статистика
           </h3>
@@ -304,7 +286,7 @@ export const LeaderboardScreen: React.FC = () => {
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
     </div>
   );

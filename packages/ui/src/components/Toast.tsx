@@ -1,5 +1,4 @@
-import React, { useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useEffect, useRef } from 'react';
 import { X, CheckCircle, AlertCircle, Info } from 'lucide-react';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
@@ -54,6 +53,7 @@ export const Toast: React.FC<ToastProps> = ({
 }) => {
   const config = toastConfig[type];
   const Icon = config.icon;
+  const barRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (duration > 0) {
@@ -63,58 +63,58 @@ export const Toast: React.FC<ToastProps> = ({
   }, [duration, onClose]);
 
   return (
-    <AnimatePresence>
-      <motion.div
-        className={`
-          fixed top-4 right-4 z-50 max-w-sm w-full
-          rounded-card border bg-bg-graphite shadow-steel
-          ${config.bgColor} ${config.borderColor} ${className}
-        `}
-        initial={{ opacity: 0, x: 300, scale: 0.8 }}
-        animate={{ opacity: 1, x: 0, scale: 1 }}
-        exit={{ opacity: 0, x: 300, scale: 0.8 }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
-      >
-        <div className="p-4">
-          <div className="flex items-start gap-3">
-            {/* Иконка */}
-            <div className={`flex-shrink-0 ${config.iconColor}`}>
-              <Icon size={20} strokeWidth={2} />
-            </div>
-
-            {/* Контент */}
-            <div className="flex-1 min-w-0">
-              <h4 className={`font-heading font-semibold text-body ${config.textColor}`}>
-                {title}
-              </h4>
-              {message && (
-                <p className="mt-1 text-secondary text-mist">
-                  {message}
-                </p>
-              )}
-            </div>
-
-            {/* Кнопка закрытия */}
-            <button
-              onClick={onClose}
-              className="flex-shrink-0 p-1 rounded-md text-mist hover:text-foam hover:bg-steel/50 transition-colors"
-            >
-              <X size={16} strokeWidth={2} />
-            </button>
+    <div
+      className={`
+        fixed top-4 right-4 z-50 max-w-sm w-full
+        rounded-card border bg-bg-graphite
+        ${config.bgColor} ${config.borderColor} ${className}
+      `}
+    >
+      <div className="p-4">
+        <div className="flex items-start gap-3">
+          {/* Иконка */}
+          <div className={`flex-shrink-0 ${config.iconColor}`}>
+            <Icon size={20} strokeWidth={2} />
           </div>
-        </div>
 
-        {/* Прогресс-бар */}
-        {duration > 0 && (
-          <motion.div
-            className={`h-1 ${config.bgColor.replace('/10', '/20')}`}
-            initial={{ scaleX: 1 }}
-            animate={{ scaleX: 0 }}
-            transition={{ duration: duration / 1000, ease: "linear" }}
-            style={{ transformOrigin: 'left' }}
-          />
-        )}
-      </motion.div>
-    </AnimatePresence>
+          {/* Контент */}
+          <div className="flex-1 min-w-0">
+            <h4 className={`font-heading font-semibold text-body ${config.textColor}`}>
+              {title}
+            </h4>
+            {message && (
+              <p className="mt-1 text-secondary text-mist">
+                {message}
+              </p>
+            )}
+          </div>
+
+          {/* Кнопка закрытия */}
+          <button
+            onClick={onClose}
+            className="flex-shrink-0 p-1 rounded-md text-mist hover:text-foam hover:bg-steel/50 transition-colors"
+          >
+            <X size={16} strokeWidth={2} />
+          </button>
+        </div>
+      </div>
+
+      {/* Прогресс-бар */}
+      {duration > 0 && (
+        <div
+          ref={barRef}
+          className={`${config.bgColor.replace('/10', '/20')} h-1`}
+          style={{ width: '100%', transition: `width ${duration}ms linear` }}
+          onAnimationStart={() => {
+            if (barRef.current) {
+              // Trigger layout to ensure transition
+              // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+              barRef.current.offsetWidth;
+              barRef.current.style.width = '0%';
+            }
+          }}
+        />
+      )}
+    </div>
   );
 };
