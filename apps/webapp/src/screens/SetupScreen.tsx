@@ -246,8 +246,8 @@ export const SetupScreen: React.FC = () => {
                 key={ship.id}
                 className="p-3 rounded-lg border-2 border-edge hover:border-sonar/50 transition-all cursor-grab active:cursor-grabbing touch-none"
                 style={{ 
-                  '--cell': 'var(--cell, 28px)',
-                  '--gap': 'var(--gap, 2px)'
+                  ['--cell' as any]: '34px',
+                  ['--gap' as any]: '2px'
                 } as React.CSSProperties}
                 role="button"
                 tabIndex={0}
@@ -285,7 +285,6 @@ export const SetupScreen: React.FC = () => {
                     size={ship.size as 1 | 2 | 3 | 4}
                     isHorizontal={true}
                     color={ship.color}
-                    className="scale-75"
                   />
                 </div>
               </div>
@@ -314,7 +313,7 @@ export const SetupScreen: React.FC = () => {
           </h3>
           
           <div className="flex justify-center">
-            <div ref={boardWrapperRef}>
+            <div ref={boardWrapperRef} tabIndex={-1}>
               <GameBoard
               ref={boardRef}
               mode="placement"
