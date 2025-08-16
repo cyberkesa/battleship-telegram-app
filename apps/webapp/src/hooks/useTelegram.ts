@@ -48,8 +48,8 @@ interface TelegramWebApp {
     button_text_color: string;
     secondary_bg_color: string;
   };
-  openTelegramLink?: (url: string) => void;
-  openLink?: (url: string, options?: { try_instant_view?: boolean }) => void;
+  openTelegramLink?: (_url: string) => void;
+  openLink?: (_url: string, _options?: { try_instant_view?: boolean }) => void;
 }
 
 declare global {
