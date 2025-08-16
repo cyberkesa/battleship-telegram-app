@@ -11,7 +11,8 @@ export type CellState =
   | 'disabled'
   | 'ship'
   | 'ship-hit'
-  | 'ship-sunk';
+  | 'ship-sunk'
+  | 'invalid';
 
 export type CellSize = 'sm' | 'md' | 'lg' | 'mini';
 
@@ -45,6 +46,7 @@ const stateClasses = {
   ship: 'bg-game-ship/20 ring-1 ring-game-ship/50',
   'ship-hit': 'bg-game-hit/60 ring-1 ring-game-hit',
   'ship-sunk': 'bg-game-sunk/80 ring-1 ring-game-sunk',
+  invalid: 'bg-red-300/40 ring-2 ring-red-500/70',
 };
 
 export const Cell: React.FC<CellProps> = ({

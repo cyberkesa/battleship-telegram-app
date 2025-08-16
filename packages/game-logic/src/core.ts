@@ -16,6 +16,9 @@ import {
 
 export const BOARD_SIZE = 10;
 
+// New: expected composition constant for classic rules
+export const FLEET_COMPOSITION: Readonly<Record<number, number>> = Object.freeze({ 1: 4, 2: 3, 3: 2, 4: 1 });
+
 // Утилиты для координат
 export const inBounds = ({ x, y }: Coord): boolean =>
   x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE;
@@ -65,6 +68,55 @@ export function getShipAdjacentCells(ship: Ship): Coord[] {
   }
   
   return result;
+}
+
+// NEW: Валидация одного корабля относительно существующего флота (для realtime-предпросмотра)
+export function validatePlacementAgainstFleet(
+  existingFleet: Fleet,
+  candidate: Ship,
+  allowTouching = false,
+  excludeShipId?: string
+): { ok: true } | { ok: false; reason: GameError } {
+  // 1) Проверка длины и ориентации
+  if (candidate.length < 1 || candidate.length > 4) return { ok: false, reason: GameError.BAD_LENGTH };
+  if (candidate.horizontal === undefined) return { ok: false, reason: GameError.ORIENTATION };
+
+  // 2) Собираем сетку занятости без исключаемого корабля
+  const occ: (null | string)[][] = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(null));
+  for (const sh of existingFleet) {
+    if (excludeShipId && sh.id === excludeShipId) continue;
+    const cells = shipCells(sh);
+    for (const c of cells) {
+      if (!inBounds(c)) return { ok: false, reason: GameError.OUT_OF_BOUNDS };
+      if (occ[c.y][c.x]) return { ok: false, reason: GameError.OVERLAP };
+      occ[c.y][c.x] = sh.id;
+    }
+  }
+
+  // 3) Проверяем клетки кандидата на выход за пределы и пересечение
+  const cells = shipCells(candidate);
+  for (const c of cells) {
+    if (!inBounds(c)) return { ok: false, reason: GameError.OUT_OF_BOUNDS };
+    if (occ[c.y][c.x]) return { ok: false, reason: GameError.OVERLAP };
+  }
+
+  // 4) Проверка касаний (8 направлений), если запрещены
+  if (!allowTouching) {
+    const dirs = [-1, 0, 1];
+    for (const c of cells) {
+      for (const dy of dirs) {
+        for (const dx of dirs) {
+          if (dx === 0 && dy === 0) continue;
+          const nx = c.x + dx;
+          const ny = c.y + dy;
+          if (nx < 0 || ny < 0 || nx >= BOARD_SIZE || ny >= BOARD_SIZE) continue;
+          if (occ[ny][nx]) return { ok: false, reason: GameError.TOUCHING };
+        }
+      }
+    }
+  }
+
+  return { ok: true };
 }
 
 // Автоматическое открытие соседних клеток потопленного корабля

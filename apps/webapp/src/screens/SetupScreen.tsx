@@ -22,11 +22,13 @@ const PLACEMENT_SECONDS = 60;
 const safeUUID = () => globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2);
 
 // Правильные корабли по классическим правилам Морского боя
+// Источник состава теперь из game-logic FLEET_COMPOSITION
+import { FLEET_COMPOSITION } from '@battleship/game-logic';
 const SHIP_TYPES = [
-  { size: 4, name: 'Линкор', count: 1, color: 'red' as const },
-  { size: 3, name: 'Крейсер', count: 2, color: 'blue' as const },
-  { size: 2, name: 'Эсминец', count: 3, color: 'sonar' as const },
-  { size: 1, name: 'Катер', count: 4, color: 'cyan' as const },
+  { size: 4, name: 'Линкор', count: FLEET_COMPOSITION[4], color: 'red' as const },
+  { size: 3, name: 'Крейсер', count: FLEET_COMPOSITION[3], color: 'blue' as const },
+  { size: 2, name: 'Эсминец', count: FLEET_COMPOSITION[2], color: 'sonar' as const },
+  { size: 1, name: 'Катер', count: FLEET_COMPOSITION[1], color: 'cyan' as const },
 ] as const;
 
 // Конвертер PlacedShip → Fleet для валидации
