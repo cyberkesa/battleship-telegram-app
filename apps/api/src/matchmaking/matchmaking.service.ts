@@ -1,7 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { Redis } from 'ioredis';
 import { PrismaService } from '../infra/prisma.service';
-// import { createMatch as createInitialMatch } from '@battleship/game-logic';
+import { createMatch as createInitialMatch } from '@battleship/game-logic';
 import { randomUUID } from 'crypto';
 
 interface JoinQueueRequest {
@@ -17,19 +17,31 @@ interface QueueResponse {
 @Injectable()
 export class MatchmakingService {
   private readonly logger = new Logger(MatchmakingService.name);
-  private readonly redis: Redis;
+  private readonly redis?: Redis;
 
   constructor(private readonly _prisma: PrismaService) {
-    this.redis = new Redis(process.env.REDIS_URL!);
+    const url = process.env.REDIS_URL;
+    if (url) {
+      this.redis = new Redis(url);
+      this.logger.log('Connected to Redis for matchmaking');
+    } else {
+      this.logger.warn('REDIS_URL not set. Matchmaking is disabled. Set REDIS_URL to enable.');
+    }
+  }
+
+  private ensureRedis() {
+    if (!this.redis) {
+      throw new ServiceUnavailableException('Matchmaking is not available. Please try again later.');
+    }
   }
 
   async joinQueue(userId: string, request: JoinQueueRequest): Promise<QueueResponse> {
+    this.ensureRedis();
     const queueKey = `queue:${request.mode}`;
     const userKey = `user:${userId}`;
     
     try {
-      // Check if user is already in queue
-      const existingPosition = await this.redis.zrank(queueKey, userId.toString());
+      const existingPosition = await this.redis!.zrank(queueKey, userId.toString());
       if (existingPosition !== null) {
         return {
           queued: true,
@@ -38,14 +50,11 @@ export class MatchmakingService {
         };
       }
 
-      // Add user to queue with timestamp as score
       const timestamp = Date.now();
-      await this.redis.zadd(queueKey, timestamp, userId.toString());
-      
-      // Set user status
-      await this.redis.setex(userKey, 300, 'queued'); // 5 minutes TTL
+      await this.redis!.zadd(queueKey, timestamp, userId.toString());
+      await this.redis!.setex(userKey, 300, 'queued'); // 5 minutes TTL
 
-      const position = await this.redis.zrank(queueKey, userId.toString());
+      const position = await this.redis!.zrank(queueKey, userId.toString());
       
       this.logger.log(`User ${userId} joined ${request.mode} queue at position ${position! + 1}`);
 
@@ -61,15 +70,13 @@ export class MatchmakingService {
   }
 
   async leaveQueue(userId: string, mode: string): Promise<QueueResponse> {
+    this.ensureRedis();
     const queueKey = `queue:${mode}`;
     const userKey = `user:${userId}`;
     
     try {
-      // Remove from queue
-      await this.redis.zrem(queueKey, userId.toString());
-      
-      // Remove user status
-      await this.redis.del(userKey);
+      await this.redis!.zrem(queueKey, userId.toString());
+      await this.redis!.del(userKey);
 
       this.logger.log(`User ${userId} left ${mode} queue`);
 
@@ -83,11 +90,11 @@ export class MatchmakingService {
   }
 
   async findMatch(mode: string): Promise<{ player1: string; player2: string } | null> {
+    this.ensureRedis();
     const queueKey = `queue:${mode}`;
     
     try {
-      // Get first two players from queue
-      const players = await this.redis.zrange(queueKey, 0, 1);
+      const players = await this.redis!.zrange(queueKey, 0, 1);
       
       if (players.length < 2) {
         return null;
@@ -95,11 +102,8 @@ export class MatchmakingService {
 
       const [player1, player2] = players;
 
-      // Remove both players from queue
-      await this.redis.zrem(queueKey, player1, player2);
-
-      // Clear user status
-      await this.redis.del(`user:${player1}`, `user:${player2}`);
+      await this.redis!.zrem(queueKey, player1, player2);
+      await this.redis!.del(`user:${player1}`, `user:${player2}`);
 
       this.logger.log(`Found match: ${player1} vs ${player2} in ${mode} mode`);
 
@@ -113,19 +117,13 @@ export class MatchmakingService {
   async createMatch(player1Id: string, player2Id: string, mode: string): Promise<string> {
     try {
       const matchId = randomUUID();
-      // const initialState = createInitialMatch(matchId);
-      const initialState = {
-        id: matchId,
-        status: 'in_progress',
-        currentTurn: 'A'
-      };
+      const initialState = createInitialMatch(matchId);
 
-      // Create match in database
       const match = await this._prisma.match.create({
         data: {
           id: initialState.id,
           status: initialState.status,
-          currentTurn: initialState.currentTurn,
+          currentTurn: initialState.currentTurn as any,
           state: initialState as any,
           playerA: { connect: { id: player1Id } },
           playerB: { connect: { id: player2Id } },
@@ -134,13 +132,14 @@ export class MatchmakingService {
 
       this.logger.log(`Created match ${match.id} between ${player1Id} and ${player2Id}`);
 
-      // Publish match found event
-      await this.redis.publish('match_found', JSON.stringify({
-        matchId: match.id,
-        player1: { id: player1Id, role: 'A' },
-        player2: { id: player2Id, role: 'B' },
-        mode,
-      }));
+      if (this.redis) {
+        await this.redis.publish('match_found', JSON.stringify({
+          matchId: match.id,
+          player1: { id: player1Id, role: 'A' },
+          player2: { id: player2Id, role: 'B' },
+          mode,
+        }));
+      }
 
       return match.id;
     } catch (error) {
@@ -150,21 +149,23 @@ export class MatchmakingService {
   }
 
   private async estimateWaitTime(mode: string): Promise<number> {
+    this.ensureRedis();
     const queueKey = `queue:${mode}`;
-    const queueSize = await this.redis.zcard(queueKey);
+    const queueSize = await this.redis!.zcard(queueKey);
     
-    // Rough estimate: 30 seconds per player in queue
     return Math.max(10, queueSize * 30);
   }
 
   async getQueuePosition(userId: number, mode: string): Promise<number | null> {
+    this.ensureRedis();
     const queueKey = `queue:${mode}`;
-    const position = await this.redis.zrank(queueKey, userId.toString());
+    const position = await this.redis!.zrank(queueKey, userId.toString());
     return position !== null ? position + 1 : null;
   }
 
   async getQueueSize(mode: string): Promise<number> {
+    this.ensureRedis();
     const queueKey = `queue:${mode}`;
-    return await this.redis.zcard(queueKey);
+    return await this.redis!.zcard(queueKey);
   }
 }
