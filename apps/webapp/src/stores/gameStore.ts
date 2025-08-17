@@ -14,7 +14,7 @@ interface GameState {
   leaveQueue: () => Promise<void>;
   getQueueStatus: () => Promise<void>;
   getActiveMatch: () => Promise<void>;
-  setupBoard: (_matchId: string, _ships: any[]) => Promise<void>;
+  setupBoard: (_matchId: string, _fleet: any[]) => Promise<string | undefined>;
   makeMove: (_matchId: string, _position: Position) => Promise<void>;
   getGameState: (_matchId: string) => Promise<void>;
   addEvent: (_event: GameEvent) => void;
@@ -118,22 +118,23 @@ export const useGameStore = create<GameState>((set) => ({
     }
   },
 
-  setupBoard: async (matchId: string, ships: any[]) => {
+  setupBoard: async (matchId: string, fleet: any[]) => {
     try {
       set({ isLoading: true, error: null });
       
-      const response = await api.post(`/game/${matchId}/setup`, { ships });
+      const response = await api.post(`/game/${matchId}/setup`, { ships: fleet });
       
       if (response.data.success) {
+        const actualMatchId = response.data.data.matchId as string;
         set({ 
           isLoading: false,
           currentMatch: {
-            id: response.data.data.matchId,
+            id: actualMatchId,
             status: response.data.data.status,
             currentTurn: response.data.data.currentTurn
           }
         });
-        return response.data.data.matchId; // Return the actual match ID
+        return actualMatchId;
       } else {
         set({ 
           isLoading: false, 
