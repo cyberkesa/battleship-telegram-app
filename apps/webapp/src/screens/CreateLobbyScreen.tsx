@@ -12,18 +12,20 @@ import {
   Users,
   User
 } from 'lucide-react';
+import { lobbyAPI } from '../services/api';
 
 export const CreateLobbyScreen: React.FC = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, isLoading, error } = useAuth();
   const [lobbyId, setLobbyId] = useState<string>('');
+  const [inviteLink, setInviteLink] = useState<string>('');
   const [isCreating, setIsCreating] = useState(false);
 
   const [copied, setCopied] = useState(false);
 
-  const botUsername = import.meta.env.VITE_TELEGRAM_BOT_USERNAME;
-
   const buildLobbyDeepLink = (id: string) => {
+    const raw = import.meta.env.VITE_TELEGRAM_BOT_USERNAME as string | undefined;
+    const botUsername = raw?.startsWith('@') ? raw.slice(1) : raw;
     if (botUsername) {
       const payload = `join:${id}`;
       return `https://t.me/${botUsername}?startapp=${encodeURIComponent(payload)}`;
@@ -49,38 +51,11 @@ export const CreateLobbyScreen: React.FC = () => {
 
     try {
       setIsCreating(true);
-      
-      // Создаем локальное лобби с уникальным ID
-      const newLobbyId = `lobby_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      // Сохраняем в localStorage для демонстрации
-      const lobby = {
-        id: newLobbyId,
-        host: {
-          id: user.id,
-          firstName: user.firstName || 'Игрок',
-          lastName: user.lastName,
-          username: user.username,
-          photoUrl: user.photoUrl,
-          isReady: false,
-          isHost: true
-        },
-        players: [{
-          id: user.id,
-          firstName: user.firstName || 'Игрок',
-          lastName: user.lastName,
-          username: user.username,
-          photoUrl: user.photoUrl,
-          isReady: false,
-          isHost: true
-        }],
-        status: 'waiting',
-        createdAt: new Date().toISOString()
-      };
-      
-      localStorage.setItem(`lobby_${newLobbyId}`, JSON.stringify(lobby));
-      setLobbyId(newLobbyId);
 
+      const res = await lobbyAPI.create(user.firstName || 'Игрок', user.photoUrl);
+      const lobby = res.data as { id: string; inviteLink: string };
+      setLobbyId(lobby.id);
+      setInviteLink(lobby.inviteLink || buildLobbyDeepLink(lobby.id));
     } catch (err: any) {
       console.error('Ошибка создания лобби:', err);
     } finally {
@@ -89,7 +64,7 @@ export const CreateLobbyScreen: React.FC = () => {
   };
 
   const handleCopyLink = async () => {
-    const link = buildLobbyDeepLink(lobbyId);
+    const link = inviteLink || buildLobbyDeepLink(lobbyId);
     try {
       await navigator.clipboard.writeText(link);
       setCopied(true);
@@ -100,7 +75,7 @@ export const CreateLobbyScreen: React.FC = () => {
   };
 
   const handleShare = async () => {
-    const deepLink = buildLobbyDeepLink(lobbyId);
+    const deepLink = inviteLink || buildLobbyDeepLink(lobbyId);
     const text = 'Приглашаю тебя сыграть в Морской бой!';
     if (!openTelegramShare(deepLink, text)) {
       if (navigator.share) {

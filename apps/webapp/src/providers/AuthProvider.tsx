@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useEffect } from 'react';
 import { useTelegram } from './TelegramProvider';
-import { authAPI } from '../services/api';
+import { authAPI, api } from '../services/api';
 
 interface User {
-  id: number;
+  id: string;
   telegramId: number;
   firstName: string;
   lastName?: string;
@@ -87,6 +87,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const { token, user } = response.data.data;
           if (token) {
             localStorage.setItem('auth_token', token);
+            api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
           }
           const normalizedUser: User = {
             id: user.id,
