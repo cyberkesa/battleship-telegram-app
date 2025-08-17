@@ -25,7 +25,7 @@
     "baseUrl": ".",
     "paths": {
       "@battleship/shared-types": ["../../packages/shared-types/src"],
-      "@battleship/game-logic": ["../../packages/game-logic/src"],
+      "@battleship/game-logic": ["../../packages/game-logic/dist"],
       "@battleship/ui": ["../../packages/ui/src"]
     }
   },
