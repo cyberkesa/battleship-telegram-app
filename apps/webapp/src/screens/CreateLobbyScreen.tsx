@@ -9,12 +9,13 @@ import {
   Clock,
   ArrowLeft,
   CheckCircle,
-  Users
+  Users,
+  User
 } from 'lucide-react';
 
 export const CreateLobbyScreen: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isAuthenticated, isLoading, error } = useAuth();
   const [lobbyId, setLobbyId] = useState<string>('');
   const [isCreating, setIsCreating] = useState(false);
 
@@ -41,7 +42,10 @@ export const CreateLobbyScreen: React.FC = () => {
   };
 
   const handleCreateLobby = async () => {
-    if (!user) return;
+    if (!user) {
+      console.error('Пользователь не аутентифицирован');
+      return;
+    }
 
     try {
       setIsCreating(true);
@@ -54,15 +58,19 @@ export const CreateLobbyScreen: React.FC = () => {
         id: newLobbyId,
         host: {
           id: user.id,
-          name: user.firstName || 'Игрок',
-          avatar: user.photoUrl,
+          firstName: user.firstName || 'Игрок',
+          lastName: user.lastName,
+          username: user.username,
+          photoUrl: user.photoUrl,
           isReady: false,
           isHost: true
         },
         players: [{
           id: user.id,
-          name: user.firstName || 'Игрок',
-          avatar: user.photoUrl,
+          firstName: user.firstName || 'Игрок',
+          lastName: user.lastName,
+          username: user.username,
+          photoUrl: user.photoUrl,
           isReady: false,
           isHost: true
         }],
@@ -183,13 +191,61 @@ export const CreateLobbyScreen: React.FC = () => {
             Создать лобби
           </h3>
           
+          {/* Authentication Status */}
+          {isLoading && (
+            <div className="mb-4 p-3 bg-steel rounded-lg">
+              <div className="flex items-center gap-2 text-mist">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-sonar"></div>
+                <span>Загрузка...</span>
+              </div>
+            </div>
+          )}
+          
+          {error && (
+            <div className="mb-4 p-3 bg-torpedo/20 border border-torpedo/50 rounded-lg">
+              <div className="flex items-center gap-2 text-torpedo">
+                <span className="text-sm">Ошибка аутентификации: {error}</span>
+              </div>
+            </div>
+          )}
+          
+          {!isAuthenticated && !isLoading && !error && (
+            <div className="mb-4 p-3 bg-sonar/20 border border-sonar/50 rounded-lg">
+              <div className="flex items-center gap-2 text-sonar">
+                <span className="text-sm">Ожидание аутентификации...</span>
+              </div>
+            </div>
+          )}
+          
+          {isAuthenticated && user && (
+            <div className="mb-4 p-3 bg-steel rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-sonar rounded-full flex items-center justify-center">
+                  {user.photoUrl ? (
+                    <img src={user.photoUrl} alt="Avatar" className="w-full h-full rounded-full" />
+                  ) : (
+                    <User className="w-4 h-4 text-white" />
+                  )}
+                </div>
+                <div>
+                  <div className="font-heading font-semibold text-body text-foam">
+                    {user.firstName} {user.lastName}
+                  </div>
+                  <div className="text-caption text-mist">
+                    @{user.username || 'user'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
           {!lobbyId ? (
             <Button
               variant="primary"
               size="lg"
               onClick={handleCreateLobby}
               loading={isCreating}
-              disabled={isCreating}
+              disabled={isCreating || !isAuthenticated}
               className="w-full flex items-center justify-center gap-2"
             >
               <UserPlus className="w-5 h-5" />

@@ -50,6 +50,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const authenticate = async () => {
       try {
+        // Если есть данные Telegram пользователя, используем их для локальной аутентификации
+        if (tgUser) {
+          const normalizedUser: User = {
+            id: tgUser.id,
+            telegramId: tgUser.id,
+            firstName: tgUser.first_name || 'Игрок',
+            lastName: tgUser.last_name,
+            username: tgUser.username,
+            photoUrl: tgUser.photo_url,
+            gamesPlayed: 0,
+            gamesWon: 0,
+            rating: 1000,
+            createdAt: new Date().toISOString()
+          };
+
+          setAuthState({
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+            user: normalizedUser,
+            clearError: () => setAuthState(prev => ({ ...prev, error: null }))
+          });
+          return;
+        }
+
+        // Если нет Telegram данных, пробуем серверную аутентификацию
         const initData = (webApp as any)?.initData;
         if (!initData) {
           setAuthState(prev => ({ ...prev, isLoading: false, error: 'Telegram initData not available' }));
@@ -68,7 +94,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             firstName: user.firstName,
             lastName: user.lastName,
             username: user.username,
-            photoUrl: undefined,
+            photoUrl: user.photoUrl || tgUser?.photo_url,
             gamesPlayed: 0,
             gamesWon: 0,
             rating: 1000,
@@ -86,6 +112,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setAuthState(prev => ({ ...prev, isLoading: false, error: response.data?.error || 'Authentication failed' }));
         }
       } catch (error) {
+        console.error('Authentication error:', error);
         setAuthState(prev => ({ ...prev, isLoading: false, error: error instanceof Error ? error.message : 'Authentication error' }));
       }
     };
@@ -94,9 +121,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Если Telegram готов, пробуем аутентифицироваться один раз
       if (!authState.isAuthenticated && authState.isLoading) {
         authenticate();
-      } else if (!tgUser) {
-        setAuthState(prev => ({ ...prev, isLoading: false, error: 'Telegram user data not available' }));
       }
+    } else {
+      // Если Telegram не готов, ждем
+      setAuthState(prev => ({ ...prev, isLoading: true }));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isReady, webApp, tgUser]);

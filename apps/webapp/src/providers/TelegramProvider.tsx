@@ -69,6 +69,19 @@ export const TelegramProvider: React.FC<TelegramProviderProps> = ({ children }) 
         '--tg-theme-secondary-bg-color',
         tg.themeParams.secondary_bg_color || '#f1f1f1'
       );
+    } else {
+      // Fallback для разработки в браузере
+      console.log('Telegram WebApp not available, using development mode');
+      setWebApp(null);
+      setTheme(null);
+      setUser({
+        id: 123456789,
+        first_name: 'Test',
+        last_name: 'User',
+        username: 'testuser',
+        photo_url: null
+      });
+      setIsReady(true);
     }
   }, []);
 
