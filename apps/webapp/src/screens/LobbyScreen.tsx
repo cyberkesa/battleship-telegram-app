@@ -73,10 +73,10 @@ export const LobbyScreen: React.FC = () => {
           // Auto-join if not in lobby and lobby is waiting
           if (!current && data.status === 'waiting' && data.players.length < 2) {
             try {
-              await lobbyAPI.join(lobbyId, user.firstName || 'Игрок');
+              await lobbyAPI.join(lobbyId, user.firstName || 'Игрок', user.photoUrl);
               const refreshed = await lobbyAPI.status(lobbyId);
               const newData = refreshed.data as Lobby;
-              setLobby(newData);
+              setLobby(newData as any);
               const me = newData.players.find(p => p.id === user.id);
               setIsReady(!!me?.isReady);
             } catch (e) {
@@ -267,7 +267,7 @@ export const LobbyScreen: React.FC = () => {
             </div>
           )}
         </div>
-
+        
         {/* Actions */}
         <div className="space-y-3">
           {/* Invite link */}

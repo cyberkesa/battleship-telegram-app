@@ -93,8 +93,12 @@ export const HomeScreen: React.FC = () => {
               onClick={handleProfile}
               className="flex items-center gap-2 px-3 py-2 bg-bg-graphite rounded-lg hover:bg-steel transition-colors"
             >
-              <div className="w-8 h-8 bg-sonar rounded-full flex items-center justify-center">
-                <User className="w-4 h-4 text-white" />
+              <div className="w-8 h-8 bg-sonar rounded-full flex items-center justify-center overflow-hidden">
+                {user?.photoUrl ? (
+                  <img src={user.photoUrl} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-4 h-4 text-white" />
+                )}
               </div>
               <div className="text-left hidden sm:block">
                 <div className="font-heading font-semibold text-body text-foam truncate">
@@ -207,7 +211,7 @@ export const HomeScreen: React.FC = () => {
               <p>Потопите все корабли противника для победы</p>
             </div>
             <div className="flex items-start gap-2">
-              <div className="w-2 h-2 bg-sonar rounded-full mt-2 flex-shrink-0"></div>
+              <div className="w-2 h-2 bg-sonар rounded-full mt-2 flex-shrink-0"></div>
               <p>На ход дается 5 секунд, на расстановку 80 секунд</p>
             </div>
           </div>

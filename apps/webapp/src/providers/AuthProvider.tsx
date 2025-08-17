@@ -50,7 +50,44 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const authenticate = async () => {
       try {
-        // Если есть данные Telegram пользователя, используем их для локальной аутентификации
+        // Prefer server-side authentication when initData is available to obtain JWT
+        const initData = (webApp as any)?.initData || (window as any)?.Telegram?.WebApp?.initData;
+        if (initData) {
+          const response = await authAPI.authenticate({ initData });
+          if (response.data?.success) {
+            const { token, user } = response.data.data;
+            if (token) {
+              localStorage.setItem('auth_token', token);
+              api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            }
+            const normalizedUser: User = {
+              id: user.id,
+              telegramId: user.telegramId,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              username: user.username,
+              photoUrl: user.photoUrl || tgUser?.photo_url,
+              gamesPlayed: 0,
+              gamesWon: 0,
+              rating: 1000,
+              createdAt: new Date().toISOString()
+            };
+
+            setAuthState({
+              isAuthenticated: true,
+              isLoading: false,
+              error: null,
+              user: normalizedUser,
+              clearError: () => setAuthState(prev => ({ ...prev, error: null }))
+            });
+            return;
+          } else {
+            setAuthState(prev => ({ ...prev, isLoading: false, error: response.data?.error || 'Authentication failed' }));
+            return;
+          }
+        }
+
+        // Fallback: if Telegram user is available but no initData (e.g., dev mode), use local auth
         if (tgUser) {
           const normalizedUser: User = {
             id: tgUser.id,
@@ -75,43 +112,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return;
         }
 
-        // Если нет Telegram данных, пробуем серверную аутентификацию
-        const initData = (webApp as any)?.initData;
-        if (!initData) {
-          setAuthState(prev => ({ ...prev, isLoading: false, error: 'Telegram initData not available' }));
-          return;
-        }
-
-        const response = await authAPI.authenticate({ initData });
-        if (response.data?.success) {
-          const { token, user } = response.data.data;
-          if (token) {
-            localStorage.setItem('auth_token', token);
-            api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          }
-          const normalizedUser: User = {
-            id: user.id,
-            telegramId: user.telegramId,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            username: user.username,
-            photoUrl: user.photoUrl || tgUser?.photo_url,
-            gamesPlayed: 0,
-            gamesWon: 0,
-            rating: 1000,
-            createdAt: new Date().toISOString()
-          };
-
-          setAuthState({
-            isAuthenticated: true,
-            isLoading: false,
-            error: null,
-            user: normalizedUser,
-            clearError: () => setAuthState(prev => ({ ...prev, error: null }))
-          });
-        } else {
-          setAuthState(prev => ({ ...prev, isLoading: false, error: response.data?.error || 'Authentication failed' }));
-        }
+        // Neither initData nor tgUser available
+        setAuthState(prev => ({ ...prev, isLoading: false, error: 'Telegram initData not available' }));
       } catch (error) {
         console.error('Authentication error:', error);
         setAuthState(prev => ({ ...prev, isLoading: false, error: error instanceof Error ? error.message : 'Authentication error' }));
@@ -119,12 +121,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     if (isReady) {
-      // Если Telegram готов, пробуем аутентифицироваться один раз
+      // Attempt authentication once when Telegram WebApp context is ready
       if (!authState.isAuthenticated && authState.isLoading) {
         authenticate();
       }
     } else {
-      // Если Telegram не готов, ждем
+      // Wait until Telegram is ready
       setAuthState(prev => ({ ...prev, isLoading: true }));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

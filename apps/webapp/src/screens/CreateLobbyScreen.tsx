@@ -56,6 +56,8 @@ export const CreateLobbyScreen: React.FC = () => {
       const lobby = res.data as { id: string; inviteLink: string };
       setLobbyId(lobby.id);
       setInviteLink(lobby.inviteLink || buildLobbyDeepLink(lobby.id));
+      // Автопереход в лобби после успешного создания
+      navigate(`/lobby/${lobby.id}`);
     } catch (err: any) {
       console.error('Ошибка создания лобби:', err);
     } finally {

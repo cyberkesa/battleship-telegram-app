@@ -61,8 +61,12 @@ export const ProfileScreen: React.FC = () => {
         {/* Profile Info */}
         <div className="bg-bg-graphite rounded-card ring-1 ring-edge p-4">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-sonar rounded-full flex items-center justify-center">
-              <User className="w-8 h-8 text-white" />
+            <div className="w-16 h-16 bg-sonar rounded-full flex items-center justify-center overflow-hidden">
+              {user?.photoUrl ? (
+                <img src={user.photoUrl} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <User className="w-8 h-8 text-white" />
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="font-heading font-bold text-h3 text-foam truncate">
@@ -72,8 +76,8 @@ export const ProfileScreen: React.FC = () => {
                 Рейтинг: {stats.rating}
               </p>
               <div className="flex items-center gap-2 mt-1">
-                <Medal className="w-4 h-4 text-sonar" />
-                <span className="text-caption text-sonar font-semibold">
+                <Medal className="w-4 h-4 text-sonар" />
+                <span className="text-caption text-sonар font-semibold">
                   {stats.rank}
                 </span>
               </div>
@@ -85,7 +89,7 @@ export const ProfileScreen: React.FC = () => {
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-bg-graphite rounded-card ring-1 ring-edge p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Trophy className="w-5 h-5 text-sonar" />
+              <Trophy className="w-5 h-5 text-sonар" />
               <span className="font-heading font-semibold text-body text-foam">
                 Победы
               </span>
@@ -126,7 +130,7 @@ export const ProfileScreen: React.FC = () => {
                 <Clock className="w-4 h-4 text-mist" />
                 <span className="text-body text-foam">Среднее время игры</span>
               </div>
-              <span className="font-mono font-semibold text-body text-sonar">
+              <span className="font-mono font-semibold text-body text-sonар">
                 {stats.averageTime}
               </span>
             </div>
@@ -136,7 +140,7 @@ export const ProfileScreen: React.FC = () => {
                 <Star className="w-4 h-4 text-mist" />
                 <span className="text-body text-foam">Лучшее время</span>
               </div>
-              <span className="font-mono font-semibold text-body text-sonar">
+              <span className="font-mono font-semibold text-body text-sonар">
                 {stats.bestTime}
               </span>
             </div>
@@ -146,7 +150,7 @@ export const ProfileScreen: React.FC = () => {
                 <TrendingUp className="w-4 h-4 text-mist" />
                 <span className="text-body text-foam">Текущая серия побед</span>
               </div>
-              <span className="font-mono font-semibold text-body text-sonar">
+              <span className="font-mono font-semibold text-body text-sonар">
                 {stats.currentStreak}
               </span>
             </div>
@@ -156,7 +160,7 @@ export const ProfileScreen: React.FC = () => {
                 <Trophy className="w-4 h-4 text-mist" />
                 <span className="text-body text-foam">Максимальная серия</span>
               </div>
-              <span className="font-mono font-semibold text-body text-sonar">
+              <span className="font-mono font-semibold text-body text-sonар">
                 {stats.maxStreak}
               </span>
             </div>
@@ -172,7 +176,7 @@ export const ProfileScreen: React.FC = () => {
           <div className="grid grid-cols-2 gap-3">
             <div className="p-3 bg-steel rounded-lg">
               <div className="flex items-center gap-2 mb-1">
-                <Medal className="w-4 h-4 text-sonar" />
+                <Medal className="w-4 h-4 text-sonар" />
                 <span className="font-heading font-semibold text-caption text-foam">
                   Первая победа
                 </span>
@@ -184,7 +188,7 @@ export const ProfileScreen: React.FC = () => {
 
             <div className="p-3 bg-steel rounded-lg">
               <div className="flex items-center gap-2 mb-1">
-                <Trophy className="w-4 h-4 text-sonar" />
+                <Trophy className="w-4 h-4 text-sonар" />
                 <span className="font-heading font-semibold text-caption text-foam">
                   Серия побед
                 </span>
@@ -196,7 +200,7 @@ export const ProfileScreen: React.FC = () => {
 
             <div className="p-3 bg-steel rounded-lg">
               <div className="flex items-center gap-2 mb-1">
-                <Target className="w-4 h-4 text-sonar" />
+                <Target className="w-4 h-4 text-sonар" />
                 <span className="font-heading font-semibold text-caption text-foam">
                   Точный стрелок
                 </span>
@@ -208,7 +212,7 @@ export const ProfileScreen: React.FC = () => {
 
             <div className="p-3 bg-steel rounded-lg">
               <div className="flex items-center gap-2 mb-1">
-                <Clock className="w-4 h-4 text-sonar" />
+                <Clock className="w-4 h-4 text-sonар" />
                 <span className="font-heading font-semibold text-caption text-foam">
                   Быстрая игра
                 </span>
