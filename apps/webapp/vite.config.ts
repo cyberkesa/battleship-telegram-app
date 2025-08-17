@@ -2,14 +2,16 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { fileURLToPath } from 'node:url'
 
+const isBuild = process.env.NODE_ENV === 'production'
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@battleship/shared-types': fileURLToPath(new URL('../../packages/shared-types/dist/index.js', import.meta.url)),
-      '@battleship/game-logic': fileURLToPath(new URL('../../packages/game-logic/dist/index.js', import.meta.url)),
-      '@battleship/ui': fileURLToPath(new URL('../../packages/ui/dist/index.js', import.meta.url)),
+      '@battleship/shared-types': fileURLToPath(new URL(isBuild ? '../../packages/shared-types/dist/index.js' : '../../packages/shared-types/src/index.ts', import.meta.url)),
+      '@battleship/game-logic': fileURLToPath(new URL(isBuild ? '../../packages/game-logic/dist/index.js' : '../../packages/game-logic/src/index.ts', import.meta.url)),
+      '@battleship/ui': fileURLToPath(new URL(isBuild ? '../../packages/ui/dist/index.js' : '../../packages/ui/src/index.ts', import.meta.url)),
     },
   },
   server: {

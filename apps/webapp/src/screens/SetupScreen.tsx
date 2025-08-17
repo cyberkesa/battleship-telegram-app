@@ -178,10 +178,11 @@ export const SetupScreen: React.FC = () => {
     // Устанавливаем флаг запуска игры
     setIsGameStarted(true);
     try {
-      // Настраиваем игровую доску через API
-      await setupBoard(gameId, fleet);
+      // Настраиваем игровую доску через API и получаем фактический matchId
+      const actualMatchId = await setupBoard(gameId, fleet);
+      const redirectId = actualMatchId ?? gameId;
       // Переходим на страницу игры
-      navigate(`/game/${gameId}`);
+      navigate(`/game/${redirectId}`);
     } catch (e) {
       console.error('Failed to setup board:', e);
       // Сбрасываем флаг при ошибке

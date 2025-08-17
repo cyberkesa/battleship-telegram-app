@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect } from 'react';
 import { useTelegram } from './TelegramProvider';
+import { authAPI } from '../services/api';
 
 interface User {
   id: number;
@@ -37,7 +38,7 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const { user: tgUser, isReady } = useTelegram();
+  const { user: tgUser, isReady, webApp } = useTelegram();
   const [authState, setAuthState] = React.useState<AuthContextType>({
     isAuthenticated: false,
     isLoading: true,
@@ -47,38 +48,58 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   });
 
   useEffect(() => {
-    if (isReady && tgUser) {
-      // Создаем пользователя из Telegram данных
-      const user: User = {
-        id: tgUser.id,
-        telegramId: tgUser.id,
-        firstName: tgUser.first_name,
-        lastName: tgUser.last_name,
-        username: tgUser.username,
-        photoUrl: undefined, // Telegram не предоставляет фото в WebApp
-        gamesPlayed: 0,
-        gamesWon: 0,
-        rating: 1000,
-        createdAt: new Date().toISOString()
-      };
+    const authenticate = async () => {
+      try {
+        const initData = (webApp as any)?.initData;
+        if (!initData) {
+          setAuthState(prev => ({ ...prev, isLoading: false, error: 'Telegram initData not available' }));
+          return;
+        }
 
-      setAuthState({
-        isAuthenticated: true,
-        isLoading: false,
-        error: null,
-        user,
-        clearError: () => setAuthState(prev => ({ ...prev, error: null }))
-      });
-    } else if (isReady && !tgUser) {
-      setAuthState({
-        isAuthenticated: false,
-        isLoading: false,
-        error: 'Telegram user data not available',
-        user: null,
-        clearError: () => setAuthState(prev => ({ ...prev, error: null }))
-      });
+        const response = await authAPI.authenticate({ initData });
+        if (response.data?.success) {
+          const { token, user } = response.data.data;
+          if (token) {
+            localStorage.setItem('auth_token', token);
+          }
+          const normalizedUser: User = {
+            id: user.id,
+            telegramId: user.telegramId,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            username: user.username,
+            photoUrl: undefined,
+            gamesPlayed: 0,
+            gamesWon: 0,
+            rating: 1000,
+            createdAt: new Date().toISOString()
+          };
+
+          setAuthState({
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+            user: normalizedUser,
+            clearError: () => setAuthState(prev => ({ ...prev, error: null }))
+          });
+        } else {
+          setAuthState(prev => ({ ...prev, isLoading: false, error: response.data?.error || 'Authentication failed' }));
+        }
+      } catch (error) {
+        setAuthState(prev => ({ ...prev, isLoading: false, error: error instanceof Error ? error.message : 'Authentication error' }));
+      }
+    };
+
+    if (isReady) {
+      // Если Telegram готов, пробуем аутентифицироваться один раз
+      if (!authState.isAuthenticated && authState.isLoading) {
+        authenticate();
+      } else if (!tgUser) {
+        setAuthState(prev => ({ ...prev, isLoading: false, error: 'Telegram user data not available' }));
+      }
     }
-  }, [isReady, tgUser]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isReady, webApp, tgUser]);
 
   return (
     <AuthContext.Provider value={authState}>
