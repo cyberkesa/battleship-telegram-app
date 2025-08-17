@@ -26,7 +26,11 @@ export class LobbyService {
 
   async createLobby(data: { playerId: string; playerName: string; playerAvatar?: string }): Promise<Lobby> {
     const lobbyId = randomUUID();
-    const inviteLink = `${process.env.FRONTEND_URL}/lobby/${lobbyId}`;
+    // Prefer Telegram Mini App deep link if bot username is provided; fallback to frontend URL
+    const botUsername = process.env.TELEGRAM_BOT_USERNAME;
+    const inviteLink = botUsername
+      ? `https://t.me/${botUsername}?startapp=${encodeURIComponent(`join:${lobbyId}`)}`
+      : `${process.env.FRONTEND_URL}/lobby/${lobbyId}`;
 
     const lobby = await this._prisma.lobby.create({
       data: {
@@ -173,7 +177,7 @@ export class LobbyService {
     
     if (allReady && updatedLobby.players.length === 2) {
       // Создаем матч
-             const matchId = randomUUID();
+      	     const matchId = randomUUID();
       // const matchState = createMatch(matchId);
       const matchState = {
         id: matchId,
@@ -183,7 +187,7 @@ export class LobbyService {
 
 
       // Сохраняем матч в БД
-              const savedMatch = await this._prisma.match.create({
+      	      const savedMatch = await this._prisma.match.create({
           data: {
             id: matchState.id,
             status: matchState.status,
@@ -203,7 +207,7 @@ export class LobbyService {
         },
       });
 
-          return {
+      	  return {
       id: updatedLobby.id,
       status: 'playing',
       players: updatedLobby.players.map(p => ({

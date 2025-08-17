@@ -66,3 +66,13 @@ export const eventsAPI = {
       responseType: 'stream' 
     }),
 };
+
+export const lobbyAPI = {
+  create: (playerName: string, playerAvatar?: string) => 
+    api.post('/lobby/create', { playerName, playerAvatar }),
+  join: (lobbyId: string, playerName: string, playerAvatar?: string) => 
+    api.post('/lobby/join', { lobbyId, playerName, playerAvatar }),
+  status: (lobbyId: string) => api.get(`/lobby/${lobbyId}`),
+  setReady: (lobbyId: string) => api.post(`/lobby/${lobbyId}/ready`),
+  leave: (lobbyId: string) => api.post(`/lobby/${lobbyId}/leave`),
+};

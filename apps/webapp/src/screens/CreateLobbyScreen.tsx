@@ -11,11 +11,13 @@ import {
   CheckCircle,
   Users
 } from 'lucide-react';
+import { lobbyAPI } from '../services/api';
 
 export const CreateLobbyScreen: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [lobbyId, setLobbyId] = useState<string>('');
+  const [inviteLink, setInviteLink] = useState<string>('');
   const [isCreating, setIsCreating] = useState(false);
 
   const [copied, setCopied] = useState(false);
@@ -45,34 +47,13 @@ export const CreateLobbyScreen: React.FC = () => {
 
     try {
       setIsCreating(true);
-      
-      // Создаем локальное лобби с уникальным ID
-      const newLobbyId = `lobby_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      // Сохраняем в localStorage для демонстрации
-      const lobby = {
-        id: newLobbyId,
-        host: {
-          id: user.id,
-          name: user.firstName || 'Игрок',
-          avatar: user.photoUrl,
-          isReady: false,
-          isHost: true
-        },
-        players: [{
-          id: user.id,
-          name: user.firstName || 'Игрок',
-          avatar: user.photoUrl,
-          isReady: false,
-          isHost: true
-        }],
-        status: 'waiting',
-        createdAt: new Date().toISOString()
-      };
-      
-      localStorage.setItem(`lobby_${newLobbyId}`, JSON.stringify(lobby));
-      setLobbyId(newLobbyId);
 
+      // Создаем лобби на сервере
+      const res = await lobbyAPI.create(user.firstName || 'Игрок', user.photoUrl);
+      const data = res.data;
+      const created = data;
+      setLobbyId(created.id);
+      setInviteLink(created.inviteLink || buildLobbyDeepLink(created.id));
     } catch (err: any) {
       console.error('Ошибка создания лобби:', err);
     } finally {
@@ -81,7 +62,7 @@ export const CreateLobbyScreen: React.FC = () => {
   };
 
   const handleCopyLink = async () => {
-    const link = buildLobbyDeepLink(lobbyId);
+    const link = inviteLink || buildLobbyDeepLink(lobbyId);
     try {
       await navigator.clipboard.writeText(link);
       setCopied(true);
@@ -92,7 +73,7 @@ export const CreateLobbyScreen: React.FC = () => {
   };
 
   const handleShare = async () => {
-    const deepLink = buildLobbyDeepLink(lobbyId);
+    const deepLink = inviteLink || buildLobbyDeepLink(lobbyId);
     const text = 'Приглашаю тебя сыграть в Морской бой!';
     if (!openTelegramShare(deepLink, text)) {
       if (navigator.share) {
