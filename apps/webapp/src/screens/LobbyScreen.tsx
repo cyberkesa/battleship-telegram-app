@@ -12,23 +12,23 @@ import {
   User,
   AlertCircle
 } from 'lucide-react';
+import { lobbyAPI } from '../services/api';
 
 interface LobbyPlayer {
-  id: number;
-  firstName: string;
-  lastName?: string;
-  username?: string;
-  photoUrl?: string;
+  id: string;
+  name: string;
+  avatar?: string;
   isReady: boolean;
   isHost: boolean;
 }
 
 interface Lobby {
   id: string;
-  host: LobbyPlayer;
   players: LobbyPlayer[];
-  status: 'waiting' | 'ready' | 'starting';
-  createdAt: string;
+  status: 'waiting' | 'ready' | 'playing' | 'finished' | 'starting';
+  createdAt: string | Date;
+  inviteLink?: string;
+  matchId?: string;
 }
 
 export const LobbyScreen: React.FC = () => {
@@ -39,7 +39,6 @@ export const LobbyScreen: React.FC = () => {
   const [lobby, setLobby] = useState<Lobby | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isReady, setIsReady] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
 
   const botUsername = import.meta.env.VITE_TELEGRAM_BOT_USERNAME;
@@ -51,81 +50,93 @@ export const LobbyScreen: React.FC = () => {
     return `${window.location.origin}/lobby/${id}`;
   };
 
-  // Загружаем лобби из localStorage
-  useEffect(() => {
-    if (!lobbyId) {
-      setError('ID лобби не найден');
-      setIsLoading(false);
-      return;
-    }
-
+  const fetchLobby = async () => {
+    if (!lobbyId) return;
     try {
-      const lobbyData = localStorage.getItem(`lobby_${lobbyId}`);
-      if (lobbyData) {
-        const lobbyObj = JSON.parse(lobbyData);
-        setLobby(lobbyObj);
-        
-        // Проверяем, готов ли текущий пользователь
-        const currentPlayer = lobbyObj.players.find((p: LobbyPlayer) => p.id === user?.id);
-        setIsReady(currentPlayer?.isReady || false);
-      } else {
-        setError('Лобби не найдено');
-      }
-    } catch (err) {
-      setError('Ошибка загрузки лобби');
+      const res = await lobbyAPI.status(lobbyId);
+      setLobby(res.data);
+      setError(null);
+    } catch (e) {
+      setError('Лобби не найдено');
     } finally {
       setIsLoading(false);
     }
-  }, [lobbyId, user?.id]);
+  };
 
-  const handleToggleReady = () => {
-    if (!lobby || !user) return;
+  // Initial load + join if needed
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      if (!lobbyId) {
+        setError('ID лобби не найден');
+        setIsLoading(false);
+        return;
+      }
+      try {
+        setIsLoading(true);
+        const res = await lobbyAPI.status(lobbyId);
+        let currentLobby: Lobby = res.data;
 
-    const newIsReady = !isReady;
-    setIsReady(newIsReady);
+        const currentUserId = String(user?.id ?? '');
+        const isMember = currentLobby.players.some(p => p.id === currentUserId);
+        const hasSlot = currentLobby.players.length < 2 && currentLobby.status === 'waiting';
 
-    // Обновляем лобби в localStorage
-    const updatedLobby: Lobby = {
-      ...lobby,
-      players: lobby.players.map(player => 
-        player.id === user.id 
-          ? { ...player, isReady: newIsReady }
-          : player
-      ),
-      status: newIsReady && lobby.players.length === 2 ? 'ready' : 'waiting'
+        if (!isMember && hasSlot) {
+          // Join lobby as second player
+          await lobbyAPI.join(lobbyId, user?.firstName || 'Игрок', user?.photoUrl);
+          const refreshed = await lobbyAPI.status(lobbyId);
+          currentLobby = refreshed.data;
+        }
+        if (!cancelled) {
+          setLobby(currentLobby);
+          setError(null);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setError('Ошибка загрузки лобби');
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
     };
+    load();
+    return () => { cancelled = true; };
+  }, [lobbyId, user?.id, user?.firstName, user?.photoUrl]);
 
-    setLobby(updatedLobby);
-    localStorage.setItem(`lobby_${lobbyId}`, JSON.stringify(updatedLobby));
+  // Polling to update lobby state
+  useEffect(() => {
+    if (!lobbyId) return;
+    const interval = setInterval(() => {
+      lobbyAPI.status(lobbyId)
+        .then(r => setLobby(r.data))
+        .catch(() => {});
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [lobbyId]);
+
+  const handleToggleReady = async () => {
+    if (!lobbyId) return;
+    try {
+      await lobbyAPI.setReady(lobbyId);
+      const res = await lobbyAPI.status(lobbyId);
+      setLobby(res.data);
+    } catch (e) {
+      // noop
+    }
   };
 
   const handleStartGame = async () => {
-    if (!lobby || !user) return;
-
+    if (!lobby || !lobbyId) return;
     try {
       setIsStarting(true);
-      
-      // Создаем матч
-      const matchId = `match_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      // Сохраняем матч в localStorage
-      const match = {
-        id: matchId,
-        lobbyId: lobby.id,
-        players: lobby.players,
-        status: 'setup',
-        createdAt: new Date().toISOString()
-      };
-      
-      localStorage.setItem(`match_${matchId}`, JSON.stringify(match));
-      
-      // Обновляем статус лобби
-      const updatedLobby: Lobby = { ...lobby, status: 'starting' };
-      setLobby(updatedLobby);
-      localStorage.setItem(`lobby_${lobbyId}`, JSON.stringify(updatedLobby));
-      
-      // Переходим к настройке игры
-      navigate(`/setup/${matchId}`);
+      // Ensure ready, then navigate if match created
+      await lobbyAPI.setReady(lobbyId);
+      const res = await lobbyAPI.status(lobbyId);
+      const updated = res.data as Lobby;
+      setLobby(updated);
+      if (updated.matchId) {
+        navigate(`/setup/${updated.matchId}`);
+      }
     } catch (err) {
       console.error('Ошибка запуска игры:', err);
     } finally {
@@ -135,17 +146,16 @@ export const LobbyScreen: React.FC = () => {
 
   const handleCopyInviteLink = () => {
     if (!lobbyId) return;
-    
-    const inviteLink = buildLobbyDeepLink(lobbyId);
-    navigator.clipboard.writeText(inviteLink);
-    
+    const link = lobby?.inviteLink || buildLobbyDeepLink(lobbyId);
+    navigator.clipboard.writeText(link);
     alert('Ссылка скопирована в буфер обмена!');
   };
 
-  const handleLeaveLobby = () => {
-    if (lobbyId) {
-      localStorage.removeItem(`lobby_${lobbyId}`);
-    }
+  const handleLeaveLobby = async () => {
+    if (!lobbyId) return;
+    try {
+      await lobbyAPI.leave(lobbyId);
+    } catch {}
     navigate('/');
   };
 
@@ -175,9 +185,11 @@ export const LobbyScreen: React.FC = () => {
     );
   }
 
-  const isHost = lobby.host.id === user?.id;
+  const currentUserId = String(user?.id ?? '');
+  const isHost = lobby.players.find(p => p.isHost)?.id === currentUserId;
   const allPlayersReady = lobby.players.length === 2 && lobby.players.every(p => p.isReady);
   const canStartGame = isHost && allPlayersReady;
+  const userIsReady = lobby.players.find(p => p.id === currentUserId)?.isReady ?? false;
 
   return (
     <div className="min-h-screen bg-bg-deep text-foam" style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
@@ -210,7 +222,7 @@ export const LobbyScreen: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
               <h3 className="font-heading font-semibold text-h3 text-foam truncate">
-                Статус: {lobby.status === 'waiting' ? 'Ожидание игроков' : 'Готово к игре'}
+                Статус: {lobby.players.length === 2 ? (allPlayersReady ? 'Готово к игре' : 'Ожидание готовности') : 'Ожидание игроков'}
               </h3>
               <p className="text-secondary text-mist truncate">
                 {lobby.players.length}/2 игроков
@@ -239,15 +251,15 @@ export const LobbyScreen: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <div className="w-10 h-10 bg-bg-deep rounded-full ring-2 ring-sonar flex items-center justify-center flex-shrink-0">
-                    {player.photoUrl ? (
-                      <img src={player.photoUrl} alt="Avatar" className="w-full h-full rounded-full" />
+                    {player.avatar ? (
+                      <img src={player.avatar} alt="Avatar" className="w-full h-full rounded-full" />
                     ) : (
                       <User className="w-5 h-5 text-sonar" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h4 className="font-heading font-semibold text-body text-foam truncate">
-                      {player.firstName} {player.lastName}
+                      {player.name}
                     </h4>
                     <p className="text-caption text-mist truncate">
                       {player.isHost ? 'Хост' : 'Игрок'}
@@ -299,12 +311,12 @@ export const LobbyScreen: React.FC = () => {
 
           {/* Ready toggle */}
           <Button
-            variant={isReady ? "primary" : "primary"}
+            variant={userIsReady ? 'primary' : 'primary'}
             size="lg"
             onClick={handleToggleReady}
             className="w-full flex items-center justify-center gap-2"
           >
-            {isReady ? (
+            {userIsReady ? (
               <>
                 <CheckCircle className="w-4 h-4" />
                 Готов к игре
