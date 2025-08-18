@@ -37,7 +37,7 @@ function App() {
       <AuthProvider>
         <BrowserRouter>
           <DeepLinkHandler />
-          <NetworkDebugOverlay />
+          {import.meta.env.VITE_DEBUG_NET === 'true' ? <NetworkDebugOverlay /> : null}
           <Routes>
             {/* Главная страница */}
             <Route path="/" element={<HomeScreen />} />
