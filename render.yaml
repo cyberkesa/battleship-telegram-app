@@ -3,7 +3,7 @@ services:
     name: battleship-api
     runtime: docker
     dockerfilePath: apps/api/Dockerfile
-    plan: free
+    plan: starter
     autoDeployTrigger: commit
     healthCheckPath: /api/health
     envVars:
@@ -15,7 +15,7 @@ services:
   - type: web
     name: battleship-webapp
     runtime: static
-    plan: free
+    plan: starter
     rootDir: apps/webapp
     buildCommand: npm ci --no-audit --no-fund && npm run build
     staticPublishPath: dist
