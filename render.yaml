@@ -11,9 +11,8 @@ services:
       - key: PORT
         value: 3000
 
-  - type: static_site
+  - type: static
     name: battleship-webapp
-    env: static
     plan: free
     buildCommand: npm ci --no-audit --no-fund && npm run -w apps/webapp build
     staticPublishPath: apps/webapp/dist
