@@ -36,19 +36,34 @@ export class HealthController {
     const username = process.env.REDIS_USERNAME || process.env.REDISUSER || 'default';
     let client: Redis | undefined;
     try {
+      // Use strict, fast-failing options to avoid long retries during health checks
+      const commonOpts: any = {
+        name: 'health',
+        maxRetriesPerRequest: 1,
+        retryStrategy: () => null,
+        enableReadyCheck: false,
+        enableOfflineQueue: false,
+        connectTimeout: 1500,
+      };
       if (url) {
         let enableTls = false;
         try {
           const u = new URL(url);
           enableTls = u.protocol === 'rediss:' || /\.proxy\.rlwy\.net$/i.test(u.hostname);
         } catch {}
-        client = new Redis(url, { tls: enableTls ? {} : undefined, name: 'health' });
+        client = new Redis(url, { ...commonOpts, tls: enableTls ? {} : undefined });
       } else if (host && port) {
-        client = new Redis({ host, port, password, username, tls: process.env.REDIS_TLS === '1' ? {} : undefined, name: 'health' });
+        client = new Redis({ host, port, password, username, tls: process.env.REDIS_TLS === '1' ? {} : undefined, ...commonOpts });
       }
       if (client) {
         const t0 = Date.now();
-        const pong = await client.ping();
+        const timeout = 1500;
+        const pingPromise = client.ping();
+        const timed = Promise.race([
+          pingPromise,
+          new Promise((_, reject) => setTimeout(() => reject(new Error('PING timeout')), timeout)),
+        ]);
+        const pong = (await timed) as string;
         result.redis.ok = pong === 'PONG';
         result.redis.latencyMs = Date.now() - t0;
       } else {
