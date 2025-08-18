@@ -146,8 +146,14 @@ async function startBot() {
   
   if (process.env.NODE_ENV === 'production') {
     // Use webhook in production
-    const app = webhookCallback(bot, 'express');
-    // TODO: Set up webhook endpoint
+    const handler = webhookCallback(bot, 'express', {
+      secretToken: process.env.TELEGRAM_WEBHOOK_SECRET,
+    });
+    const express = await import('express');
+    const srv = express.default();
+    srv.post('/bot/webhook', handler);
+    const port = process.env.PORT || 3001;
+    srv.listen(port, () => console.log(`🤖 Bot webhook listening on ${port}`));
   } else {
     // Use polling in development
     await run(bot);

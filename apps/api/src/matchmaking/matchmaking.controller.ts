@@ -30,4 +30,13 @@ export class MatchmakingController {
     const userId = req.user.sub as string;
     return this._matchmakingService.leaveQueue(userId, mode);
   }
+
+  // Alias to match checklist naming: /matchmaking/cancel
+  @UseGuards(JwtAuthGuard)
+  @Post('cancel')
+  async cancel(@Request() req: any, @Body() body: Partial<JoinQueueRequest> = {}): Promise<QueueResponse> {
+    const userId = req.user.sub as string;
+    const mode = (body.mode ?? 'CLASSIC') as JoinQueueRequest['mode'];
+    return this._matchmakingService.leaveQueue(userId, mode);
+  }
 }

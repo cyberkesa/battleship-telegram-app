@@ -22,8 +22,11 @@
     "db:generate": "cd apps/api && npm run db:generate",
     "db:migrate": "cd apps/api && npm run db:migrate",
     "db:studio": "cd apps/api && npm run db:studio",
-    "start:prod:migrate": "cd apps/api && npx prisma migrate deploy && find /app -name 'main.js' -type f | head -1 | xargs node",
-    "start:prod": "npm run -w apps/api start:prod"
+    "start:prod:migrate": "cd apps/api && npx prisma migrate deploy && node dist/src/main.js",
+    "start:prod": "npm run -w apps/api start:prod",
+    "deploy:api": "railway up --service $RAILWAY_API_ID --root apps/api",
+    "deploy:bot": "railway up --service $RAILWAY_BOT_ID --root apps/bot",
+    "migrate:deploy": "cd apps/api && prisma migrate deploy"
   },
   "devDependencies": {
     "turbo": "^1.10.0",

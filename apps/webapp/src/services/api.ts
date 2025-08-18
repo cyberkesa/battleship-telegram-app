@@ -80,7 +80,7 @@ api.interceptors.response.use(
 
 // API endpoints
 export const authAPI = {
-  authenticate: (data: any) => api.post('/auth/telegram', data, { timeout: 30000 }),
+  authenticate: (data: any) => api.post('/auth/telegram/validate', data, { timeout: 30000 }),
   getProfile: () => api.get('/auth/me'),
 };
 
