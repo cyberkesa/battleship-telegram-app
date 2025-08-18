@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
+import { EventsController } from './events/events.controller';
 import { AuthModule } from './auth/auth.module';
 import { MatchmakingModule } from './matchmaking/matchmaking.module';
 import { LobbyModule } from './lobby/lobby.module';
@@ -17,7 +18,7 @@ import { PrismaService } from './infra/prisma.service';
     LobbyModule,
     GameModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, EventsController],
   providers: [PrismaService],
 })
 export class AppModule {}

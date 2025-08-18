@@ -32,6 +32,24 @@ export class AuthController {
     };
   }
 
+  // Alias to match checklist: /auth/telegram/validate
+  @Post('telegram/validate')
+  @HttpCode(HttpStatus.OK)
+  async validateInitData(@Body() body: { initData: string }): Promise<any> {
+    if (!body.initData) {
+      throw new BadRequestException('initData is required');
+    }
+    const telegramData = await this._telegramAuthService.verifyInitData(body.initData);
+    const result = await this._telegramAuthService.authenticateUser(telegramData);
+    return {
+      success: true,
+      data: {
+        token: result.sessionToken,
+        user: result.user,
+      },
+    };
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get('me')
   async getProfile(@Request() req: any) {
