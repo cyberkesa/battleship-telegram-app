@@ -1,4 +1,6 @@
 import axios from 'axios';
+import { debugNetAppend, debugNetUpdate } from '../stores/debugNetworkStore';
+import { randomUUID } from './uuid';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? `${window.location.origin.replace(/:\\d+$/, ':3000')}/api` : 'http://localhost:3000/api');
 
@@ -17,6 +19,20 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Debug capture: request
+    const id = randomUUID();
+    (config as any).__dbg_id = id;
+    (config as any).__dbg_startedAt = Date.now();
+    debugNetAppend({
+      id,
+      method: (config.method || 'GET').toUpperCase(),
+      url: config.url || '',
+      baseURL: config.baseURL,
+      requestHeaders: { ...(config.headers as any) },
+      requestBody: config.data,
+      startedAt: (config as any).__dbg_startedAt,
+    });
     return config;
   },
   (error) => {
@@ -27,9 +43,32 @@ api.interceptors.request.use(
 // Response interceptor to handle errors
 api.interceptors.response.use(
   (response) => {
+    const cfg: any = response.config || {};
+    const id: string | undefined = cfg.__dbg_id;
+    if (id) {
+      debugNetUpdate(id, {
+        status: response.status,
+        responseHeaders: response.headers as any,
+        responseBody: response.data,
+        durationMs: Date.now() - (useStart(cfg) || Date.now()),
+      });
+    }
     return response;
   },
   (error) => {
+    try {
+      const cfg: any = error.config || {};
+      const id: string | undefined = cfg.__dbg_id;
+      if (id) {
+        debugNetUpdate(id, {
+          status: error.response?.status,
+          responseHeaders: error.response?.headers,
+          responseBody: error.response?.data,
+          error: error.message,
+          durationMs: Date.now() - (useStart(cfg) || Date.now()),
+        });
+      }
+    } catch {}
     if (error.response?.status === 401) {
       // Handle unauthorized access
       localStorage.removeItem('auth_token');
@@ -76,3 +115,12 @@ export const eventsAPI = {
       responseType: 'stream' 
     }),
 };
+
+function useStart(cfg: any): number | undefined {
+  const id: string | undefined = cfg?.__dbg_id;
+  if (!id) return undefined;
+  // find in store for start time
+  // lightweight approach: we stored startedAt in append; duration computed via start on update using closure is not available here,
+  // so we stash it into config too
+  return cfg.__dbg_startedAt;
+}

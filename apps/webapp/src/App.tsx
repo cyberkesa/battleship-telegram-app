@@ -11,6 +11,8 @@ import { MatchmakingScreen } from './screens/MatchmakingScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { LeaderboardScreen } from './screens/LeaderboardScreen';
+import { NetworkDebugOverlay } from './components/NetworkDebugOverlay';
+import { setDebugNetEnabled } from './stores/debugNetworkStore';
 
 function DeepLinkHandler() {
   const navigate = useNavigate();
@@ -30,11 +32,20 @@ function DeepLinkHandler() {
 }
 
 function App() {
+  // Enable overlay via URL param ?debugNet=1 or env
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const v = params.get('debugNet');
+    if (v === '1' || v === 'true') {
+      setDebugNetEnabled(true);
+    }
+  }, []);
   return (
     <TelegramProvider>
       <AuthProvider>
         <BrowserRouter>
           <DeepLinkHandler />
+          <NetworkDebugOverlay />
           <Routes>
             {/* Главная страница */}
             <Route path="/" element={<HomeScreen />} />
