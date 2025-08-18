@@ -90,14 +90,19 @@ export class LobbyService {
 			throw new BadRequestException('Вы уже в этом лобби');
 		}
 
+		// Use latest name and avatar if provided; otherwise, pull from User record to keep consistency
+		const user = await this._prisma.user.findUnique({ where: { id: data.playerId } });
+		const playerName = data.playerName || `${user?.firstName ?? 'Игрок'}${user?.lastName ? ' ' + user.lastName : ''}`.trim();
+		const playerAvatar = data.playerAvatar || user?.photoUrl || undefined;
+
 		const updatedLobby = await this._prisma.lobby.update({
 			where: { id: data.lobbyId },
 			data: {
 				players: {
 					create: {
 						playerId: data.playerId,
-						name: data.playerName,
-						avatar: data.playerAvatar,
+						name: playerName,
+						avatar: playerAvatar,
 						isReady: false,
 						isHost: false,
 					},

@@ -9,6 +9,7 @@ interface TelegramUser {
   last_name?: string;
   username?: string;
   language_code?: string;
+  photo_url?: string;
 }
 
 interface TelegramInitData {
@@ -24,6 +25,7 @@ interface AuthResponse {
     firstName: string;
     lastName?: string;
     username?: string;
+    photoUrl?: string;
     createdAt: string;
   };
 }
@@ -42,6 +44,10 @@ export class TelegramAuthService {
     
     if (!hash) {
       throw new UnauthorizedException('Invalid initData: missing hash');
+    }
+
+    if (!process.env.TELEGRAM_BOT_TOKEN) {
+      throw new UnauthorizedException('Server misconfiguration: TELEGRAM_BOT_TOKEN is not set');
     }
 
     // Remove hash from params for verification
@@ -73,6 +79,21 @@ export class TelegramAuthService {
     }
     const parsedUser = JSON.parse(userParam) as TelegramUser;
 
+    // Validate auth_date to prevent replay (allow within 24h)
+    const authDateParam = params.get('auth_date');
+    if (!authDateParam) {
+      throw new UnauthorizedException('Invalid initData: missing auth_date');
+    }
+    const authDateSec = Number(authDateParam);
+    if (!Number.isFinite(authDateSec)) {
+      throw new UnauthorizedException('Invalid initData: bad auth_date');
+    }
+    const nowSec = Math.floor(Date.now() / 1000);
+    const maxAgeSec = 24 * 60 * 60; // 24 hours
+    if (nowSec - authDateSec > maxAgeSec) {
+      throw new UnauthorizedException('initData expired');
+    }
+
     return { initData, user: parsedUser };
   }
 
@@ -92,6 +113,7 @@ export class TelegramAuthService {
           firstName: user.first_name,
           lastName: user.last_name,
           username: user.username,
+          photoUrl: user.photo_url,
         },
       });
     } else {
@@ -102,6 +124,7 @@ export class TelegramAuthService {
           firstName: user.first_name,
           lastName: user.last_name,
           username: user.username,
+          photoUrl: user.photo_url ?? dbUser.photoUrl,
         },
       });
     }
@@ -126,6 +149,7 @@ export class TelegramAuthService {
         firstName: dbUser.firstName,
         lastName: dbUser.lastName,
         username: dbUser.username,
+        photoUrl: user.photo_url,
         createdAt: dbUser.createdAt.toISOString(),
       },
     };

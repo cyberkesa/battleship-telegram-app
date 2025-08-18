@@ -45,6 +45,7 @@ export class AuthController {
           username: user.username,
           firstName: user.firstName,
           lastName: user.lastName,
+          photoUrl: user.photoUrl,
           createdAt: user.createdAt.toISOString(),
         }
       };

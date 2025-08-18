@@ -87,6 +87,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }
         }
 
+        // If we already have a token, restore session by fetching profile
+        const existingToken = localStorage.getItem('auth_token');
+        if (existingToken) {
+          api.defaults.headers.common['Authorization'] = `Bearer ${existingToken}`;
+          const me = await authAPI.getProfile();
+          if (me.data?.success && me.data?.data) {
+            const u = me.data.data;
+            const normalizedUser: User = {
+              id: u.id,
+              telegramId: u.telegramId,
+              firstName: u.firstName,
+              lastName: u.lastName,
+              username: u.username,
+              photoUrl: u.photoUrl || tgUser?.photo_url,
+              gamesPlayed: 0,
+              gamesWon: 0,
+              rating: 1000,
+              createdAt: u.createdAt
+            };
+            setAuthState({
+              isAuthenticated: true,
+              isLoading: false,
+              error: null,
+              user: normalizedUser,
+              clearError: () => setAuthState(prev => ({ ...prev, error: null }))
+            });
+            return;
+          }
+        }
+
         // Fallback: if Telegram user is available but no initData (e.g., dev mode), use local auth
         if (tgUser) {
           const normalizedUser: User = {
