@@ -16,7 +16,7 @@ COPY packages/game-logic/package.json packages/game-logic/package.json
 COPY packages/contracts/package.json packages/contracts/package.json
 
 # Install dependencies (workspaces)
-RUN npm ci --ignore-scripts
+RUN npm ci --ignore-scripts --no-audit --no-fund
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -30,7 +30,7 @@ RUN npm run -w packages/shared-types build \
 	&& npm run -w packages/contracts build
 
 # Generate Prisma client for API schema
-RUN npx prisma generate --schema=apps/api/prisma/schema.prisma && npm rebuild
+RUN npx prisma generate --schema=apps/api/prisma/schema.prisma
 
 # Build only the API workspace
 RUN npx tsc -p apps/api/tsconfig.json
@@ -49,7 +49,13 @@ ENV PORT 3000
 
 # Copy built artifacts and necessary files
 COPY --from=builder /app/node_modules /app/node_modules
-COPY --from=builder /app/packages /app/packages
+# Copy only built package artifacts to shrink image size
+COPY --from=builder /app/packages/shared-types/package.json /app/packages/shared-types/package.json
+COPY --from=builder /app/packages/shared-types/dist /app/packages/shared-types/dist
+COPY --from=builder /app/packages/game-logic/package.json /app/packages/game-logic/package.json
+COPY --from=builder /app/packages/game-logic/dist /app/packages/game-logic/dist
+COPY --from=builder /app/packages/contracts/package.json /app/packages/contracts/package.json
+COPY --from=builder /app/packages/contracts/dist /app/packages/contracts/dist
 COPY --from=builder /app/apps/api/dist ./dist
 COPY --from=builder /app/apps/api/package.json ./package.json
 COPY --from=builder /app/apps/api/prisma ./prisma
