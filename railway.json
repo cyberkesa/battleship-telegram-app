@@ -1,0 +1,33 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "projects": [
+    {
+      "name": "battleship-telegram-app",
+      "services": [
+        {
+          "name": "api",
+          "path": "apps/api",
+          "source": {
+            "type": "dockerfile",
+            "dockerfilePath": "apps/api/Dockerfile"
+          },
+          "envs": {
+            "PORT": "3000"
+          }
+        },
+        {
+          "name": "webapp",
+          "path": "apps/webapp",
+          "source": {
+            "type": "dockerfile",
+            "dockerfilePath": "apps/webapp/Dockerfile"
+          },
+          "envs": {
+            "PORT": "80"
+          }
+        }
+      ]
+    }
+  ]
+}
+
