@@ -1,21 +1,26 @@
 import React from 'react';
-import { useDebugNetworkStore, toggleDebugNetOpen } from '../stores/debugNetworkStore';
+import { useDebugNetworkStore, toggleDebugNetOpen, setDebugNetEnabled, setDebugNetOpen } from '../stores/debugNetworkStore';
 
 export const NetworkDebugOverlay: React.FC = () => {
   const { enabled, isOpen, logs, clear, setEnabled } = useDebugNetworkStore();
 
-  if (!enabled) return null;
-
   return (
     <>
-      {/* Floating toggle button */}
+      {/* Floating toggle button (always visible) */}
       <button
-        onClick={() => toggleDebugNetOpen()}
+        onClick={() => {
+          if (!enabled) {
+            setDebugNetEnabled(true);
+            setDebugNetOpen(true);
+          } else {
+            toggleDebugNetOpen();
+          }
+        }}
         style={{
           position: 'fixed',
           bottom: 8,
           right: isOpen ? 540 : 8,
-          zIndex: 10000,
+          zIndex: 2147483647,
           background: '#111827',
           color: '#fff',
           border: '1px solid rgba(255,255,255,0.15)',
@@ -25,11 +30,11 @@ export const NetworkDebugOverlay: React.FC = () => {
         }}
         aria-label="Toggle Network Debug"
       >
-        {isOpen ? 'Hide Network' : 'Show Network'}
+        {!enabled ? 'Enable Network' : isOpen ? 'Hide Network' : 'Show Network'}
       </button>
 
       {/* Panel */}
-      {isOpen && (
+      {enabled && isOpen && (
         <div style={{
           position: 'fixed',
           bottom: 8,
@@ -39,7 +44,7 @@ export const NetworkDebugOverlay: React.FC = () => {
           background: 'rgba(0,0,0,0.85)',
           color: '#fff',
           fontSize: 12,
-          zIndex: 9999,
+          zIndex: 2147483600,
           borderRadius: 8,
           overflow: 'hidden',
           boxShadow: '0 2px 12px rgba(0,0,0,0.4)'
