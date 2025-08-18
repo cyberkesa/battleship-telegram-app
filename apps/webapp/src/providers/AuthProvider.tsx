@@ -63,9 +63,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const normalizedUser: User = {
               id: user.id,
               telegramId: user.telegramId,
-              firstName: user.firstName,
-              lastName: user.lastName,
-              username: user.username,
+              firstName: user.firstName || tgUser?.first_name || 'Игрок',
+              lastName: user.lastName ?? tgUser?.last_name,
+              username: user.username ?? tgUser?.username,
               photoUrl: user.photoUrl || tgUser?.photo_url,
               gamesPlayed: 0,
               gamesWon: 0,

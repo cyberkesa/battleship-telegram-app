@@ -9,23 +9,9 @@ async function bootstrap() {
     new FastifyAdapter()
   );
 
-  // Enable CORS (permit from Telegram WebApp + Vercel + localhost)
+  // Enable permissive CORS for production troubleshooting; tighten later
   app.enableCors({
-    origin: (origin, cb) => {
-      // Allow non-browser requests (no Origin) and all origins for now
-      if (!origin) return cb(null, true);
-      const allowed = [
-        process.env.FRONTEND_URL,
-        process.env.FRONTEND_URLS, // comma-separated list
-        'http://localhost:5173',
-      ]
-        .filter(Boolean)
-        .join(',');
-      if (!allowed) return cb(null, true);
-      const origins = allowed.split(',').map(s => s.trim());
-      const ok = origins.some(o => o && origin.startsWith(o));
-      return cb(null, ok);
-    },
+    origin: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
     credentials: true,
