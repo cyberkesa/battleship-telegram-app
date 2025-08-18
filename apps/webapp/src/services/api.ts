@@ -6,7 +6,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefin
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -80,7 +80,7 @@ api.interceptors.response.use(
 
 // API endpoints
 export const authAPI = {
-  authenticate: (data: any) => api.post('/auth/telegram', data),
+  authenticate: (data: any) => api.post('/auth/telegram', data, { timeout: 30000 }),
   getProfile: () => api.get('/auth/me'),
 };
 
