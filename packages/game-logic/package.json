@@ -2,18 +2,18 @@
   "name": "@battleship/game-logic",
   "version": "1.0.0",
   "description": "Battleship game logic and utilities",
-  "main": "dist/index.cjs",
+  "main": "dist/cjs/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/index.js",
-      "require": "./dist/index.cjs",
+      "require": "./dist/cjs/index.js",
       "types": "./dist/index.d.ts"
     }
   },
   "scripts": {
-    "build": "rm -rf dist && tsc -p tsconfig.esm.json && tsc -p tsconfig.cjs.json && mkdir -p dist && cp -r dist/esm/* dist/ && cp dist/cjs/index.js dist/index.cjs && cp dist/esm/index.d.ts dist/index.d.ts",
+    "build": "rm -rf dist && tsc -p tsconfig.esm.json && tsc -p tsconfig.cjs.json && mkdir -p dist && cp -r dist/esm/* dist/ && cp dist/esm/index.d.ts dist/index.d.ts",
     "dev": "tsc -p tsconfig.esm.json --watch",
     "clean": "rm -rf dist",
     "test": "jest"
