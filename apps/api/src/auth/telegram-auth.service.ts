@@ -100,43 +100,28 @@ export class TelegramAuthService {
   async authenticateUser(telegramData: TelegramInitData): Promise<AuthResponse> {
     const { user } = telegramData;
 
-    // Find or create user
-    let dbUser = await this._prisma.user.findUnique({
-      where: { telegramId: user.id },
-    });
+    // Use raw SQL to match existing DB schema (users: id SERIAL, tg_id BIGINT, first_name, last_name, avatar_url)
+    const tgId = BigInt(user.id);
 
-    if (!dbUser) {
-      // Create new user
-      dbUser = await this._prisma.user.create({
-        data: {
-          telegramId: user.id,
-          firstName: user.first_name,
-          lastName: user.last_name,
-          username: user.username,
-          photoUrl: user.photo_url,
-        },
-      });
+    type Row = { id: number; tg_id: bigint; username: string | null; first_name: string; last_name: string | null; avatar_url: string | null; created_at: Date };
+    const existing = await this._prisma.$queryRaw<Row[]>`SELECT id, tg_id, username, first_name, last_name, avatar_url, created_at FROM users WHERE tg_id = ${tgId} LIMIT 1`;
+
+    let row: Row;
+    if (existing.length === 0) {
+      const created = await this._prisma.$queryRaw<Row[]>`INSERT INTO users (tg_id, username, first_name, last_name, avatar_url) VALUES (${tgId}, ${user.username ?? null}, ${user.first_name}, ${user.last_name ?? null}, ${user.photo_url ?? null}) RETURNING id, tg_id, username, first_name, last_name, avatar_url, created_at`;
+      row = created[0];
     } else {
-      // Update existing user info
-      dbUser = await this._prisma.user.update({
-        where: { id: dbUser.id },
-        data: {
-          firstName: user.first_name,
-          lastName: user.last_name,
-          username: user.username,
-          photoUrl: user.photo_url ?? dbUser.photoUrl,
-        },
-      });
+      const updated = await this._prisma.$queryRaw<Row[]>`UPDATE users SET username = ${user.username ?? null}, first_name = ${user.first_name}, last_name = ${user.last_name ?? null}, avatar_url = ${user.photo_url ?? null}, updated_at = NOW() WHERE id = ${existing[0].id} RETURNING id, tg_id, username, first_name, last_name, avatar_url, created_at`;
+      row = updated[0] || existing[0];
     }
 
-    // Generate JWT token
     const payload = {
-      sub: dbUser.id,
-      telegramId: dbUser.telegramId.toString(),
-      username: dbUser.username,
-      photoUrl: dbUser.photoUrl || user.photo_url,
-      firstName: dbUser.firstName,
-      lastName: dbUser.lastName,
+      sub: row.id,
+      telegramId: row.tg_id.toString(),
+      username: row.username || undefined,
+      photoUrl: row.avatar_url || user.photo_url,
+      firstName: row.first_name,
+      lastName: row.last_name || undefined,
     };
 
     const sessionToken = this._jwtService.sign(payload, {
@@ -147,13 +132,13 @@ export class TelegramAuthService {
     return {
       sessionToken,
       user: {
-        id: dbUser.id,
-        telegramId: dbUser.telegramId,
-        firstName: dbUser.firstName,
-        lastName: dbUser.lastName,
-        username: dbUser.username,
-        photoUrl: dbUser.photoUrl || user.photo_url,
-        createdAt: dbUser.createdAt.toISOString(),
+        id: String(row.id),
+        telegramId: Number(row.tg_id),
+        firstName: row.first_name,
+        lastName: row.last_name || undefined,
+        username: row.username || undefined,
+        photoUrl: row.avatar_url || user.photo_url,
+        createdAt: row.created_at.toISOString(),
       },
     };
   }
