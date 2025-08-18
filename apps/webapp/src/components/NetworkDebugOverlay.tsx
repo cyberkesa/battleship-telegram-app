@@ -52,7 +52,7 @@ export const NetworkDebugOverlay: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', padding: '6px 8px', background: 'rgba(255,255,255,0.08)' }}>
             <strong style={{ flex: 1 }}>Network Debug</strong>
             <button onClick={() => clear()} style={{ marginRight: 8 }}>Clear</button>
-            <button onClick={() => setEnabled(false)}>Disable</button>
+            <button onClick={() => setDebugNetOpen(false)}>Close</button>
           </div>
           <div style={{ overflow: 'auto', maxHeight: '62vh' }}>
             {logs.length === 0 && (

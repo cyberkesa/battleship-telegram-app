@@ -31,6 +31,10 @@ export const useDebugNetworkStore = create<DebugNetworkState>((set, get) => ({
   enabled: (() => {
     // Always on by default; allow explicit opt-out via localStorage or env
     try {
+      // In Telegram WebApp, force-enable by default regardless of previous opt-out
+      if (typeof window !== 'undefined' && (window as any)?.Telegram?.WebApp) {
+        return true;
+      }
       if (typeof window !== 'undefined') {
         const v = localStorage.getItem('network_debug');
         if (v === '0') return false;
@@ -43,6 +47,10 @@ export const useDebugNetworkStore = create<DebugNetworkState>((set, get) => ({
   })(),
   isOpen: (() => {
     try {
+      // In Telegram WebApp, force-open by default
+      if (typeof window !== 'undefined' && (window as any)?.Telegram?.WebApp) {
+        return true;
+      }
       if (typeof window !== 'undefined') {
         const v = localStorage.getItem('network_debug_open');
         if (v === '0') return false;
