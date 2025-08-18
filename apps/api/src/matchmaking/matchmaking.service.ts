@@ -20,12 +20,27 @@ export class MatchmakingService {
   private readonly redis?: Redis;
 
   constructor(private readonly _prisma: PrismaService) {
-    const url = process.env.REDIS_URL;
-    if (url) {
-      this.redis = new Redis(url);
-      this.logger.log('Connected to Redis for matchmaking');
-    } else {
-      this.logger.warn('REDIS_URL not set. Matchmaking is disabled. Set REDIS_URL to enable.');
+    const url = process.env.REDIS_URL || process.env.REDIS_TLS_URL;
+    const host = process.env.REDIS_HOST;
+    const port = process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT, 10) : undefined;
+    const password = process.env.REDIS_PASSWORD;
+    try {
+      if (url) {
+        this.redis = new Redis(url, { tls: url.startsWith('rediss://') ? {} : undefined });
+      } else if (host && port) {
+        this.redis = new Redis({ host, port, password, tls: process.env.REDIS_TLS === '1' ? {} : undefined });
+      }
+      if (this.redis) {
+        this.redis.on('error', (err) => {
+          this.logger.error(`Redis error: ${err?.message || err}`);
+        });
+        this.redis.on('reconnecting', () => this.logger.warn('Redis reconnecting...'));
+        this.logger.log('Redis client initialized for matchmaking');
+      } else {
+        this.logger.warn('Redis not configured. Set REDIS_URL or REDIS_HOST/REDIS_PORT to enable matchmaking.');
+      }
+    } catch (e) {
+      this.logger.error('Failed to initialize Redis client', e as any);
     }
   }
 
