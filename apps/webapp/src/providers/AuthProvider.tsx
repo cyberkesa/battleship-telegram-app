@@ -162,6 +162,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isReady, webApp, tgUser]);
 
+  // Listen for unauthorized events and reflect in auth state without reloading
+  useEffect(() => {
+    const onUnauthorized = () => {
+      setAuthState(prev => ({
+        ...prev,
+        isAuthenticated: false,
+        user: null,
+        isLoading: false,
+        error: 'Сессия истекла. Повторите вход.'
+      }));
+    };
+    window.addEventListener('auth:unauthorized', onUnauthorized as EventListener);
+    return () => window.removeEventListener('auth:unauthorized', onUnauthorized as EventListener);
+  }, []);
+
   return (
     <AuthContext.Provider value={authState}>
       {children}

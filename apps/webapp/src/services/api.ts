@@ -70,9 +70,15 @@ api.interceptors.response.use(
       }
     } catch {}
     if (error.response?.status === 401) {
-      // Handle unauthorized access
-      localStorage.removeItem('auth_token');
-      window.location.reload();
+      // Handle unauthorized access without causing reload loops
+      try {
+        localStorage.removeItem('auth_token');
+        if ((api as any)?.defaults?.headers?.common?.Authorization) {
+          delete (api as any).defaults.headers.common.Authorization;
+        }
+        const evt = new CustomEvent('auth:unauthorized');
+        window.dispatchEvent(evt);
+      } catch {}
     }
     return Promise.reject(error);
   }
