@@ -165,3 +165,6 @@ export interface ClientEvent {
   type: string;
   data: any;
 }
+
+// Schemas
+export * from './schemas';
