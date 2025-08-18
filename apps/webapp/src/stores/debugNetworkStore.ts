@@ -17,8 +17,11 @@ export interface NetworkLogEntry {
 
 interface DebugNetworkState {
   enabled: boolean;
+  isOpen: boolean;
   logs: NetworkLogEntry[];
   setEnabled: (enabled: boolean) => void;
+  setOpen: (open: boolean) => void;
+  toggleOpen: () => void;
   append: (entry: NetworkLogEntry) => void;
   update: (id: string, update: Partial<NetworkLogEntry>) => void;
   clear: () => void;
@@ -38,6 +41,15 @@ export const useDebugNetworkStore = create<DebugNetworkState>((set, get) => ({
     if (env?.VITE_DEBUG_NET === 'false') return false;
     return true;
   })(),
+  isOpen: (() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const v = localStorage.getItem('network_debug_open');
+        if (v === '0') return false;
+      }
+    } catch {}
+    return true; // open by default
+  })(),
   logs: [],
   setEnabled: (enabled: boolean) => {
     try {
@@ -46,6 +58,23 @@ export const useDebugNetworkStore = create<DebugNetworkState>((set, get) => ({
       }
     } catch {}
     set({ enabled });
+  },
+  setOpen: (open: boolean) => {
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('network_debug_open', open ? '1' : '0');
+      }
+    } catch {}
+    set({ isOpen: open });
+  },
+  toggleOpen: () => {
+    const next = !get().isOpen;
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('network_debug_open', next ? '1' : '0');
+      }
+    } catch {}
+    set({ isOpen: next });
   },
   append: (entry: NetworkLogEntry) => set({ logs: [entry, ...get().logs].slice(0, 200) }),
   update: (id: string, update: Partial<NetworkLogEntry>) =>
@@ -59,4 +88,6 @@ export const debugNetAppend = (entry: NetworkLogEntry) => useDebugNetworkStore.g
 export const debugNetUpdate = (id: string, update: Partial<NetworkLogEntry>) =>
   useDebugNetworkStore.getState().update(id, update);
 export const setDebugNetEnabled = (enabled: boolean) => useDebugNetworkStore.getState().setEnabled(enabled);
+export const setDebugNetOpen = (open: boolean) => useDebugNetworkStore.getState().setOpen(open);
+export const toggleDebugNetOpen = () => useDebugNetworkStore.getState().toggleOpen();
 
