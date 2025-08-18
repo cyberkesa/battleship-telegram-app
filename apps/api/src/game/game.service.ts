@@ -104,14 +104,16 @@ export class GameService {
 
   async makeMove(matchId: string, playerId: string, position: { x: number; y: number }): Promise<any> {
     try {
-      if (matchId.startsWith('computer-')) {
-        const match = this.matches.get(matchId);
+      if (matchId === 'computer' || matchId.startsWith('computer-')) {
+        const actualId = matchId === 'computer' ? undefined : matchId;
+        const key = actualId ?? Array.from(this.matches.keys()).find(k => k.startsWith(`computer-${playerId}-`));
+        const match = key ? this.matches.get(key) : undefined;
         if (!match) {
           throw new NotFoundException('Match not found');
         }
         const result = { kind: 'miss', message: 'Move recorded' };
         match.currentTurn = match.currentTurn === 'A' ? 'B' : 'A';
-        this.matches.set(matchId, match);
+        this.matches.set(match.id, match);
         return {
           success: true,
           data: {
@@ -124,6 +126,7 @@ export class GameService {
       }
 
       // Multiplayer
+      // If not a computer match and not found in-memory, try DB
       const dbMatch = await this._prisma.match.findUnique({ where: { id: matchId } });
       if (!dbMatch) {
         throw new NotFoundException('Match not found');
@@ -178,8 +181,10 @@ export class GameService {
 
   async getGameState(matchId: string, playerId: string): Promise<any> {
     try {
-      if (matchId.startsWith('computer-')) {
-        const match = this.matches.get(matchId);
+      if (matchId === 'computer' || matchId.startsWith('computer-')) {
+        const actualId = matchId === 'computer' ? undefined : matchId;
+        const key = actualId ?? Array.from(this.matches.keys()).find(k => k.startsWith(`computer-${playerId}-`));
+        const match = key ? this.matches.get(key) : undefined;
         if (!match) {
           throw new NotFoundException('Match not found');
         }

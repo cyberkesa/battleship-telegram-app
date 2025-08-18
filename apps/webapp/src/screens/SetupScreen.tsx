@@ -180,9 +180,12 @@ export const SetupScreen: React.FC = () => {
     try {
       // Настраиваем игровую доску через API и получаем фактический matchId
       const actualMatchId = await setupBoard(gameId, fleet);
-      const redirectId = actualMatchId ?? gameId;
-      // Переходим на страницу игры
-      navigate(`/game/${redirectId}`);
+      // Переходим на игру только если сервер вернул фактический matchId
+      if (!actualMatchId) {
+        setIsGameStarted(false);
+        return;
+      }
+      navigate(`/game/${actualMatchId}`);
     } catch (e) {
       console.error('Failed to setup board:', e);
       // Сбрасываем флаг при ошибке
