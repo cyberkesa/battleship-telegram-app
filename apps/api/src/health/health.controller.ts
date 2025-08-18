@@ -56,12 +56,32 @@ export class HealthController {
         client = new Redis({ host, port, password, username, tls: process.env.REDIS_TLS === '1' ? {} : undefined, ...commonOpts });
       }
       if (client) {
+        // Wait briefly for a connection before issuing commands since offlineQueue is disabled
+        const connectStart = Date.now();
+        await new Promise<void>((resolve, reject) => {
+          if (client.status === 'ready' || client.status === 'connect') {
+            resolve();
+            return;
+          }
+          const onConnect = () => { cleanup(); resolve(); };
+          const onError = (err: any) => { cleanup(); reject(err); };
+          const onEnd = () => { cleanup(); reject(new Error('connection ended')); };
+          const timer = setTimeout(() => { cleanup(); reject(new Error('connect timeout')); }, 1200);
+          const cleanup = () => {
+            client.off('connect', onConnect);
+            client.off('error', onError);
+            client.off('end', onEnd);
+            clearTimeout(timer);
+          };
+          client.once('connect', onConnect);
+          client.once('error', onError);
+          client.once('end', onEnd);
+        });
+
         const t0 = Date.now();
-        const timeout = 1500;
-        const pingPromise = client.ping();
         const timed = Promise.race([
-          pingPromise,
-          new Promise((_, reject) => setTimeout(() => reject(new Error('PING timeout')), timeout)),
+          client.ping(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('PING timeout')), 800)),
         ]);
         const pong = (await timed) as string;
         result.redis.ok = pong === 'PONG';
