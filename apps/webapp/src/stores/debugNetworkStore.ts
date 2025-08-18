@@ -25,11 +25,19 @@ interface DebugNetworkState {
 }
 
 export const useDebugNetworkStore = create<DebugNetworkState>((set, get) => ({
-  enabled:
-    (typeof window !== 'undefined' && localStorage.getItem('network_debug') === '1') ||
-    (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_DEBUG_NET === 'true')
-      ? true
-      : false,
+  enabled: (() => {
+    // Always on by default; allow explicit opt-out via localStorage or env
+    try {
+      if (typeof window !== 'undefined') {
+        const v = localStorage.getItem('network_debug');
+        if (v === '0') return false;
+        if (v === '1') return true;
+      }
+    } catch {}
+    const env = (typeof import.meta !== 'undefined' && (import.meta as any).env) || {};
+    if (env?.VITE_DEBUG_NET === 'false') return false;
+    return true;
+  })(),
   logs: [],
   setEnabled: (enabled: boolean) => {
     try {
