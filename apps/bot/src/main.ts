@@ -8,6 +8,18 @@ const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN!);
 
 // Handle /start command
 bot.command('start', async (ctx) => {
+  const args = ctx.match as string | undefined;
+  // Support deep-links like /start join:<lobbyId>
+  if (args && args.startsWith('join:')) {
+    const lobbyId = args.slice('join:'.length);
+    const url = process.env.FRONTEND_URL || 'https://battleship-telegram-app-webapp.vercel.app';
+    await ctx.reply('Открываю лобби...', {
+      reply_markup: {
+        inline_keyboard: [[{ text: 'Перейти в лобби', web_app: { url } }]]
+      }
+    });
+    return;
+  }
   const welcomeMessage = `
 🚢 Добро пожаловать в игру "Морской бой"!
 

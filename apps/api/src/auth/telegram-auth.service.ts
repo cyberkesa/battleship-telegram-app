@@ -134,6 +134,9 @@ export class TelegramAuthService {
       sub: dbUser.id,
       telegramId: dbUser.telegramId.toString(),
       username: dbUser.username,
+      photoUrl: dbUser.photoUrl || user.photo_url,
+      firstName: dbUser.firstName,
+      lastName: dbUser.lastName,
     };
 
     const sessionToken = this._jwtService.sign(payload, {

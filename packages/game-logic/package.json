@@ -2,17 +2,17 @@
   "name": "@battleship/game-logic",
   "version": "1.0.0",
   "description": "Battleship game logic and utilities",
-  "main": "dist/index.js",
+  "main": "dist/index.cjs",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/index.js",
-      "require": "./dist/index.js",
+      "require": "./dist/index.cjs",
       "types": "./dist/index.d.ts"
     }
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cp dist/index.js dist/index.cjs",
     "dev": "tsc --watch",
     "clean": "rm -rf dist",
     "test": "jest"

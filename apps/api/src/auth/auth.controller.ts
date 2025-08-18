@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Request, Get, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Request, Get, HttpCode, HttpStatus, BadRequestException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { TelegramAuthService } from './telegram-auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -15,7 +15,7 @@ export class AuthController {
   async authenticate(@Body() body: { initData: string }): Promise<any> {
     // Validate input
     if (!body.initData) {
-      throw new Error('initData is required');
+      throw new BadRequestException('initData is required');
     }
     
     // Verify Telegram initData

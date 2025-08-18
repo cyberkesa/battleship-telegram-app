@@ -70,7 +70,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               gamesPlayed: 0,
               gamesWon: 0,
               rating: 1000,
-              createdAt: new Date().toISOString()
+              createdAt: user.createdAt
             };
 
             setAuthState({
