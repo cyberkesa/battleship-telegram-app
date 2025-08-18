@@ -24,10 +24,10 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Build shared packages (so their dist/* is available)
-RUN npx tsc -p packages/shared-types/tsconfig.json \
-	&& npx tsc -p packages/game-logic/tsconfig.json \
-	&& npx tsc -p packages/contracts/tsconfig.json
+# Build shared packages using workspace scripts (ensure dist/types exists)
+RUN npm run -w packages/shared-types build \
+	&& npm run -w packages/game-logic build \
+	&& npm run -w packages/contracts build
 
 # Generate Prisma client for API schema
 RUN npx prisma generate --schema=apps/api/prisma/schema.prisma && npm rebuild
