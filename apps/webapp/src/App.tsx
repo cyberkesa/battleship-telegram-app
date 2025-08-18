@@ -12,6 +12,7 @@ import { ProfileScreen } from './screens/ProfileScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { LeaderboardScreen } from './screens/LeaderboardScreen';
 import { NetworkDebugOverlay } from './components/NetworkDebugOverlay';
+import { SystemStatus } from './components/SystemStatus';
 
 function DeepLinkHandler() {
   const navigate = useNavigate();
@@ -38,6 +39,7 @@ function App() {
         <BrowserRouter>
           <DeepLinkHandler />
           {import.meta.env.VITE_DEBUG_NET === 'true' ? <NetworkDebugOverlay /> : null}
+          {import.meta.env.VITE_STATUS_WIDGET !== 'false' ? <SystemStatus /> : null}
           <Routes>
             {/* Главная страница */}
             <Route path="/" element={<HomeScreen />} />
