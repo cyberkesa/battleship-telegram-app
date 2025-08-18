@@ -48,18 +48,24 @@ export const SystemStatus: React.FC = () => {
 
   const statusOf = (ok?: boolean): Status => ok == null ? 'unknown' : ok ? 'ok' : 'error';
 
+  const apiOk = !!health && !error;
+  const apiStatus: Status = health == null && !error ? 'unknown' : apiOk ? 'ok' : 'error';
+
   return (
-    <div style={{ position: 'fixed', bottom: 8, right: 8, background: 'rgba(0,0,0,0.65)', color: 'white', padding: '8px 10px', borderRadius: 8, fontSize: 12, zIndex: 1000 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-        <strong>System</strong>
-        {loading ? <span style={{ fontSize: 11, opacity: 0.8 }}>loading…</span> : null}
-        {error ? <span style={{ color: '#f87171' }}>{error}</span> : null}
+    <div style={{ position: 'fixed', bottom: 8, right: 8, background: 'rgba(0,0,0,0.65)', color: 'white', padding: '8px 10px', borderRadius: 8, fontSize: 12, zIndex: 1000, minWidth: 220 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <strong>System</strong>
+          {loading ? <span style={{ fontSize: 11, opacity: 0.8 }}>loading…</span> : null}
+        </div>
+        <button onClick={load} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: 'white', fontSize: 11, padding: '2px 6px', borderRadius: 4, cursor: 'pointer' }}>Refresh</button>
       </div>
+      {error ? <div style={{ color: '#f87171', marginBottom: 6, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{error}</div> : null}
       <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: 6 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Dot status={statusOf(true)} /> <span>API</span>
+          <Dot status={apiStatus} /> <span>API</span>
         </div>
-        <div style={{ textAlign: 'right', opacity: 0.85 }}>{health?.durationMs ? `${health.durationMs}ms` : ''}</div>
+        <div style={{ textAlign: 'right', opacity: 0.85 }}>{health?.durationMs ? `${health.durationMs}ms` : (apiStatus === 'error' ? 'error' : '')}</div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <Dot status={statusOf(health?.db?.ok)} /> <span>DB</span>
