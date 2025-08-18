@@ -152,7 +152,7 @@ export class TelegramAuthService {
         firstName: dbUser.firstName,
         lastName: dbUser.lastName,
         username: dbUser.username,
-        photoUrl: user.photo_url,
+        photoUrl: dbUser.photoUrl || user.photo_url,
         createdAt: dbUser.createdAt.toISOString(),
       },
     };
