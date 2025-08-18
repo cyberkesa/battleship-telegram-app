@@ -70,9 +70,17 @@ api.interceptors.response.use(
       }
     } catch {}
     if (error.response?.status === 401) {
-      // Handle unauthorized access
-      localStorage.removeItem('auth_token');
-      window.location.reload();
+      // Handle unauthorized access without causing reload loops
+      try {
+        localStorage.removeItem('auth_token');
+        // Ensure the API instance does not keep stale Authorization header
+        if ((api as any)?.defaults?.headers?.common?.Authorization) {
+          delete (api as any).defaults.headers.common.Authorization;
+        }
+        // Notify app; consumers (e.g., AuthProvider) can react if needed
+        const evt = new CustomEvent('auth:unauthorized');
+        window.dispatchEvent(evt);
+      } catch {}
     }
     return Promise.reject(error);
   }
