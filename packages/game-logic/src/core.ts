@@ -12,7 +12,7 @@ import {
   PlayerRole,
   GameError,
   GameLogicError
-} from './types';
+} from './types.js';
 
 export const BOARD_SIZE = 10;
 

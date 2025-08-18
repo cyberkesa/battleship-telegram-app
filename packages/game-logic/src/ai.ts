@@ -1,4 +1,4 @@
-import { Coord, FogOfWar, CellMark, MoveResultKind } from './types';
+import { Coord, FogOfWar, CellMark, MoveResultKind } from './types.js';
 import { BOARD_SIZE, inBounds } from './core';
 
 // Уровни сложности ИИ

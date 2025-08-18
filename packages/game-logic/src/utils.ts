@@ -1,4 +1,4 @@
-import { Coord, Fleet, Ship, GameError, GameLogicError } from './types';
+import { Coord, Fleet, Ship, GameError, GameLogicError } from './types.js';
 import { BOARD_SIZE, inBounds, shipCells } from './core';
 
 // Утилиты для координат и нотации
