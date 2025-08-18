@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: battleship-api
+    env: docker
+    dockerfilePath: apps/api/Dockerfile
+    plan: free
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+
+  - type: static_site
+    name: battleship-webapp
+    env: static
+    plan: free
+    buildCommand: npm ci --no-audit --no-fund && npm run -w apps/webapp build
+    staticPublishPath: apps/webapp/dist
+    pullRequestPreviewsEnabled: true
+
