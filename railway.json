@@ -25,6 +25,17 @@
           "envs": {
             "PORT": "80"
           }
+        },
+        {
+          "name": "bot",
+          "path": "apps/bot",
+          "source": {
+            "type": "dockerfile",
+            "dockerfilePath": "apps/bot/Dockerfile"
+          },
+          "envs": {
+            "PORT": "3001"
+          }
         }
       ]
     }
