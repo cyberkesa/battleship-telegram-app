@@ -104,23 +104,24 @@ BOT_WEBHOOK_URL="https://your-domain.com/bot/webhook"
 
 ## 🚀 Деплой
 
-### Frontend (Vercel)
-```bash
-cd apps/webapp
-vercel --prod
-```
+### Railway (API + Webapp как отдельные сервисы)
 
-### Backend (Fly.io)
-```bash
-cd apps/api
-fly deploy
-```
+В репозитории есть `railway.json`, который объявляет два сервиса:
 
-### Bot (Fly.io)
-```bash
-cd apps/bot
-fly deploy
-```
+- API: `apps/api/Dockerfile` (порт 3000)
+- Webapp: `apps/webapp/Dockerfile` + `apps/webapp/nginx.conf` (порт 80)
+
+Шаги:
+1) Импортируйте репозиторий в Railway
+2) Railway предложит поднять оба сервиса из monorepo
+3) В переменных окружения:
+   - Webapp: `VITE_API_URL=https://<api-domain>/api`
+   - API: `FRONTEND_URL=https://<webapp-domain>` и `TELEGRAM_BOT_TOKEN`, `JWT_SECRET` и т.д.
+4) Деплой
+
+### Альтернативы
+- Frontend (Vercel)
+- Backend/Bot (Fly.io / Railway)
 
 ## 📝 Лицензия
 
