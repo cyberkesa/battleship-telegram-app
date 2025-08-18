@@ -17,9 +17,6 @@
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
-    "paths": {
-      "@battleship/shared-types": ["../../packages/shared-types/dist"],
-      "@battleship/game-logic": ["../../packages/game-logic/dist"]
-    }
+    
   }
 }

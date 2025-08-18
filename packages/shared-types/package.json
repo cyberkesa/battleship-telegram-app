@@ -3,18 +3,19 @@
   "version": "1.0.0",
   "description": "Shared types for Battleship game",
   "type": "module",
-  "main": "dist/index.js",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/index.js",
-      "require": "./dist/index.js",
+      "require": "./dist/index.cjs",
       "types": "./dist/index.d.ts"
     }
   },
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
+    "build": "rm -rf dist && tsc -p tsconfig.esm.json && tsc -p tsconfig.cjs.json && mkdir -p dist && cp dist/esm/index.js dist/index.js && cp dist/esm/index.d.ts dist/index.d.ts && cp dist/cjs/index.js dist/index.cjs",
+    "dev": "tsc -p tsconfig.esm.json --watch",
     "clean": "rm -rf dist"
   },
   "dependencies": {
