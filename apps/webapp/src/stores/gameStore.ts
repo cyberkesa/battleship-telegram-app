@@ -57,8 +57,7 @@ export const useGameStore = create<GameState>((set) => ({
   leaveQueue: async () => {
     try {
       set({ isLoading: true, error: null });
-      
-      const response = await api.post('/matchmaking/leave');
+      const response = await api.delete('/matchmaking/leave/CLASSIC');
       
       if (response.data.success) {
         set({ 
@@ -79,44 +78,9 @@ export const useGameStore = create<GameState>((set) => ({
     }
   },
 
-  getQueueStatus: async () => {
-    try {
-      const response = await api.get('/matchmaking/status');
-      
-      if (response.data.success) {
-        set({ 
-          isInQueue: response.data.data.inQueue 
-        });
-      }
-    } catch (error) {
-      console.error('Failed to get queue status:', error);
-    }
-  },
+  getQueueStatus: async () => { /* not implemented on backend */ },
 
-  getActiveMatch: async () => {
-    try {
-      set({ isLoading: true, error: null });
-      
-      const response = await api.get('/matchmaking/active-match');
-      
-      if (response.data.success) {
-        set({ 
-          currentMatch: response.data.data, 
-          isLoading: false 
-        });
-      } else {
-        set({ 
-          currentMatch: null, 
-          isLoading: false 
-        });
-      }
-    } catch (error) {
-      set({ 
-        isLoading: false, 
-        error: error instanceof Error ? error.message : 'Failed to get active match' 
-      });
-    }
-  },
+  getActiveMatch: async () => { /* not implemented on backend */ },
 
   setupBoard: async (matchId: string, fleet: any[]) => {
     try {

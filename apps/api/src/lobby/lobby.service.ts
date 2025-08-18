@@ -182,25 +182,25 @@ export class LobbyService {
 		const allReady = updatedLobby.players.every(p => p.isReady);
 		
 		if (allReady && updatedLobby.players.length === 2) {
-			// Создаем матч
-				const matchId = randomUUID();
-			// const matchState = createMatch(matchId);
-			const matchState = {
-				id: matchId,
-				status: 'in_progress',
-				currentTurn: 'A'
+			// Создаем матч в режиме расстановки (placing)
+			const matchId = randomUUID();
+			const playerAId = updatedLobby.players[0].playerId;
+			const playerBId = updatedLobby.players[1].playerId;
+			const initialState = {
+				boards: { A: null, B: null },
+				ready: { A: false, B: false },
+				phase: 'placing'
 			};
 
-
 			// Сохраняем матч в БД
-					const savedMatch = await this._prisma.match.create({
+			const savedMatch = await this._prisma.match.create({
 				data: {
-					id: matchState.id,
-					status: matchState.status,
-					playerAId: updatedLobby.players[0].playerId,
-					playerBId: updatedLobby.players[1].playerId,
-					currentTurn: matchState.currentTurn,
-					state: matchState as any,
+					id: matchId,
+					status: 'placing',
+					playerAId,
+					playerBId,
+					currentTurn: null,
+					state: initialState as any,
 				},
 			});
 

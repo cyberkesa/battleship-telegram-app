@@ -96,9 +96,7 @@ export const lobbyAPI = {
 
 export const matchmakingAPI = {
   joinQueue: () => api.post('/matchmaking/join'),
-  leaveQueue: () => api.post('/matchmaking/leave'),
-  getStatus: () => api.get('/matchmaking/status'),
-  getActiveMatch: () => api.get('/matchmaking/active-match'),
+  leaveQueue: (mode: 'CLASSIC' | 'RAPID' | 'BLITZ' = 'CLASSIC') => api.delete(`/matchmaking/leave/${mode}`),
 };
 
 export const gameAPI = {
