@@ -2,7 +2,10 @@ import { Logger, UseGuards } from '@nestjs/common';
 import { WebSocketGateway, WebSocketServer, OnGatewayConnection, OnGatewayDisconnect, SubscribeMessage, MessageBody, ConnectedSocket } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { z } from 'zod';
-import { FleetSchema, JoinSchema, MoveSchema, PlaceSchema } from '@battleship/shared-types';
+// Use compiled schema JS directly to avoid ESM/CJS interop issues in Nest build
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import { JoinSchema, MoveSchema, PlaceSchema } from '@battleship/shared-types/schemas';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { GameService } from './game.service';
 
