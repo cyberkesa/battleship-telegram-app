@@ -27,14 +27,14 @@ const PLACEMENT_SECONDS = 60;
 // Функция для генерации уникального ID с fallback на случай отсутствия crypto API
 const safeUUID = () => globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2);
 
-// Импорт конфигурации состава флота из игровой логики
-import { FLEET_COMPOSITION } from '@battleship/game-logic';
+// Локальная конфигурация состава флота (избегаем проблем с экспортом в окружении)
+const FLEET_COMPOSITION_LOCAL: Readonly<Record<number, number>> = Object.freeze({ 1: 4, 2: 3, 3: 2, 4: 1 });
 // Массив типов кораблей с их характеристиками: размер, название, количество и цвет
 const SHIP_TYPES = [
-  { size: 4, name: 'Линкор', count: FLEET_COMPOSITION[4], color: 'red' as const }, // 4-палубный линкор
-  { size: 3, name: 'Крейсер', count: FLEET_COMPOSITION[3], color: 'blue' as const }, // 3-палубный крейсер
-  { size: 2, name: 'Эсминец', count: FLEET_COMPOSITION[2], color: 'sonar' as const }, // 2-палубный эсминец
-  { size: 1, name: 'Катер', count: FLEET_COMPOSITION[1], color: 'cyan' as const }, // 1-палубный катер
+  { size: 4, name: 'Линкор', count: FLEET_COMPOSITION_LOCAL[4], color: 'red' as const },
+  { size: 3, name: 'Крейсер', count: FLEET_COMPOSITION_LOCAL[3], color: 'blue' as const },
+  { size: 2, name: 'Эсминец', count: FLEET_COMPOSITION_LOCAL[2], color: 'sonar' as const },
+  { size: 1, name: 'Катер', count: FLEET_COMPOSITION_LOCAL[1], color: 'cyan' as const },
 ] as const;
 
 // Функция-конвертер для преобразования PlacedShip в формат Fleet для валидации

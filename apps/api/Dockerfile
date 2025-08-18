@@ -1,5 +1,6 @@
 # Use Node.js 20 Alpine as base image
 FROM node:20-alpine AS base
+RUN apk update && apk upgrade --no-cache
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -36,6 +37,7 @@ RUN npx tsc -p apps/api/tsconfig.json
 
 # Production image, copy all the files and run the app
 FROM base AS runner
+RUN apk update && apk upgrade --no-cache
 
 # Create user and set workdir to API package
 RUN addgroup --system --gid 1001 nodejs \

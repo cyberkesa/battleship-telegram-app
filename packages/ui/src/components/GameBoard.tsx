@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 	import { Cell, CellState } from './Cell';
-	import { Ship } from './Ship';
+	// import { Ship } from './Ship';
 	import { BoardSize, sizeConfig, adaptiveSizeConfig, gapPx, coordinates, BOARD_SIZE } from '../utils/boardConfig';
 
 

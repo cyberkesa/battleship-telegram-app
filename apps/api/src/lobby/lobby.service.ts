@@ -91,7 +91,10 @@ export class LobbyService {
 		}
 
 		// Use latest name and avatar if provided; otherwise, pull from User record to keep consistency
-		const user = await this._prisma.user.findUnique({ where: { id: data.playerId } });
+		const user = await this._prisma.user.findUnique({ 
+			where: { id: data.playerId },
+			select: { firstName: true, lastName: true, photoUrl: true }
+		});
 		const playerName = data.playerName || `${user?.firstName ?? 'Игрок'}${user?.lastName ? ' ' + user.lastName : ''}`.trim();
 		const playerAvatar = data.playerAvatar || user?.photoUrl || undefined;
 
