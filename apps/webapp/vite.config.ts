@@ -10,7 +10,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@battleship/shared-types': fileURLToPath(new URL(isBuild ? '../../packages/shared-types/dist/index.js' : '../../packages/shared-types/src/index.ts', import.meta.url)),
-      '@battleship/game-logic': fileURLToPath(new URL(isBuild ? '../../packages/game-logic/dist/index.js' : '../../packages/game-logic/src/index.ts', import.meta.url)),
+      // Use CommonJS entry during production build to expose named exports reliably
+      '@battleship/game-logic': fileURLToPath(new URL(isBuild ? '../../packages/game-logic/dist/index.cjs' : '../../packages/game-logic/src/index.ts', import.meta.url)),
       '@battleship/ui': fileURLToPath(new URL(isBuild ? '../../packages/ui/dist/index.js' : '../../packages/ui/src/index.ts', import.meta.url)),
     },
   },
