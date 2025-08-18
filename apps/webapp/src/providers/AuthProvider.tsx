@@ -60,6 +60,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               localStorage.setItem('auth_token', token);
               api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
             }
+            // Clear any one-time retry flag after successful auth
+            try { localStorage.removeItem('tg_auth_retry'); } catch {}
             const normalizedUser: User = {
               id: user.id,
               telegramId: user.telegramId,
@@ -144,8 +146,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         // Neither initData nor tgUser available
         setAuthState(prev => ({ ...prev, isLoading: false, error: 'Telegram initData not available' }));
-      } catch (error) {
+      } catch (error: any) {
         console.error('Authentication error:', error);
+        // If Telegram initData might have expired, attempt a one-time reload to refresh it
+        const status = error?.response?.status;
+        const isTelegramCtx = Boolean((window as any)?.Telegram?.WebApp);
+        const retryKey = 'tg_auth_retry';
+        const alreadyRetried = localStorage.getItem(retryKey) === '1';
+        if (isTelegramCtx && status === 401 && !alreadyRetried) {
+          try {
+            localStorage.setItem(retryKey, '1');
+          } catch {}
+          // A single reload inside Telegram refreshes initData/auth_date
+          window.location.reload();
+          return;
+        }
         setAuthState(prev => ({ ...prev, isLoading: false, error: error instanceof Error ? error.message : 'Authentication error' }));
       }
     };
