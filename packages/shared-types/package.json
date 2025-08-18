@@ -11,10 +11,15 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs",
       "types": "./dist/index.d.ts"
+    },
+    "./schemas": {
+      "import": "./dist/schemas.js",
+      "require": "./dist/schemas.cjs.js",
+      "types": "./dist/schemas.d.ts"
     }
   },
   "scripts": {
-    "build": "rm -rf dist && tsc -p tsconfig.esm.json && tsc -p tsconfig.cjs.json && mkdir -p dist && cp dist/esm/index.js dist/index.js && cp dist/esm/index.d.ts dist/index.d.ts && cp dist/cjs/index.js dist/index.cjs",
+    "build": "rm -rf dist && tsc -p tsconfig.esm.json && tsc -p tsconfig.cjs.json && mkdir -p dist && cp dist/esm/index.js dist/index.js && cp dist/esm/index.d.ts dist/index.d.ts && cp dist/esm/schemas.js dist/schemas.js && cp dist/esm/schemas.d.ts dist/schemas.d.ts && cp dist/cjs/index.js dist/index.cjs && cp dist/cjs/schemas.js dist/schemas.cjs.js",
     "dev": "tsc -p tsconfig.esm.json --watch",
     "clean": "rm -rf dist"
   },
