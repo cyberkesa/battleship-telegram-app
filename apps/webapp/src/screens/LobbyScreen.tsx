@@ -108,7 +108,16 @@ export const LobbyScreen: React.FC = () => {
         setIsStarting(true);
         navigate(`/setup/${data.matchId}`);
       }
-    } catch (e) {}
+    } catch (e: any) {
+      if (import.meta.env.DEV) {
+        console.error('[Lobby] ready failed', {
+          status: e?.response?.status,
+          response: e?.response?.data,
+          headers: e?.response?.headers,
+          message: e?.message
+        });
+      }
+    }
   };
 
   const handleStartGame = async () => {

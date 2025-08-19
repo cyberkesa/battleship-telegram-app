@@ -20,6 +20,7 @@ export const CreateLobbyScreen: React.FC = () => {
   const [lobbyId, setLobbyId] = useState<string>('');
   const [inviteLink, setInviteLink] = useState<string>('');
   const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   const [copied, setCopied] = useState(false);
 
@@ -51,6 +52,7 @@ export const CreateLobbyScreen: React.FC = () => {
 
     try {
       setIsCreating(true);
+      setCreateError(null);
 
       const res = await lobbyAPI.create(user.firstName || 'Игрок', user.photoUrl);
       const lobby = res.data as { id: string; inviteLink: string };
@@ -59,7 +61,20 @@ export const CreateLobbyScreen: React.FC = () => {
       // Автопереход в лобби после успешного создания
       navigate(`/lobby/${lobby.id}`);
     } catch (err: any) {
-      console.error('Ошибка создания лобби:', err);
+      // Подробное логирование в dev
+      const status = err?.response?.status;
+      const data = err?.response?.data;
+      if (import.meta.env.DEV) {
+        console.error('[CreateLobby] request failed', {
+          status,
+          response: data,
+          headers: err?.response?.headers,
+          config: err?.config,
+          message: err?.message,
+        });
+      }
+      const msg = data?.error || data?.message || err?.message || 'Не удалось создать лобби';
+      setCreateError(typeof msg === 'string' ? msg : JSON.stringify(msg));
     } finally {
       setIsCreating(false);
     }
@@ -273,6 +288,14 @@ export const CreateLobbyScreen: React.FC = () => {
                 <Users className="w-4 h-4" />
                 Перейти в лобби
               </Button>
+            </div>
+          )}
+
+          {/* Ошибка создания лобби (dev/any) */}
+          {createError && (
+            <div className="mt-3 p-3 bg-torpedo/15 border border-torpedo/40 rounded-lg text-torpedo">
+              <div className="text-sm font-medium">Не удалось создать лобби</div>
+              <div className="text-caption opacity-90 break-words">{createError}</div>
             </div>
           )}
         </div>

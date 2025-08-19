@@ -107,7 +107,15 @@ export const useGameStore = create<GameState>((set) => ({
           error: response.data.error 
         });
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (import.meta.env.DEV) {
+        console.error('[Game] setupBoard failed', {
+          status: error?.response?.status,
+          response: error?.response?.data,
+          headers: error?.response?.headers,
+          message: error?.message,
+        });
+      }
       set({ 
         isLoading: false, 
         error: error instanceof Error ? error.message : 'Failed to setup board' 
@@ -130,7 +138,15 @@ export const useGameStore = create<GameState>((set) => ({
           error: response.data.error 
         });
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (import.meta.env.DEV) {
+        console.error('[Game] makeMove failed', {
+          status: error?.response?.status,
+          response: error?.response?.data,
+          headers: error?.response?.headers,
+          message: error?.message,
+        });
+      }
       set({ 
         isLoading: false, 
         error: error instanceof Error ? error.message : 'Failed to make move' 
