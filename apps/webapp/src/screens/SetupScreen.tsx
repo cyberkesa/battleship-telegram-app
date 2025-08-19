@@ -69,6 +69,21 @@ export const SetupScreen: React.FC = () => {
   // Флаг для предотвращения повторного запуска игры
   const [isGameStarted, setIsGameStarted] = useState(false);
 
+  // Responsive cell size for board and ship previews
+  const [cellSize, setCellSize] = useState<number>(34);
+  useEffect(() => {
+    const calc = () => {
+      const w = window.innerWidth;
+      if (w < 360) setCellSize(26);
+      else if (w < 420) setCellSize(28);
+      else if (w < 520) setCellSize(30);
+      else setCellSize(34);
+    };
+    calc();
+    window.addEventListener('resize', calc);
+    return () => window.removeEventListener('resize', calc);
+  }, []);
+
   // Определяем, является ли это быстрой игрой (против компьютера)
   const isQuickGame = matchId === 'computer';
   // Используем matchId или fallback на 'computer' для корректного роутинга
@@ -296,7 +311,7 @@ export const SetupScreen: React.FC = () => {
       </div>
 
       {/* Основной контент страницы */}
-      <div className="p-6 space-y-6 sm:space-y-8">
+      <div className="p-6 space-y-6 sm:space-y-8 max-w-[740px] mx-auto">
         {/* Секция выбора кораблей */}
         <div className="bg-bg-graphite rounded-card ring-1 ring-edge p-6">
           <h3 className="font-heading font-semibold text-h3 text-foam mb-4">
@@ -304,14 +319,14 @@ export const SetupScreen: React.FC = () => {
           </h3>
           
           {/* Сетка доступных кораблей для размещения */}
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {availableShips.map((ship) => (
               // Карточка корабля для перетаскивания
               <div
                 key={ship.id}
-                className="p-3 rounded-lg border-2 border-edge hover:border-sonar/50 transition-all cursor-grab active:cursor-grabbing touch-none"
+                className="p-3 rounded-lg border-2 border-edge hover:border-sonar/50 transition-all cursor-grab active:cursor-grabbing touch-none bg-bg-graphite/60"
                 style={{ 
-                  ['--cell' as any]: '34px', // CSS переменная для размера клетки
+                  ['--cell' as any]: `${cellSize}px`, // CSS переменная для размера клетки
                   ['--gap' as any]: '2px' // CSS переменная для отступа между клетками
                 } as React.CSSProperties}
                 role="button"
@@ -387,7 +402,12 @@ export const SetupScreen: React.FC = () => {
           
           {/* Контейнер для игрового поля */}
           <div className="flex justify-center">
-            <div ref={boardWrapperRef} tabIndex={-1}>
+            <div
+              ref={boardWrapperRef}
+              tabIndex={-1}
+              style={{ ['--cell' as any]: `${cellSize}px`, ['--gap' as any]: '2px' } as React.CSSProperties}
+              aria-label="Игровое поле для расстановки"
+            >
               {/* Компонент игрового поля для расстановки кораблей */}
               <GameBoard
               ref={boardRef}
@@ -430,11 +450,12 @@ export const SetupScreen: React.FC = () => {
 
           {/* Основная кнопка начала игры */}
           <Button
-            variant="primary"
+            variant={isBoardComplete ? 'primary' : 'secondary'}
             size="lg"
             onClick={handleStartGame}
-            disabled={!isBoardComplete} // Кнопка неактивна, если доска не готова
+            disabled={!isBoardComplete}
             className="w-full flex items-center justify-center gap-2"
+            aria-disabled={!isBoardComplete}
           >
             {isBoardComplete ? (
               // Если доска готова - показываем кнопку начала игры
