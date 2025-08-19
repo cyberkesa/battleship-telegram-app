@@ -17,7 +17,7 @@ interface QueueResponse {
 @Injectable()
 export class MatchmakingService {
   private readonly logger = new Logger(MatchmakingService.name);
-  private readonly redis?: Redis;
+  private redis?: Redis;
 
   constructor(private readonly _prisma: PrismaService) {
     const privateUrl = process.env.REDIS_URL || process.env.REDIS_TLS_URL;
@@ -54,7 +54,7 @@ export class MatchmakingService {
           this.logger.error(`Redis error: ${err?.message || err}`);
         });
         this.redis.on('reconnecting', () => this.logger.warn('Redis reconnecting...'));
-        const where = url ? `URL ${url}` : `${host}:${port}`;
+        const where = (privateUrl || publicUrl) ? `URL ${privateUrl || publicUrl}` : `${host}:${port}`;
         this.logger.log(`Redis client initialized for matchmaking (${where})`);
       } else {
         this.logger.warn('Redis not configured. Set REDIS_URL or REDIS_HOST/REDIS_PORT to enable matchmaking.');
