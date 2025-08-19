@@ -1,17 +1,36 @@
 import { Controller, Post, Get, Param, Body, UseGuards, Request } from '@nestjs/common';
+import { IsOptional, IsString } from 'class-validator';
 import { LobbyService } from './lobby.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 export class CreateLobbyDto {
-  playerId: string;
-  playerName: string;
+  @IsOptional()
+  @IsString()
+  playerId?: string;
+
+  @IsOptional()
+  @IsString()
+  playerName?: string;
+
+  @IsOptional()
+  @IsString()
   playerAvatar?: string;
 }
 
 export class JoinLobbyDto {
+  @IsString()
   lobbyId: string;
-  playerId: string;
-  playerName: string;
+
+  @IsOptional()
+  @IsString()
+  playerId?: string;
+
+  @IsOptional()
+  @IsString()
+  playerName?: string;
+
+  @IsOptional()
+  @IsString()
   playerAvatar?: string;
 }
 
