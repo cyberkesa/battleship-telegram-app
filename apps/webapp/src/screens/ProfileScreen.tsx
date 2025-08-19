@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../providers/AuthProvider';
+import { useTelegram } from '../providers/TelegramProvider';
 import { 
   ArrowLeft,
   Trophy,
@@ -15,6 +16,10 @@ import {
 export const ProfileScreen: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { user: tgUser } = useTelegram();
+
+  const displayName = user?.firstName || tgUser?.first_name || 'Игрок';
+  const displayPhoto = user?.photoUrl || tgUser?.photo_url || null;
 
   const handleBack = () => {
     navigate('/');
@@ -62,15 +67,15 @@ export const ProfileScreen: React.FC = () => {
         <div className="bg-bg-graphite rounded-card ring-1 ring-edge p-4">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 bg-sonar rounded-full flex items-center justify-center overflow-hidden">
-              {user?.photoUrl ? (
-                <img src={user.photoUrl} alt="Avatar" className="w-full h-full object-cover" />
+              {displayPhoto ? (
+                <img src={displayPhoto} alt="Avatar" className="w-full h-full object-cover" />
               ) : (
                 <User className="w-8 h-8 text-white" />
               )}
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="font-heading font-bold text-h3 text-foam truncate">
-                {user?.firstName || 'Игрок'}
+                {displayName}
               </h2>
               <p className="text-body text-mist">
                 Рейтинг: {stats.rating}
