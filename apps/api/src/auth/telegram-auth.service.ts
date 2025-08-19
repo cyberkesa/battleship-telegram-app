@@ -37,6 +37,28 @@ export class TelegramAuthService {
     private readonly _jwtService: JwtService,
   ) {}
 
+  private async fetchTelegramPhotoUrl(telegramId: number): Promise<string | null> {
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    if (!token) return null;
+    const apiBase = `https://api.telegram.org/bot${token}`;
+    try {
+      const photosRes = await fetch(`${apiBase}/getUserProfilePhotos?user_id=${telegramId}&limit=1` as any);
+      const photosJson: any = await photosRes.json();
+      if (!photosJson?.ok || !photosJson?.result || photosJson.result.total_count === 0) return null;
+      const sizes: any[] = photosJson.result.photos?.[0];
+      if (!sizes || sizes.length === 0) return null;
+      const best = sizes[sizes.length - 1];
+      const fileId = best.file_id;
+      const fileRes = await fetch(`${apiBase}/getFile?file_id=${fileId}` as any);
+      const fileJson: any = await fileRes.json();
+      if (!fileJson?.ok || !fileJson?.result?.file_path) return null;
+      const filePath: string = fileJson.result.file_path;
+      return `https://api.telegram.org/file/bot${token}/${filePath}`;
+    } catch {
+      return null;
+    }
+  }
+
   async verifyInitData(initData: string): Promise<TelegramInitData> {
     // Parse initData
     const params = new URLSearchParams(initData);
@@ -108,10 +130,17 @@ export class TelegramAuthService {
 
     let row: Row;
     if (existing.length === 0) {
-      const created = await this._prisma.$queryRaw<Row[]>`INSERT INTO users (tg_id, username, first_name, last_name, avatar_url) VALUES (${tgId}, ${user.username ?? null}, ${user.first_name}, ${user.last_name ?? null}, ${user.photo_url ?? null}) RETURNING id, tg_id, username, first_name, last_name, avatar_url, created_at`;
+      // Attempt to enrich avatar via Bot API if not provided in initData
+      const enrichedPhoto = user.photo_url ?? (await this.fetchTelegramPhotoUrl(Number(tgId))) ?? null;
+      const created = await this._prisma.$queryRaw<Row[]>`INSERT INTO users (tg_id, username, first_name, last_name, avatar_url) VALUES (${tgId}, ${user.username ?? null}, ${user.first_name}, ${user.last_name ?? null}, ${enrichedPhoto}) RETURNING id, tg_id, username, first_name, last_name, avatar_url, created_at`;
       row = created[0];
     } else {
-      const updated = await this._prisma.$queryRaw<Row[]>`UPDATE users SET username = ${user.username ?? null}, first_name = ${user.first_name}, last_name = ${user.last_name ?? null}, avatar_url = ${user.photo_url ?? null}, updated_at = NOW() WHERE id = ${existing[0].id} RETURNING id, tg_id, username, first_name, last_name, avatar_url, created_at`;
+      // Keep existing avatar if none provided; try to enrich if still null
+      let avatar = user.photo_url ?? existing[0].avatar_url ?? null;
+      if (!avatar) {
+        avatar = await this.fetchTelegramPhotoUrl(Number(tgId));
+      }
+      const updated = await this._prisma.$queryRaw<Row[]>`UPDATE users SET username = ${user.username ?? null}, first_name = ${user.first_name}, last_name = ${user.last_name ?? null}, avatar_url = ${avatar ?? null}, updated_at = NOW() WHERE id = ${existing[0].id} RETURNING id, tg_id, username, first_name, last_name, avatar_url, created_at`;
       row = updated[0] || existing[0];
     }
 
