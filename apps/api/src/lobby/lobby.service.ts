@@ -32,7 +32,7 @@ export class LobbyService {
 			: `${process.env.FRONTEND_URL}/lobby/${lobbyId}`;
 
 		await this._prisma.$executeRawUnsafe(
-			`INSERT INTO lobbies (id, status, invite_link) VALUES ($1, $2, $3)`,
+			`INSERT INTO lobbies (id, status, invite_link, updated_at) VALUES ($1, $2, $3, NOW())`,
 			lobbyId,
 			'waiting',
 			inviteLink,
@@ -41,7 +41,7 @@ export class LobbyService {
 		await this._prisma.$executeRawUnsafe(
 			`INSERT INTO lobby_players (lobby_id, player_id, name, avatar, is_ready, is_host) VALUES ($1, $2, $3, $4, $5, $6)`,
 			lobbyId,
-			Number(data.playerId),
+			Number(data.playerId) || data.playerId,
 			data.playerName,
 			data.playerAvatar ?? null,
 			false,

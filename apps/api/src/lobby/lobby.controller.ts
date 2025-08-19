@@ -36,9 +36,12 @@ export class LobbyController {
   @Post('create')
   @UseGuards(JwtAuthGuard)
   async createLobby(@Body() createLobbyDto: CreateLobbyDto, @Request() req) {
-        const lobby = await this._lobbyService.createLobby({
+    // Ensure playerName fallback
+    const safeName = createLobbyDto.playerName || req.user.firstName || req.user.username || 'Игрок';
+    const lobby = await this._lobbyService.createLobby({
       ...createLobbyDto,
       playerId: req.user.sub,
+      playerName: safeName,
     });
     return lobby;
   }
