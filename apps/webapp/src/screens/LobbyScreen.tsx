@@ -3,14 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button, LoadingScreen } from '@battleship/ui';
 import { useAuth } from '../providers/AuthProvider';
 import { 
-  Copy, 
   LogOut, 
   Play, 
   CheckCircle, 
   Clock, 
   Crown,
   User,
-  AlertCircle
+  AlertCircle,
+  Share
 } from 'lucide-react';
 import { lobbyAPI } from '../services/api';
 
@@ -47,7 +47,7 @@ export const LobbyScreen: React.FC = () => {
     const botUsername = raw?.startsWith('@') ? raw.slice(1) : raw;
     if (botUsername) {
       const payload = `join:${id}`;
-      return `https://t.me/${botUsername}?startapp=${encodeURIComponent(payload)}`;
+      return `https://t.me/${botUsername}/game?startapp=${encodeURIComponent(payload)}&startApp=${encodeURIComponent(payload)}`;
     }
     return `${window.location.origin}/lobby/${id}`;
   };
@@ -127,11 +127,21 @@ export const LobbyScreen: React.FC = () => {
     }
   };
 
-  const handleCopyInviteLink = () => {
+  const handleInviteFriend = () => {
     if (!lobbyId) return;
-    const inviteLink = lobby?.inviteLink || buildLobbyDeepLink(lobbyId);
-    navigator.clipboard.writeText(inviteLink);
-    alert('Ссылка скопирована в буфер обмена!');
+    const deepLink = lobby?.inviteLink || buildLobbyDeepLink(lobbyId);
+    const text = 'Приглашаю тебя сыграть в Морской бой!';
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(deepLink)}&text=${encodeURIComponent(text)}`;
+    const tg: any = (window as any).Telegram?.WebApp;
+    if (tg?.openTelegramLink) {
+      tg.openTelegramLink(shareUrl);
+      return;
+    }
+    if (navigator.share) {
+      navigator.share({ title: 'Морской бой', text, url: deepLink }).catch(() => {});
+      return;
+    }
+    try { navigator.clipboard.writeText(deepLink); alert('Ссылка скопирована'); } catch {}
   };
 
   const handleLeaveLobby = async () => {
@@ -283,11 +293,11 @@ export const LobbyScreen: React.FC = () => {
           <Button
             variant="secondary"
             size="lg"
-            onClick={handleCopyInviteLink}
+            onClick={handleInviteFriend}
             className="w-full flex items-center justify-center gap-2"
           >
-            <Copy className="w-4 h-4" />
-            Скопировать ссылку приглашения
+            <Share className="w-4 h-4" />
+            Пригласить друга
           </Button>
 
           {/* Ready toggle */}
