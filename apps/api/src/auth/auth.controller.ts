@@ -4,14 +4,14 @@ import { AuthService } from './auth.service';
 import { TelegramAuthService } from './telegram-auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
+class TelegramInitDto { @IsString() initData!: string }
+
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly _authService: AuthService,
     private readonly _telegramAuthService: TelegramAuthService,
   ) {}
-
-  class TelegramInitDto { @IsString() initData!: string }
 
   @Post('telegram')
   @HttpCode(HttpStatus.OK)
