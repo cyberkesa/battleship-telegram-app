@@ -23,8 +23,8 @@ function DeepLinkHandler() {
       console.log('[DeepLink] initData start_param =', startParam);
     }
     if (startParam) {
-      if (startParam.startsWith('join:')) {
-        const id = startParam.slice('join:'.length);
+      if (startParam.startsWith('join:') || startParam.startsWith('join_')) {
+        const id = startParam.replace(/^join[:_]/, '');
         if (id) {
           navigate(`/lobby/${id}`, { replace: true });
         }
