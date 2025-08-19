@@ -47,7 +47,7 @@ export const LobbyScreen: React.FC = () => {
     const botUsername = raw?.startsWith('@') ? raw.slice(1) : raw;
     if (botUsername) {
       const payload = `join:${id}`;
-      return `https://t.me/${botUsername}/game?startapp=${encodeURIComponent(payload)}&startApp=${encodeURIComponent(payload)}`;
+      return `https://t.me/${botUsername}?startapp=${encodeURIComponent(payload)}`;
     }
     return `${window.location.origin}/lobby/${id}`;
   };

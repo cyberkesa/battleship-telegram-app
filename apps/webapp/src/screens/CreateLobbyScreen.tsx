@@ -29,8 +29,8 @@ export const CreateLobbyScreen: React.FC = () => {
     const botUsername = raw?.startsWith('@') ? raw.slice(1) : raw;
     if (botUsername) {
       const payload = `join:${id}`;
-      // Use /game path and include both startapp and startApp for broader client compatibility
-      return `https://t.me/${botUsername}/game?startapp=${encodeURIComponent(payload)}&startApp=${encodeURIComponent(payload)}`;
+      // Use Mini App deep link without /game path
+      return `https://t.me/${botUsername}?startapp=${encodeURIComponent(payload)}`;
     }
     return `${window.location.origin}/lobby/${id}`;
   };
