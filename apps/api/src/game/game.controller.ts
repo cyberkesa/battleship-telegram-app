@@ -4,33 +4,33 @@ import { Type } from 'class-transformer';
 import { GameService } from './game.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
+class PositionDto {
+  @IsInt()
+  @Min(0)
+  @Max(9)
+  x!: number;
+
+  @IsInt()
+  @Min(0)
+  @Max(9)
+  y!: number;
+}
+
+class PlaceFleetDto {
+  @IsArray()
+  ships!: any[];
+}
+
+class MoveDto {
+  @ValidateNested()
+  @Type(() => PositionDto)
+  position!: PositionDto;
+}
+
 @Controller('game')
 @UseGuards(JwtAuthGuard)
 export class GameController {
   constructor(private readonly _gameService: GameService) {}
-
-  class PositionDto {
-    @IsInt()
-    @Min(0)
-    @Max(9)
-    x!: number;
-
-    @IsInt()
-    @Min(0)
-    @Max(9)
-    y!: number;
-  }
-
-  class PlaceFleetDto {
-    @IsArray()
-    ships!: any[];
-  }
-
-  class MoveDto {
-    @ValidateNested()
-    @Type(() => PositionDto)
-    position!: PositionDto;
-  }
 
   // Alias to match checklist: /game/:id/place
   @Post(':matchId/setup')
