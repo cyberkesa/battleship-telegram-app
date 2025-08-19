@@ -311,7 +311,7 @@ export const SetupScreen: React.FC = () => {
       </div>
 
       {/* Основной контент страницы */}
-      <div className="p-6 space-y-6 sm:space-y-8 max-w-[740px] mx-auto">
+      <div className="p-6 space-y-6 sm:space-y-8 max-w-[760px] mx-auto">
         {/* Секция выбора кораблей */}
         <div className="bg-bg-graphite rounded-card ring-1 ring-edge p-6">
           <h3 className="font-heading font-semibold text-h3 text-foam mb-4">
@@ -324,7 +324,7 @@ export const SetupScreen: React.FC = () => {
               // Карточка корабля для перетаскивания
               <div
                 key={ship.id}
-                className="p-3 rounded-lg border-2 border-edge hover:border-sonar/50 transition-all cursor-grab active:cursor-grabbing touch-none bg-bg-graphite/60"
+                className="p-3 rounded-lg border border-edge/60 hover:border-sonar/60 transition-all cursor-grab active:cursor-grabbing touch-none bg-bg-graphite/70 shadow-sm"
                 style={{ 
                   ['--cell' as any]: `${cellSize}px`, // CSS переменная для размера клетки
                   ['--gap' as any]: '2px' // CSS переменная для отступа между клетками

@@ -75,7 +75,7 @@ export const ProfileScreen: React.FC = () => {
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="font-heading font-bold text-h3 text-foam truncate">
-                {displayName}
+                {displayName}{user?.lastName ? ` ${user.lastName}` : ''}
               </h2>
               <p className="text-body text-mist">
                 Рейтинг: {stats.rating}

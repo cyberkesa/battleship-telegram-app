@@ -102,7 +102,7 @@ export const HomeScreen: React.FC = () => {
               </div>
               <div className="text-left hidden sm:block">
                 <div className="font-heading font-semibold text-body text-foam truncate">
-                  {user?.firstName || 'Игрок'}
+                  {user ? `${user.firstName}${user.lastName ? ` ${user.lastName}` : ''}` : 'Игрок'}
                 </div>
                 <div className="text-caption text-mist">
                   Рейтинг: 1200
