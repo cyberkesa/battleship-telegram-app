@@ -29,7 +29,8 @@ export class HealthController {
     }
 
     // Redis check (construct ephemeral client using the same env logic as matchmaking)
-    const url = process.env.REDIS_URL || process.env.REDIS_TLS_URL || process.env.REDIS_PUBLIC_URL;
+    const privateUrl = process.env.REDIS_URL || process.env.REDIS_TLS_URL;
+    const publicUrl = process.env.REDIS_PUBLIC_URL;
     const host = process.env.REDIS_HOST || process.env.REDISHOST;
     const port = process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT, 10) : (process.env.REDISPORT ? parseInt(process.env.REDISPORT, 10) : undefined);
     const password = process.env.REDIS_PASSWORD || process.env.REDISPASSWORD;
@@ -45,13 +46,14 @@ export class HealthController {
         enableOfflineQueue: false,
         connectTimeout: 1500,
       };
-      if (url) {
+      if (privateUrl || publicUrl) {
         let enableTls = false;
         try {
-          const u = new URL(url);
+          const u = new URL(privateUrl || publicUrl!);
           enableTls = u.protocol === 'rediss:' || /\.proxy\.rlwy\.net$/i.test(u.hostname);
         } catch {}
-        client = new Redis(url, { ...commonOpts, tls: enableTls ? {} : undefined });
+        const chosenUrl = privateUrl || publicUrl!;
+        client = new Redis(chosenUrl, { ...commonOpts, tls: enableTls ? {} : undefined });
       } else if (host && port) {
         client = new Redis({ host, port, password, username, tls: process.env.REDIS_TLS === '1' ? {} : undefined, ...commonOpts });
       }
