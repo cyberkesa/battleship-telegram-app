@@ -6,7 +6,7 @@ type Status = 'ok' | 'error' | 'unknown';
 interface HealthData {
   api: { ok: boolean };
   db: { ok: boolean; latencyMs?: number; error?: string };
-  redis: { ok: boolean; latencyMs?: number; error?: string };
+  redis: { ok: boolean; latencyMs?: number; error?: string; endpoint?: 'private' | 'public' | 'hostport' | 'none' };
   telegram: { configured: boolean };
   jwt: { configured: boolean };
   time: string;
@@ -75,7 +75,10 @@ export const SystemStatus: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <Dot status={statusOf(health?.redis?.ok)} /> <span>Redis</span>
         </div>
-        <div style={{ textAlign: 'right', opacity: 0.85 }}>{health?.redis?.latencyMs != null ? `${health?.redis?.latencyMs}ms` : health?.redis?.error || ''}</div>
+        <div style={{ textAlign: 'right', opacity: 0.85 }}>
+          {health?.redis?.latencyMs != null ? `${health?.redis?.latencyMs}ms` : health?.redis?.error || ''}
+          {health?.redis?.endpoint ? ` · ${health.redis.endpoint}` : ''}
+        </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <Dot status={statusOf(health?.telegram?.configured)} /> <span>Telegram Bot</span>

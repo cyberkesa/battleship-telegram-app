@@ -12,7 +12,7 @@ export class HealthController {
     const result: any = {
       api: { ok: true },
       db: { ok: false },
-      redis: { ok: false },
+      redis: { ok: false, endpoint: 'none' },
       telegram: { configured: Boolean(process.env.TELEGRAM_BOT_TOKEN) },
       jwt: { configured: Boolean(process.env.JWT_SECRET) },
       time: new Date().toISOString(),
@@ -53,10 +53,12 @@ export class HealthController {
           enableTls = u.protocol === 'rediss:' || /\.proxy\.rlwy\.net$/i.test(u.hostname);
         } catch {}
         const chosenUrl = privateUrl || publicUrl!;
+        result.redis.endpoint = privateUrl ? 'private' : 'public';
         const withFamily = chosenUrl.includes('family=') ? chosenUrl : `${chosenUrl}${chosenUrl.includes('?') ? '&' : '?'}family=0`;
         client = new Redis(withFamily, { ...commonOpts, tls: enableTls ? {} : undefined });
       } else if (host && port) {
         client = new Redis({ host, port, password, username, tls: process.env.REDIS_TLS === '1' ? {} : undefined, ...commonOpts });
+        result.redis.endpoint = 'hostport';
       }
       if (client) {
         // Wait briefly for a connection before issuing commands since offlineQueue is disabled
