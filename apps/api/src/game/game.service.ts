@@ -77,7 +77,7 @@ export class GameService {
           id: actualMatchId,
           status: 'in_progress',
           currentTurn: 'A',
-          boardA: { ships },
+          boardA: { ships, hits: [], misses: [] },
           boardB: { ships: [] }
         };
         
@@ -240,7 +240,17 @@ export class GameService {
         const key = actualId ?? Array.from(this.matches.keys()).find(k => k.startsWith(`computer-${playerId}-`));
         const match = key ? await this.loadAiMatch(key) : undefined;
         if (!match) {
-          throw new NotFoundException('Match not found');
+          const fallbackBoard = { ships: [], hits: [], misses: [] };
+          return {
+            success: true,
+            data: {
+              id: actualId || `computer-${playerId}`,
+              status: 'in_progress',
+              currentTurn: 'A',
+              playerRole: 'A',
+              publicState: { fog: [], board: fallbackBoard }
+            }
+          };
         }
         const publicState = { fog: [], board: match.boardA };
         return {

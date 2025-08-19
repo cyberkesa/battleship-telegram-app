@@ -160,9 +160,20 @@ export const useGameStore = create<GameState>((set) => ({
       
       if (response.data.success) {
         set({ currentMatch: response.data.data });
+      } else {
+        if (import.meta.env.DEV) {
+          console.error('[Game] getGameState non-success', response.data);
+        }
+        set({ error: response.data.error || 'Не удалось получить состояние игры' });
       }
     } catch (error) {
-      console.error('Failed to get game state:', error);
+      const status = (error as any)?.response?.status;
+      const data = (error as any)?.response?.data;
+      if (import.meta.env.DEV) {
+        console.error('[Game] getGameState failed', { status, data, message: (error as any)?.message });
+      }
+      const reason = status === 404 ? 'Игра не найдена (сервер вернул 404)' : (data?.error || (error as any)?.message || 'Не удалось получить состояние игры');
+      set({ error: reason });
     }
   },
 
