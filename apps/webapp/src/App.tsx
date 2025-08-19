@@ -19,6 +19,9 @@ function DeepLinkHandler() {
   useEffect(() => {
     const tg: any = (window as any).Telegram?.WebApp;
     const startParam: string | undefined = tg?.initDataUnsafe?.start_param;
+    if (import.meta.env.DEV) {
+      console.log('[DeepLink] initData start_param =', startParam);
+    }
     if (startParam) {
       if (startParam.startsWith('join:')) {
         const id = startParam.slice('join:'.length);
