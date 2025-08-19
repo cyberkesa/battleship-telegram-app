@@ -86,7 +86,9 @@ export const useGameStore = create<GameState>((set) => ({
     try {
       set({ isLoading: true, error: null });
       
-      const response = await api.post(`/game/${matchId}/setup`, { ships: fleet });
+      const response = matchId === 'computer'
+        ? await api.post(`/game/quick/setup`, { ships: fleet })
+        : await api.post(`/game/${matchId}/setup`, { ships: fleet });
       
       if (response.data.success) {
         const actualMatchId = response.data.data.matchId as string;

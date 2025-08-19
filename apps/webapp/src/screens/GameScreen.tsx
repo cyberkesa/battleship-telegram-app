@@ -121,6 +121,9 @@ export const GameScreen: React.FC = () => {
             setGameState(data.data);
             setIsMyTurn(data.data.currentTurn === 'A');
           }
+        } else if (response.status === 404 && matchId.startsWith('computer-')) {
+          // Try to refetch shortly if AI state not yet persisted
+          setTimeout(() => getGameState(matchId), 300);
         }
       } catch (error) {
         console.error('Failed to poll game state:', error);
