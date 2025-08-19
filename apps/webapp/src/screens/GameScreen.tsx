@@ -9,29 +9,28 @@ import { CellState } from '@battleship/ui';
 // Convert fog of war to cell states
 const convertFogToCellStates = (fog: any[][]): CellState[][] => {
   const board = Array(10).fill(null).map(() => Array(10).fill('idle'));
-  
+  const safeFog = Array.isArray(fog) ? fog : [];
   for (let y = 0; y < 10; y++) {
+    const row = safeFog[y] || [];
     for (let x = 0; x < 10; x++) {
-      const cell = fog[y][x];
-      if (cell === 'H') { // Hit
-        board[y][x] = 'hit';
-      } else if (cell === 'M') { // Miss
-        board[y][x] = 'miss';
-      } else if (cell === 'S') { // Sunk
-        board[y][x] = 'sunk';
-      }
+      const cell = row[x];
+      if (cell === 'H') board[y][x] = 'hit';
+      else if (cell === 'M') board[y][x] = 'miss';
+      else if (cell === 'S') board[y][x] = 'sunk';
     }
   }
-  
   return board;
 };
 
 // Convert player board data to cell states
-const convertPlayerBoardToCellStates = (hits: Set<string>, misses: Set<string>, ships: any[]): CellState[][] => {
+const convertPlayerBoardToCellStates = (hitsInput: Set<string> | string[] | undefined, missesInput: Set<string> | string[] | undefined, ships: any[] | undefined): CellState[][] => {
   const board = Array(10).fill(null).map(() => Array(10).fill('idle'));
-  
+  const hits: string[] = hitsInput instanceof Set ? Array.from(hitsInput) : Array.isArray(hitsInput) ? hitsInput : [];
+  const misses: string[] = missesInput instanceof Set ? Array.from(missesInput) : Array.isArray(missesInput) ? missesInput : [];
+  const safeShips: any[] = Array.isArray(ships) ? ships : [];
+
   // Mark ships
-  ships.forEach(ship => {
+  safeShips.forEach(ship => {
     // Generate ship positions based on bow, length, and orientation
     const positions = [];
     for (let i = 0; i < ship.length; i++) {
@@ -48,12 +47,12 @@ const convertPlayerBoardToCellStates = (hits: Set<string>, misses: Set<string>, 
   });
   
   // Mark hits and misses
-  hits.forEach(hitKey => {
+  hits.forEach((hitKey: string) => {
     const [x, y] = hitKey.split(',').map(Number);
     board[y][x] = 'ship-hit';
   });
   
-  misses.forEach(missKey => {
+  misses.forEach((missKey: string) => {
     const [x, y] = missKey.split(',').map(Number);
     board[y][x] = 'miss';
   });

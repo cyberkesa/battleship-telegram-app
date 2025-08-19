@@ -116,10 +116,9 @@ export const useGameStore = create<GameState>((set) => ({
           message: error?.message,
         });
       }
-      set({ 
-        isLoading: false, 
-        error: error instanceof Error ? error.message : 'Failed to setup board' 
-      });
+      const status = error?.response?.status;
+      const msg = error?.response?.data?.error || error?.message || 'Failed to setup board';
+      set({ isLoading: false, error: status === 400 ? `Ошибка настройки игры: ${msg}` : msg });
     }
   },
 
