@@ -36,14 +36,16 @@ export class MatchmakingService {
         } catch {}
         // Prefer private; fallback to public on DNS errors
         const chosenUrl = privateUrl || publicUrl!;
-        this.redis = new Redis(chosenUrl, { tls: enableTls ? {} : undefined, name: 'matchmaking' });
+        const withFamily = chosenUrl.includes('family=') ? chosenUrl : `${chosenUrl}${chosenUrl.includes('?') ? '&' : '?'}family=0`;
+        this.redis = new Redis(withFamily, { tls: enableTls ? {} : undefined, name: 'matchmaking' });
         this.redis.on('error', (err) => {
           if ((err as any)?.code === 'ENOTFOUND' && publicUrl && privateUrl) {
             this.logger.warn(`Private redis DNS failed for ${privateUrl}. Falling back to public endpoint.`);
             try { this.redis?.disconnect(); } catch {}
             const u = new URL(publicUrl);
             const enable = u.protocol === 'rediss:' || /\.proxy\.rlwy\.net$/i.test(u.hostname);
-            this.redis = new Redis(publicUrl, { tls: enable ? {} : undefined, name: 'matchmaking' });
+            const pubWithFamily = publicUrl.includes('family=') ? publicUrl : `${publicUrl}${publicUrl.includes('?') ? '&' : '?'}family=0`;
+            this.redis = new Redis(pubWithFamily, { tls: enable ? {} : undefined, name: 'matchmaking' });
           }
         });
       } else if (host && port) {
