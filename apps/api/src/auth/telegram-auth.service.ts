@@ -132,7 +132,7 @@ export class TelegramAuthService {
     if (existing.length === 0) {
       // Attempt to enrich avatar via Bot API if not provided in initData
       const enrichedPhoto = user.photo_url ?? (await this.fetchTelegramPhotoUrl(Number(tgId))) ?? null;
-      const created = await this._prisma.$queryRaw<Row[]>`INSERT INTO users (tg_id, username, first_name, last_name, avatar_url) VALUES (${tgId}, ${user.username ?? null}, ${user.first_name}, ${user.last_name ?? null}, ${enrichedPhoto}) RETURNING id, tg_id, username, first_name, last_name, avatar_url, created_at`;
+      const created = await this._prisma.$queryRaw<Row[]>`INSERT INTO users (tg_id, username, first_name, last_name, avatar_url, updated_at) VALUES (${tgId}, ${user.username ?? null}, ${user.first_name}, ${user.last_name ?? null}, ${enrichedPhoto}, NOW()) RETURNING id, tg_id, username, first_name, last_name, avatar_url, created_at`;
       row = created[0];
     } else {
       // Keep existing avatar if none provided; try to enrich if still null
