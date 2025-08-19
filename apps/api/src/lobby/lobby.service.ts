@@ -61,7 +61,7 @@ export class LobbyService {
 			isHost: !!r.is_host,
 		}));
 		return {
-			id: lobbyId,
+			id: String(lobbyId),
 			status: rows[0]?.status || 'waiting',
 			players,
 			inviteLink: rows[0]?.invite_link || inviteLink,
@@ -120,7 +120,7 @@ export class LobbyService {
 			isHost: !!r.is_host,
 		}));
 		return {
-			id: rows[0].id,
+			id: String(rows[0].id),
 			status: rows[0].status,
 			players,
 			inviteLink: rows[0].invite_link,
@@ -143,7 +143,7 @@ export class LobbyService {
 			isHost: !!r.is_host,
 		}));
 		return {
-			id: rows[0].id,
+			id: String(rows[0].id),
 			status: rows[0].status,
 			players,
 			inviteLink: rows[0].invite_link,

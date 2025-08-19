@@ -16,7 +16,7 @@ export class AuthService {
       typeof id === 'number'
         ? `SELECT 
             id,
-            tg_id as "telegramId",
+            tg_id::text as "telegramId",
             username,
             COALESCE(first_name, username, 'Игрок') as "firstName",
             last_name as "lastName",
@@ -25,7 +25,7 @@ export class AuthService {
           FROM users WHERE id = ${id} LIMIT 1`
         : `SELECT 
             id,
-            tg_id as "telegramId",
+            tg_id::text as "telegramId",
             username,
             COALESCE(first_name, username, 'Игрок') as "firstName",
             last_name as "lastName",

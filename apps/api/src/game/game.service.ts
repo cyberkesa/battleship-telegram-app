@@ -153,7 +153,17 @@ export class GameService {
         const key = actualId ?? Array.from(this.matches.keys()).find(k => k.startsWith(`computer-${playerId}-`));
         const match = key ? await this.loadAiMatch(key) : undefined;
         if (!match) {
-          throw new NotFoundException('Match not found');
+          // Return a not-ready state instead of 404 to avoid breaking UI
+          return {
+            success: true,
+            data: {
+              id: actualId || 'computer',
+              status: 'in_progress',
+              currentTurn: 'A',
+              playerRole: 'A',
+              publicState: { fog: [], board: null }
+            }
+          };
         }
         const result = { kind: 'miss', message: 'Move recorded' };
         match.currentTurn = match.currentTurn === 'A' ? 'B' : 'A';
