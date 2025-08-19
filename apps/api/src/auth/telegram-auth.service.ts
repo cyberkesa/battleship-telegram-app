@@ -140,7 +140,8 @@ export class TelegramAuthService {
       if (!avatar) {
         avatar = await this.fetchTelegramPhotoUrl(Number(tgId));
       }
-      const updated = await this._prisma.$queryRaw<Row[]>`UPDATE users SET username = ${user.username ?? null}, first_name = ${user.first_name}, last_name = ${user.last_name ?? null}, avatar_url = ${avatar ?? null}, updated_at = NOW() WHERE id = ${existing[0].id} RETURNING id, tg_id, username, first_name, last_name, avatar_url, created_at`;
+      // Always refresh name/username from initData to keep profile current
+      const updated = await this._prisma.$queryRaw<Row[]>`UPDATE users SET username = ${user.username ?? null}, first_name = ${user.first_name ?? null}, last_name = ${user.last_name ?? null}, avatar_url = ${avatar ?? null}, updated_at = NOW() WHERE id = ${existing[0].id} RETURNING id, tg_id, username, first_name, last_name, avatar_url, created_at`;
       row = updated[0] || existing[0];
     }
 
@@ -148,9 +149,9 @@ export class TelegramAuthService {
       sub: row.id,
       telegramId: row.tg_id.toString(),
       username: row.username || undefined,
-      photoUrl: row.avatar_url || user.photo_url,
-      firstName: row.first_name,
-      lastName: row.last_name || undefined,
+      photoUrl: (row.avatar_url || user.photo_url) || undefined,
+      firstName: row.first_name || user.first_name,
+      lastName: (row.last_name || user.last_name) || undefined,
     };
 
     const sessionToken = this._jwtService.sign(payload, {

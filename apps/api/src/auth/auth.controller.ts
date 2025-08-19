@@ -55,15 +55,19 @@ export class AuthController {
   async getProfile(@Request() req: any) {
     try {
       const user = await this._authService.validateUser(req.user.sub);
+      // Coalesce with JWT payload (verified on this request) to avoid empty names/photos
+      const firstName = user.firstName || req.user.firstName || user.username || 'Игрок';
+      const lastName = user.lastName || req.user.lastName || null;
+      const photoUrl = user.photoUrl || req.user.photoUrl || null;
       return {
         success: true,
         data: {
           id: user.id,
           telegramId: user.telegramId,
           username: user.username,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          photoUrl: user.photoUrl,
+          firstName,
+          lastName,
+          photoUrl,
           createdAt: user.createdAt.toISOString(),
         }
       };
