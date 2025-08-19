@@ -1,7 +1,6 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { Redis } from 'ioredis';
 import { PrismaService } from '../infra/prisma.service';
-import { createMatch as createInitialMatch } from '@battleship/game-logic';
 import { randomUUID } from 'crypto';
 
 interface JoinQueueRequest {
@@ -154,14 +153,21 @@ export class MatchmakingService {
   async createMatch(player1Id: string, player2Id: string, mode: string): Promise<string> {
     try {
       const matchId = randomUUID();
-      const initialState = createInitialMatch(matchId);
+      // Minimal initial state for DB; full logic handled by GameService later
+      const initialState: any = {
+        id: matchId,
+        status: 'placing',
+        currentTurn: 'A',
+        mode,
+        createdAt: new Date().toISOString(),
+      };
 
       const match = await this._prisma.match.create({
         data: {
-          id: initialState.id,
-          status: initialState.status,
-          currentTurn: initialState.currentTurn as any,
-          state: initialState as any,
+          id: matchId,
+          status: 'placing',
+          currentTurn: 'A' as any,
+          state: initialState,
           playerA: { connect: { id: player1Id } },
           playerB: { connect: { id: player2Id } },
         },
