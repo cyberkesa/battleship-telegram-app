@@ -68,9 +68,12 @@ export class LobbyController {
   @Post('join')
   @UseGuards(JwtAuthGuard)
   async joinLobby(@Body() joinLobbyDto: JoinLobbyDto, @Request() req) {
+    const safeName = joinLobbyDto.playerName || req.user.firstName || req.user.username || 'Игрок';
     const lobby = await this._lobbyService.joinLobby({
-      ...joinLobbyDto,
+      lobbyId: joinLobbyDto.lobbyId,
       playerId: req.user.sub,
+      playerName: safeName,
+      playerAvatar: joinLobbyDto.playerAvatar,
     });
     return lobby;
   }
