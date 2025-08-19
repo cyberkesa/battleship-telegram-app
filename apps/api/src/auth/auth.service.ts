@@ -14,8 +14,24 @@ export class AuthService {
     const id = typeof userId === 'number' ? userId : isNaN(Number(userId)) ? userId : Number(userId);
     const user = await this._prisma.$queryRawUnsafe<any>(
       typeof id === 'number'
-        ? `SELECT id, tg_id as "telegramId", username, first_name as "firstName", last_name as "lastName", avatar_url as "photoUrl", created_at as "createdAt" FROM users WHERE id = ${id} LIMIT 1`
-        : `SELECT id, tg_id as "telegramId", username, first_name as "firstName", last_name as "lastName", avatar_url as "photoUrl", created_at as "createdAt" FROM users WHERE id = '${id}' LIMIT 1`
+        ? `SELECT 
+            id,
+            tg_id as "telegramId",
+            username,
+            COALESCE(first_name, username, 'Игрок') as "firstName",
+            last_name as "lastName",
+            avatar_url as "photoUrl",
+            created_at as "createdAt"
+          FROM users WHERE id = ${id} LIMIT 1`
+        : `SELECT 
+            id,
+            tg_id as "telegramId",
+            username,
+            COALESCE(first_name, username, 'Игрок') as "firstName",
+            last_name as "lastName",
+            avatar_url as "photoUrl",
+            created_at as "createdAt"
+          FROM users WHERE id = '${id}' LIMIT 1`
     );
     if (!user || (Array.isArray(user) && user.length === 0)) {
       throw new UnauthorizedException('User not found');
