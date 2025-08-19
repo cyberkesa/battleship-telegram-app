@@ -1,9 +1,12 @@
 import { Controller, Post, Body, UseGuards, Request, Delete, Param } from '@nestjs/common';
+import { IsIn, IsOptional } from 'class-validator';
 import { MatchmakingService } from './matchmaking.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
-interface JoinQueueRequest {
-  mode: 'CLASSIC' | 'RAPID' | 'BLITZ';
+class JoinQueueRequest {
+  @IsOptional()
+  @IsIn(['CLASSIC', 'RAPID', 'BLITZ'])
+  mode?: 'CLASSIC' | 'RAPID' | 'BLITZ';
 }
 
 interface QueueResponse {

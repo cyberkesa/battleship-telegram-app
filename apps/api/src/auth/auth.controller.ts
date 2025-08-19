@@ -1,4 +1,5 @@
 import { Controller, Post, Body, UseGuards, Request, Get, HttpCode, HttpStatus, BadRequestException } from '@nestjs/common';
+import { IsString } from 'class-validator';
 import { AuthService } from './auth.service';
 import { TelegramAuthService } from './telegram-auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -10,9 +11,11 @@ export class AuthController {
     private readonly _telegramAuthService: TelegramAuthService,
   ) {}
 
+  class TelegramInitDto { @IsString() initData!: string }
+
   @Post('telegram')
   @HttpCode(HttpStatus.OK)
-  async authenticate(@Body() body: { initData: string }): Promise<any> {
+  async authenticate(@Body() body: TelegramInitDto): Promise<any> {
     // Validate input
     if (!body.initData) {
       throw new BadRequestException('initData is required');
@@ -35,7 +38,7 @@ export class AuthController {
   // Alias to match checklist: /auth/telegram/validate
   @Post('telegram/validate')
   @HttpCode(HttpStatus.OK)
-  async validateInitData(@Body() body: { initData: string }): Promise<any> {
+  async validateInitData(@Body() body: TelegramInitDto): Promise<any> {
     if (!body.initData) {
       throw new BadRequestException('initData is required');
     }
