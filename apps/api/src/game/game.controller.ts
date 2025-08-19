@@ -59,4 +59,14 @@ export class GameController {
     const playerId = req.user.sub;
     return this._gameService.getGameState(matchId, playerId);
   }
+
+  // Quick game (computer) setup endpoint
+  @Post('quick/setup')
+  async quickSetup(
+    @Body() body: { ships: any[] },
+    @Request() req: any
+  ) {
+    const playerId = req.user.sub;
+    return this._gameService.setupBoard('computer', playerId, body.ships);
+  }
 }

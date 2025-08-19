@@ -107,7 +107,7 @@ export const matchmakingAPI = {
 
 export const gameAPI = {
   setupBoard: (matchId: string, ships: any[]) => 
-    api.post(`/game/${matchId}/setup`, { ships }),
+    matchId === 'computer' ? api.post(`/game/quick/setup`, { ships }) : api.post(`/game/${matchId}/setup`, { ships }),
   makeMove: (matchId: string, position: any) => 
     api.post(`/game/${matchId}/move`, { position }),
   getState: (matchId: string) => api.get(`/game/${matchId}/state`),
