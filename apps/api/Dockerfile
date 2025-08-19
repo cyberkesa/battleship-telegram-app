@@ -67,4 +67,5 @@ USER nestjs
 EXPOSE 3000
 
 # Start the application (Railway will use startCommand from railway.json)
-CMD ["npm", "run", "start:prod"]
+# Ensure DB schema is up-to-date before starting
+CMD ["sh", "-lc", "npm run start:prod:migrate"]
