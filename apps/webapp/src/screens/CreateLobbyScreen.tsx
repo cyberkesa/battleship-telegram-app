@@ -29,7 +29,8 @@ export const CreateLobbyScreen: React.FC = () => {
     const botUsername = raw?.startsWith('@') ? raw.slice(1) : raw;
     if (botUsername) {
       const payload = `join:${id}`;
-      return `https://t.me/${botUsername}?startapp=${encodeURIComponent(payload)}`;
+      // Use /game path and include both startapp and startApp for broader client compatibility
+      return `https://t.me/${botUsername}/game?startapp=${encodeURIComponent(payload)}&startApp=${encodeURIComponent(payload)}`;
     }
     return `${window.location.origin}/lobby/${id}`;
   };
@@ -261,21 +262,11 @@ export const CreateLobbyScreen: React.FC = () => {
                 <Button
                   variant="secondary"
                   size="lg"
-                  onClick={handleCopyLink}
-                  className="flex-1 flex items-center justify-center gap-2"
-                >
-                  <Copy className="w-4 h-4" />
-                  {copied ? 'Скопировано!' : 'Копировать'}
-                </Button>
-                
-                <Button
-                  variant="secondary"
-                  size="lg"
                   onClick={handleShare}
                   className="flex-1 flex items-center justify-center gap-2"
                 >
                   <Share className="w-4 h-4" />
-                  Поделиться
+                  Пригласить друга
                 </Button>
               </div>
 
