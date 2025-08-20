@@ -136,6 +136,7 @@ export const Cell: React.FC<CellProps> = ({
     grid place-items-center rounded-cell ${transitionClass}
     ${sizeClasses[size]}
     ${stateClasses[state]}
+    will-change-transform
     ${disabled ? 'cursor-not-allowed' : draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}
     ${className}
   `;

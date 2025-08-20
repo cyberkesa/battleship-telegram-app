@@ -103,6 +103,7 @@ export const GameScreen: React.FC = () => {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [isMyTurn, setIsMyTurn] = useState(false);
   const [turnTime, setTurnTime] = useState(5);
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     if (matchId) {
@@ -134,9 +135,18 @@ export const GameScreen: React.FC = () => {
         if (response.ok) {
           const data = await response.json();
           if (data.success) {
-            setGameState(data.data);
+            // Smooth update: avoid hard flashes by minimal state change
+            setGameState(prev => {
+              // Shallow compare key fields to prevent unnecessary re-renders
+              if (prev && prev.id === data.data.id && prev.currentTurn === data.data.currentTurn && prev.status === data.data.status) {
+                // Update publicState references carefully
+                return { ...prev, publicState: data.data.publicState };
+              }
+              return data.data;
+            });
             setIsMyTurn(data.data.currentTurn === 'A');
             setTurnTime(5);
+            if (!initialized) setInitialized(true);
             if (data.data.status === 'finished') {
               const youWon = data.data.winner === 'A';
               alert(youWon ? 'Вы выиграли!' : 'Вы проиграли');
@@ -219,7 +229,7 @@ export const GameScreen: React.FC = () => {
     return isMyTurn ? `Ваш ход (${turnTime}s)` : 'Ход компьютера';
   };
 
-  if (isLoading) {
+  if (!initialized && !gameState) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">

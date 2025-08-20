@@ -108,7 +108,7 @@ export const Board: React.FC<BoardProps> = React.memo(({
         role="grid"
         aria-rowcount={BOARD_SIZE}
         aria-colcount={BOARD_SIZE}
-        className="relative grid grid-cols-10 rounded-card bg-bg-graphite ring-1 ring-edge"
+        className="relative grid grid-cols-10 rounded-card bg-bg-graphite ring-1 ring-edge transition-colors duration-200"
         style={{
           gap: 'var(--gap)',
           padding: 'var(--pad)',
