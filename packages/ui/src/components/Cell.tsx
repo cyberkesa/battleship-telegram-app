@@ -35,19 +35,20 @@ const sizeClasses = {
   mini: 'w-cell-mini h-cell-mini',
 };
 
+// Keep only rings and interaction states on the outer container; visuals are rendered via an isometric tile inside
 const stateClasses = {
-  idle: 'bg-game-water/20 ring-1 ring-border-light hover:ring-primary-400 hover:bg-game-water/30 transition-colors duration-150',
-  hover: 'bg-primary-100 ring-2 ring-primary-400',
-  selected: 'bg-primary-200 ring-2 ring-primary-500',
-  miss: 'bg-game-miss/30 ring-1 ring-border-medium',
-  hit: 'bg-game-hit ring-1 ring-game-hit',
-  sunk: 'bg-game-sunk ring-1 ring-game-sunk',
-  disabled: 'bg-secondary-100/50 ring-1 ring-border-light/50 cursor-not-allowed',
-  ship: 'bg-game-ship/20 ring-1 ring-game-ship/50',
-  'ship-hit': 'bg-game-hit/60 ring-1 ring-game-hit',
-  'ship-sunk': 'bg-game-sunk/80 ring-1 ring-game-sunk',
-  invalid: 'bg-red-300/40 ring-2 ring-red-500/70',
-};
+  idle: 'ring-1 ring-border-light hover:ring-primary-400 transition-colors duration-150',
+  hover: 'ring-2 ring-primary-400',
+  selected: 'ring-2 ring-primary-500',
+  miss: 'ring-1 ring-border-medium',
+  hit: 'ring-1 ring-game-hit',
+  sunk: 'ring-1 ring-game-sunk',
+  disabled: 'ring-1 ring-border-light/50 cursor-not-allowed',
+  ship: 'ring-1 ring-game-ship/50',
+  'ship-hit': 'ring-1 ring-game-hit',
+  'ship-sunk': 'ring-1 ring-game-sunk',
+  invalid: 'ring-2 ring-red-500/70',
+} as const;
 
 export const Cell: React.FC<CellProps> = ({
   state,
@@ -86,78 +87,118 @@ export const Cell: React.FC<CellProps> = ({
   };
 
   const getCellContent = () => {
+    // Helper to render an isometric diamond tile
+    const renderIsoTile = (options?: { fill?: string; border?: string; shadow?: string }) => {
+      const baseSize = 'calc(var(--cell, 32px) * 0.7071)'; // fits rotated square into the outer square
+      const fill = options?.fill ?? '#0F2A40';
+      const border = options?.border ?? 'rgba(255,255,255,0.08)';
+      const shadow = options?.shadow ?? '0 2px 6px rgba(0,0,0,0.25) inset, 0 1px 0 rgba(255,255,255,0.06)';
+      return (
+        <div
+          aria-hidden
+          style={{
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            width: baseSize,
+            height: baseSize,
+            transform: 'translate(-50%, -50%) rotate(45deg) scaleY(0.5)',
+            transformOrigin: 'center',
+            background: fill,
+            boxShadow: shadow,
+            border: `1px solid ${border}`,
+            borderRadius: '2px',
+          }}
+        />
+      );
+    };
+
     switch (state) {
       case 'miss':
         return (
-          <div
-            style={{
-              width: 'calc(var(--cell, 32px) * 0.22)',
-              height: 'calc(var(--cell, 32px) * 0.22)',
-              backgroundColor: '#204A86',
-              borderRadius: '50%'
-            }}
-          />
+          <>
+            {renderIsoTile({ fill: 'linear-gradient(180deg, rgba(20,60,100,0.6), rgba(8,24,40,0.7))' })}
+            <div
+              style={{
+                position: 'absolute',
+                left: '50%',
+                top: '50%',
+                width: 'calc(var(--cell, 32px) * 0.18)',
+                height: 'calc(var(--cell, 32px) * 0.18)',
+                transform: 'translate(-50%, -50%)',
+                backgroundColor: '#204A86',
+                borderRadius: '50%'
+              }}
+            />
+          </>
         );
       case 'hit':
         return (
-          <div className="relative w-full h-full" aria-hidden>
-            <div
-              style={{
-                position: 'absolute', left: '12%', top: '50%', width: '76%', height: getStrokePx(), backgroundColor: '#C22121', transform: 'rotate(45deg)', transformOrigin: 'center'
-              }}
-            />
-            <div
-              style={{
-                position: 'absolute', left: '12%', top: '50%', width: '76%', height: getStrokePx(), backgroundColor: '#C22121', transform: 'rotate(-45deg)', transformOrigin: 'center'
-              }}
-            />
-          </div>
+          <>
+            {renderIsoTile({ fill: 'linear-gradient(180deg, rgba(20,60,100,0.6), rgba(8,24,40,0.7))', border: 'rgba(255,0,0,0.35)' })}
+            <div className="relative w-full h-full" aria-hidden>
+              <div
+                style={{
+                  position: 'absolute', left: '12%', top: '50%', width: '76%', height: getStrokePx(), backgroundColor: '#C22121', transform: 'rotate(45deg)', transformOrigin: 'center'
+                }}
+              />
+              <div
+                style={{
+                  position: 'absolute', left: '12%', top: '50%', width: '76%', height: getStrokePx(), backgroundColor: '#C22121', transform: 'rotate(-45deg)', transformOrigin: 'center'
+                }}
+              />
+            </div>
+          </>
         );
       case 'sunk':
         return (
-          <div className="relative w-full h-full" aria-hidden>
-            <div
-              style={{
-                position: 'absolute', left: '12%', top: '50%', width: '76%', height: getStrokePx(), backgroundColor: '#C22121', transform: 'rotate(45deg)', transformOrigin: 'center'
-              }}
-            />
-            <div
-              style={{
-                position: 'absolute', left: '12%', top: '50%', width: '76%', height: getStrokePx(), backgroundColor: '#C22121', transform: 'rotate(-45deg)', transformOrigin: 'center'
-              }}
-            />
-          </div>
+          <>
+            {renderIsoTile({ fill: 'linear-gradient(180deg, rgba(40,20,20,0.6), rgba(20,8,8,0.7))', border: 'rgba(255,0,0,0.5)' })}
+            <div className="relative w-full h-full" aria-hidden>
+              <div
+                style={{
+                  position: 'absolute', left: '12%', top: '50%', width: '76%', height: getStrokePx(), backgroundColor: '#C22121', transform: 'rotate(45deg)', transformOrigin: 'center'
+                }}
+              />
+              <div
+                style={{
+                  position: 'absolute', left: '12%', top: '50%', width: '76%', height: getStrokePx(), backgroundColor: '#C22121', transform: 'rotate(-45deg)', transformOrigin: 'center'
+                }}
+              />
+            </div>
+          </>
         );
       case 'ship':
-        return (
-          <div
-            style={{
-              position: 'absolute',
-              inset: '12%',
-              backgroundColor: '#222222',
-            }}
-          />
-        );
+        return renderIsoTile({ fill: 'linear-gradient(180deg, rgba(40,40,40,0.95), rgba(28,28,28,0.95))', border: 'rgba(255,255,255,0.12)', shadow: '0 2px 8px rgba(0,0,0,0.45) inset, 0 1px 0 rgba(255,255,255,0.08)'});
       case 'ship-hit':
         return (
-          <div className="relative w-full h-full" aria-hidden>
-            <div
-              style={{ position: 'absolute', left: '12%', top: '50%', width: '76%', height: getStrokePx(), backgroundColor: '#C22121', transform: 'rotate(45deg)', transformOrigin: 'center' }}
-            />
-            <div
-              style={{ position: 'absolute', left: '12%', top: '50%', width: '76%', height: getStrokePx(), backgroundColor: '#C22121', transform: 'rotate(-45deg)', transformOrigin: 'center' }}
-            />
-          </div>
+          <>
+            {renderIsoTile({ fill: 'linear-gradient(180deg, rgba(40,40,40,0.95), rgba(28,28,28,0.95))', border: 'rgba(255,0,0,0.4)' })}
+            <div className="relative w-full h-full" aria-hidden>
+              <div style={{ position: 'absolute', left: '12%', top: '50%', width: '76%', height: getStrokePx(), backgroundColor: '#C22121', transform: 'rotate(45deg)', transformOrigin: 'center' }} />
+              <div style={{ position: 'absolute', left: '12%', top: '50%', width: '76%', height: getStrokePx(), backgroundColor: '#C22121', transform: 'rotate(-45deg)', transformOrigin: 'center' }} />
+            </div>
+          </>
         );
       case 'ship-sunk':
         return (
-          <div className="relative w-full h-full" aria-hidden>
-            <div style={{ position: 'absolute', left: '12%', top: '50%', width: '76%', height: getStrokePx(), backgroundColor: '#C22121', transform: 'rotate(45deg)', transformOrigin: 'center' }} />
-            <div style={{ position: 'absolute', left: '12%', top: '50%', width: '76%', height: getStrokePx(), backgroundColor: '#C22121', transform: 'rotate(-45deg)', transformOrigin: 'center' }} />
-          </div>
+          <>
+            {renderIsoTile({ fill: 'linear-gradient(180deg, rgba(40,20,20,0.95), rgba(22,10,10,0.95))', border: 'rgba(255,0,0,0.5)' })}
+            <div className="relative w-full h-full" aria-hidden>
+              <div style={{ position: 'absolute', left: '12%', top: '50%', width: '76%', height: getStrokePx(), backgroundColor: '#C22121', transform: 'rotate(45deg)', transformOrigin: 'center' }} />
+              <div style={{ position: 'absolute', left: '12%', top: '50%', width: '76%', height: getStrokePx(), backgroundColor: '#C22121', transform: 'rotate(-45deg)', transformOrigin: 'center' }} />
+            </div>
+          </>
         );
+      case 'hover':
+        return renderIsoTile({ fill: 'linear-gradient(180deg, rgba(40,100,160,0.6), rgba(16,48,80,0.7))', border: 'rgba(64,160,255,0.5)' });
+      case 'selected':
+        return renderIsoTile({ fill: 'linear-gradient(180deg, rgba(56,120,200,0.6), rgba(24,64,112,0.7))', border: 'rgba(64,160,255,0.7)' });
+      case 'invalid':
+        return renderIsoTile({ fill: 'linear-gradient(180deg, rgba(120,40,40,0.5), rgba(80,20,20,0.6))', border: 'rgba(255,80,80,0.6)' });
       default:
-        return children;
+        // 'idle' and any other fallbacks
+        return renderIsoTile({ fill: 'linear-gradient(180deg, rgba(20,60,100,0.6), rgba(8,24,40,0.7))' });
     }
   };
 
@@ -167,6 +208,7 @@ export const Cell: React.FC<CellProps> = ({
     grid place-items-center rounded-cell ${transitionClass}
     ${sizeClasses[size]}
     ${stateClasses[state]}
+    bg-transparent
     will-change-transform
     ${disabled ? 'cursor-not-allowed' : draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}
     ${className}
@@ -182,7 +224,7 @@ export const Cell: React.FC<CellProps> = ({
     return (
       <div
         className={cellClassName}
-        style={{ width: `var(--cell, ${fallbackPx}px)`, height: `var(--cell, ${fallbackPx}px)`, backgroundColor: '#FAFAFA' }}
+        style={{ width: `var(--cell, ${fallbackPx}px)`, height: `var(--cell, ${fallbackPx}px)`, backgroundColor: 'transparent', position: 'relative' }}
         onClick={handleClick}
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
@@ -201,7 +243,7 @@ export const Cell: React.FC<CellProps> = ({
   return (
     <div
       className={cellClassName}
-      style={{ width: `var(--cell, ${fallbackPx}px)`, height: `var(--cell, ${fallbackPx}px)`, backgroundColor: '#FAFAFA', position: 'relative' }}
+      style={{ width: `var(--cell, ${fallbackPx}px)`, height: `var(--cell, ${fallbackPx}px)`, backgroundColor: 'transparent', position: 'relative' }}
       onClick={handleClick}
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}

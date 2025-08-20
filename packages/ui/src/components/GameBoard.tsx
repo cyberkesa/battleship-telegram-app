@@ -624,8 +624,26 @@ export const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(({...props}
 										return (
 											<div
 												key={`${pos.x}-${pos.y}`}
-												className={`w-[var(--cell)] h-[var(--cell)] bg-gradient-to-br from-game-ship to-game-ship/80 shadow-lg ring-2 ring-inset ring-game-ship/50 border border-game-ship/30 ${rounded}`}
-											/>
+												className={`w-[var(--cell)] h-[var(--cell)] ${rounded}`}
+												style={{ position: 'relative' }}
+											>
+												<div
+													aria-hidden
+													style={{
+														position: 'absolute',
+														left: '50%',
+														top: '50%',
+														width: 'calc(var(--cell) * 0.7071)',
+														height: 'calc(var(--cell) * 0.7071)',
+														transform: 'translate(-50%, -50%) rotate(45deg) scaleY(0.5)',
+														transformOrigin: 'center',
+														background: 'linear-gradient(180deg, rgba(60,60,60,0.95), rgba(28,28,28,0.95))',
+														boxShadow: '0 2px 8px rgba(0,0,0,0.45) inset, 0 1px 0 rgba(255,255,255,0.08)',
+														border: '1px solid rgba(255,255,255,0.12)',
+														borderRadius: '2px',
+													}}
+												/>
+											</div>
 										);
 									})}
 							</div>
