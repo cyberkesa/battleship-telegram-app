@@ -113,11 +113,12 @@ export const Board: React.FC<BoardProps> = React.memo(({
           width: `calc(${BOARD_SIZE} * var(--cell))`,
           height: `calc(${BOARD_SIZE} * var(--cell))`,
           backgroundImage: `
-            linear-gradient(to right, rgba(255,255,255,0.10) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(255,255,255,0.10) 1px, transparent 1px)
+            linear-gradient(to right, #111111 1px, transparent 1px),
+            linear-gradient(to bottom, #111111 1px, transparent 1px)
           `,
           backgroundSize: 'var(--cell) var(--cell)',
           backgroundPosition: '0 0',
+          opacity: 1,
         }}
       />
 
@@ -126,7 +127,7 @@ export const Board: React.FC<BoardProps> = React.memo(({
         role="grid"
         aria-rowcount={BOARD_SIZE}
         aria-colcount={BOARD_SIZE}
-        className="relative grid bg-bg-graphite transition-colors duration-200"
+        className="relative grid"
         style={{
           gap: '0px',
           padding: 'var(--pad)',
@@ -134,7 +135,8 @@ export const Board: React.FC<BoardProps> = React.memo(({
           gridAutoRows: 'var(--cell)',
           width: `calc(${BOARD_SIZE} * var(--cell))`,
           height: `calc(${BOARD_SIZE} * var(--cell))`,
-          boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.12)',
+          boxShadow: 'inset 0 0 0 1px #111111',
+          backgroundColor: '#FAFAFA',
         }}
       >
         {cells.map((row, rowIndex) =>

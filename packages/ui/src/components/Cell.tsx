@@ -25,6 +25,7 @@ interface CellProps {
   className?: string;
   children?: React.ReactNode;
   draggable?: boolean;
+  style?: React.CSSProperties;
 }
 
 const sizeClasses = {
@@ -34,18 +35,19 @@ const sizeClasses = {
   mini: 'w-cell-mini h-cell-mini',
 };
 
+// Minimalist visual scheme per spec (paper grid, no animations)
 const stateClasses = {
-  idle: 'bg-game-water/10 hover:bg-game-water/20 transition-colors duration-150',
-  hover: 'bg-primary-100',
-  selected: 'bg-primary-200',
-  miss: 'bg-game-miss/30',
-  hit: 'bg-game-hit',
-  sunk: 'bg-game-sunk',
-  disabled: 'bg-secondary-100/50 cursor-not-allowed',
-  ship: 'bg-game-ship/20',
-  'ship-hit': 'bg-game-hit/60',
-  'ship-sunk': 'bg-game-sunk/80',
-  invalid: 'bg-red-300/40',
+  idle: '',
+  hover: '',
+  selected: '',
+  miss: '',
+  hit: '',
+  sunk: '',
+  disabled: 'cursor-not-allowed',
+  ship: '',
+  'ship-hit': '',
+  'ship-sunk': '',
+  invalid: '',
 };
 
 export const Cell: React.FC<CellProps> = ({
@@ -89,49 +91,79 @@ export const Cell: React.FC<CellProps> = ({
       case 'miss':
         return (
           <div
-            className="w-2 h-2 bg-game-miss rounded-full animate-miss-ripple"
+            style={{
+              width: 'calc(var(--cell, 32px) * 0.22)',
+              height: 'calc(var(--cell, 32px) * 0.22)',
+              backgroundColor: '#204A86',
+              borderRadius: '50%'
+            }}
           />
         );
       case 'hit':
         return (
-          <div
-            className="w-4 h-4 bg-white transform rotate-45 animate-hit-explosion"
-            style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }}
-          />
+          <div className="relative w-full h-full" aria-hidden>
+            <div
+              style={{
+                position: 'absolute', left: '12%', top: '50%', width: '76%', height: getStrokePx(), backgroundColor: '#C22121', transform: 'rotate(45deg)', transformOrigin: 'center'
+              }}
+            />
+            <div
+              style={{
+                position: 'absolute', left: '12%', top: '50%', width: '76%', height: getStrokePx(), backgroundColor: '#C22121', transform: 'rotate(-45deg)', transformOrigin: 'center'
+              }}
+            />
+          </div>
         );
       case 'sunk':
         return (
-          <div
-            className="w-4 h-4 bg-white transform rotate-45 animate-hit-explosion"
-            style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }}
-          />
+          <div className="relative w-full h-full" aria-hidden>
+            <div
+              style={{
+                position: 'absolute', left: '12%', top: '50%', width: '76%', height: getStrokePx(), backgroundColor: '#C22121', transform: 'rotate(45deg)', transformOrigin: 'center'
+              }}
+            />
+            <div
+              style={{
+                position: 'absolute', left: '12%', top: '50%', width: '76%', height: getStrokePx(), backgroundColor: '#C22121', transform: 'rotate(-45deg)', transformOrigin: 'center'
+              }}
+            />
+          </div>
         );
       case 'ship':
         return (
-          <div className="w-full h-full bg-game-ship/30 rounded-lg animate-ship-float" />
+          <div
+            style={{
+              position: 'absolute',
+              inset: '12%',
+              backgroundColor: '#222222',
+            }}
+          />
         );
       case 'ship-hit':
         return (
-          <div
-            className="w-4 h-4 bg-white transform rotate-45 animate-hit-explosion"
-            style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }}
-          />
+          <div className="relative w-full h-full" aria-hidden>
+            <div
+              style={{ position: 'absolute', left: '12%', top: '50%', width: '76%', height: getStrokePx(), backgroundColor: '#C22121', transform: 'rotate(45deg)', transformOrigin: 'center' }}
+            />
+            <div
+              style={{ position: 'absolute', left: '12%', top: '50%', width: '76%', height: getStrokePx(), backgroundColor: '#C22121', transform: 'rotate(-45deg)', transformOrigin: 'center' }}
+            />
+          </div>
         );
       case 'ship-sunk':
         return (
-          <div
-            className="w-4 h-4 bg-white transform rotate-45 animate-hit-explosion"
-            style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }}
-          />
+          <div className="relative w-full h-full" aria-hidden>
+            <div style={{ position: 'absolute', left: '12%', top: '50%', width: '76%', height: getStrokePx(), backgroundColor: '#C22121', transform: 'rotate(45deg)', transformOrigin: 'center' }} />
+            <div style={{ position: 'absolute', left: '12%', top: '50%', width: '76%', height: getStrokePx(), backgroundColor: '#C22121', transform: 'rotate(-45deg)', transformOrigin: 'center' }} />
+          </div>
         );
       default:
         return children;
     }
   };
 
-  const transitionClass = disabled ? 'transition-none' : 'transition-colors duration-150';
+  const transitionClass = disabled ? 'transition-none' : '';
   const fallbackPx = size === 'sm' ? 28 : size === 'lg' ? 40 : size === 'mini' ? 20 : 34;
-  const hasNoScale = className.includes('no-scale');
   const cellClassName = `
     grid place-items-center ${transitionClass}
     ${sizeClasses[size]}
@@ -141,12 +173,17 @@ export const Cell: React.FC<CellProps> = ({
     ${className}
   `;
 
+  function getStrokePx() {
+    // 2px at c=32 → scale linearly and round to int
+    return `calc(max(1px, round((var(--cell, 32px) / 32) * 2px)))` as any;
+  }
+
   // Если ячейка перетаскиваемая, используем обычный div
   if (draggable) {
     return (
       <div
         className={cellClassName}
-        style={{ width: `var(--cell, ${fallbackPx}px)`, height: `var(--cell, ${fallbackPx}px)` }}
+        style={{ width: `var(--cell, ${fallbackPx}px)`, height: `var(--cell, ${fallbackPx}px)`, backgroundColor: '#FAFAFA' }}
         onClick={handleClick}
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
@@ -165,7 +202,7 @@ export const Cell: React.FC<CellProps> = ({
   return (
     <div
       className={cellClassName}
-      style={{ width: `var(--cell, ${fallbackPx}px)`, height: `var(--cell, ${fallbackPx}px)` }}
+      style={{ width: `var(--cell, ${fallbackPx}px)`, height: `var(--cell, ${fallbackPx}px)`, backgroundColor: '#FAFAFA', position: 'relative' }}
       onClick={handleClick}
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}

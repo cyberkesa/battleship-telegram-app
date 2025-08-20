@@ -194,28 +194,27 @@ export const GameScreen: React.FC = () => {
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-tg-text mb-2">Морской бой</h1>
-          <p className="text-tg-hint">{gameState.status==='finished' ? (gameState.winner==='A'?'Победа!':'Поражение') : (isMyTurn? `Ваш ход (${turnTime}s)` : 'Ход компьютера')}</p>
+          <p className="text-tg-text">{gameState.status==='finished' ? (gameState.winner==='A'?'Победа':'Поражение') : (isMyTurn? `Ход: ${turnTime}` : 'Ход соперника')}</p>
         </div>
 
-        <div className="bg-tg-secondary-bg rounded-lg p-4 mb-6">
+        <div className="bg-transparent p-2 mb-4">
           <div className="flex justify-between items-center">
-            <div><span className="text-tg-text font-medium">Вы:</span><span className="text-tg-hint ml-2">{user?.firstName || 'Игрок'}</span></div>
-            <div className="text-center"><div className={`w-3 h-3 rounded-full ${isMyTurn?'bg-green-500':'bg-gray-400'}`}></div><span className="text-xs text-tg-hint ml-1">{isMyTurn?'Ваш ход':'Ожидание'}</span></div>
-            <div><span className="text-tg-text font-medium">Противник:</span><span className="text-tg-hint ml-2">Компьютер</span></div>
+            <div className="text-tg-text">Моё поле</div>
+            <div className="text-tg-text">Поле противника</div>
           </div>
         </div>
 
         {error && (<div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">{error}</div>)}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div>
-            <h3 className="text-lg font-semibold text-tg-text mb-3 text-center">Ваше поле</h3>
+          <div className="relative">
+            <div className={`absolute -inset-1 ${isMyTurn ? 'ring-2' : ''}`} style={{ border: isMyTurn ? '2px solid #111111' : 'none' }} />
             <div className="flex justify-center">
               <Board size="sm" cells={convertOwn(gameState.publicState.board) as any} disabled />
             </div>
           </div>
-          <div>
-            <h3 className="text-lg font-semibold text-tg-text mb-3 text-center">Поле противника</h3>
+          <div className="relative">
+            <div className={`absolute -inset-1 ${!isMyTurn ? 'ring-2' : ''}`} style={{ border: !isMyTurn ? '2px solid #111111' : 'none' }} />
             <div className="flex justify-center">
               <Board size="sm" cells={convertFog(gameState.publicState.fog) as any} disabled={!isMyTurn || gameState.status!=='in_progress'} onCellClick={(row,col)=>{
                 if (!isMyTurn||!matchId) return;
