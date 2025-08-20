@@ -5,6 +5,7 @@ import { useGameStore } from '../stores/gameStore';
 import { useAuth } from '../providers/AuthProvider';
 import { Position } from '@battleship/shared-types';
 import { CellState } from '@battleship/ui';
+import { playSfx } from '../utils/sfx';
 
 // Convert fog of war to cell states
 const convertFogToCellStates = (fog: any[][]): CellState[][] => {
@@ -104,6 +105,7 @@ export const GameScreen: React.FC = () => {
   const [isMyTurn, setIsMyTurn] = useState(false);
   const [turnTime, setTurnTime] = useState(5);
   const [initialized, setInitialized] = useState(false);
+  const gameStateRef = React.useRef<GameState | null>(null);
 
   useEffect(() => {
     if (matchId) {
@@ -136,22 +138,38 @@ export const GameScreen: React.FC = () => {
           const data = await response.json();
           if (data.success) {
             // Smooth update: avoid hard flashes by minimal state change
+            const prevSnapshot = gameStateRef.current;
             setGameState(prev => {
-              // Shallow compare key fields to prevent unnecessary re-renders
               if (prev && prev.id === data.data.id && prev.currentTurn === data.data.currentTurn && prev.status === data.data.status) {
-                // Update publicState references carefully
-                return { ...prev, publicState: data.data.publicState };
+                const next = { ...prev, publicState: data.data.publicState } as GameState;
+                gameStateRef.current = next;
+                return next;
               }
-              return data.data;
+              gameStateRef.current = data.data as GameState;
+              return data.data as GameState;
             });
             setIsMyTurn(data.data.currentTurn === 'A');
-            setTurnTime(5);
             if (!initialized) setInitialized(true);
             if (data.data.status === 'finished') {
               const youWon = data.data.winner === 'A';
+              playSfx(youWon ? 'win' : 'lose');
               alert(youWon ? 'Вы выиграли!' : 'Вы проиграли');
               setTimeout(() => navigate('/'), 800);
             }
+            // SFX based on fog diff
+            try {
+              const prevFog = prevSnapshot?.publicState?.fog || [];
+              const nextFog = data.data.publicState?.fog || [];
+              outer: for (let y = 0; y < 10; y++) for (let x = 0; x < 10; x++) {
+                const a = prevFog[y]?.[x];
+                const b = nextFog[y]?.[x];
+                if (a !== b) {
+                  if (b === 'S') { playSfx('sunk'); break outer; }
+                  if (b === 'H') { playSfx('hit'); break outer; }
+                  if (b === 'M') { playSfx('miss'); break outer; }
+                }
+              }
+            } catch {}
           }
         } else if (response.status === 404 && matchId.startsWith('computer-')) {
           // Try to refetch shortly if AI state not yet persisted
@@ -181,14 +199,13 @@ export const GameScreen: React.FC = () => {
 
   // 5-second turn timer with auto-random shot
   useEffect(() => {
-    if (!isMyTurn || !matchId || !gameState) return;
+    if (!isMyTurn || !matchId) return;
     setTurnTime(5);
     const t = setInterval(() => {
       setTurnTime((prev) => {
         if (prev <= 1) {
-          // auto fire at a random untried fog cell
           try {
-            const fog = gameState.publicState?.fog || [];
+            const fog = gameStateRef.current?.publicState?.fog || [];
             const tried = new Set<string>();
             for (let y = 0; y < 10; y++) {
               for (let x = 0; x < 10; x++) {
@@ -213,7 +230,7 @@ export const GameScreen: React.FC = () => {
       });
     }, 1000);
     return () => clearInterval(t);
-  }, [isMyTurn, matchId, gameState]);
+  }, [isMyTurn, matchId]);
 
   const getOpponentName = () => {
     return 'Компьютер';
@@ -247,9 +264,7 @@ export const GameScreen: React.FC = () => {
           <h2 className="text-xl font-semibold text-red-500 mb-2">
             Игра не найдена
           </h2>
-          <Button onClick={() => navigate('/')}>
-            Вернуться на главную
-          </Button>
+          <Button onClick={() => navigate('/')}>\n            Вернуться на главную\n          </Button>
         </div>
       </div>
     );
