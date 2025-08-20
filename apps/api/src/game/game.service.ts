@@ -154,7 +154,28 @@ export class GameService {
       const cells = Array.from({ length: ship.length }, (_, i) => ship.horizontal ? { x: ship.bow.x + i, y: ship.bow.y } : { x: ship.bow.x, y: ship.bow.y + i });
       const allHit = cells.every(c => (enemyBoard.hits || []).includes(`${c.x},${c.y}`));
       if (allHit) {
+        // Mark ship cells as sunk
         cells.forEach(c => { fog[c.y][c.x] = 'S'; });
+        // Outline around the sunk ship (all surrounding cells)
+        const outline = new Set<string>();
+        for (const c of cells) {
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              const nx = c.x + dx;
+              const ny = c.y + dy;
+              if (nx >= 0 && ny >= 0 && nx < 10 && ny < 10) {
+                outline.add(`${nx},${ny}`);
+              }
+            }
+          }
+        }
+        // Remove ship cells from outline, keep only surroundings
+        cells.forEach(c => outline.delete(`${c.x},${c.y}`));
+        // Apply outline marks if not already hit/sunk/miss
+        for (const key of outline) {
+          const [nx, ny] = key.split(',').map(Number);
+          if (fog[ny][nx] === '') fog[ny][nx] = 'M';
+        }
       }
     }
     return fog;
