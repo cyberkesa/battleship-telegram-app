@@ -59,51 +59,7 @@ export const Board: React.FC<BoardProps> = React.memo(({
       }}
       onContextMenu={(e) => e.preventDefault()}
     >
-      {showCoordinates && (
-        <>
-          <div className="absolute left-[var(--pad)] -top-6 right-0 flex justify-start pointer-events-none">
-            <div
-              className="grid grid-cols-10"
-              style={{
-                width: `calc(${BOARD_SIZE} * var(--cell) + ${BOARD_SIZE - 1} * var(--gap))`,
-                gap: 'var(--gap)',
-              }}
-              aria-hidden
-            >
-              {coordinates.letters.map((letter) => (
-                <div
-                  key={letter}
-                  className="flex items-center justify-center text-caption font-mono text-mute"
-                  style={{ width: 'var(--cell)', height: '24px' }}
-                >
-                  {letter}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="absolute top-[var(--pad)] -left-6 bottom-0 flex flex-col justify-start pointer-events-none">
-            <div
-              className="grid grid-rows-10"
-              style={{
-                height: `calc(${BOARD_SIZE} * var(--cell) + ${BOARD_SIZE - 1} * var(--gap))`,
-                rowGap: 'var(--gap)',
-              }}
-              aria-hidden
-            >
-              {coordinates.numbers.map((number) => (
-                <div
-                  key={number}
-                  className="flex items-center justify-center text-caption font-mono text-mute"
-                  style={{ width: '24px', height: 'var(--cell)' }}
-                >
-                  {number}
-                </div>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
+      {/* Внешние координаты убраны — координаты рендерим в изометрии внутри плоскости */}
 
       <div
         role="grid"
@@ -124,6 +80,67 @@ export const Board: React.FC<BoardProps> = React.memo(({
           boxShadow: '0 18px 28px rgba(0,0,0,0.35), 0 6px 0 rgba(0,0,0,0.15) inset',
         }}
       >
+        {showCoordinates && (
+          <>
+            {/* Верхние буквы в изометрии */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute"
+              style={{
+                left: 'var(--pad)',
+                top: 0,
+                width: `calc(${BOARD_SIZE} * var(--cell) + ${(BOARD_SIZE - 1)} * var(--gap))`,
+                height: '24px',
+                transform: 'translateY(-28px) rotateX(55deg) rotateZ(45deg) scale(0.92)',
+                transformOrigin: 'left bottom',
+              }}
+            >
+              <div
+                className="grid"
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: `repeat(${BOARD_SIZE}, var(--cell))`,
+                  columnGap: 'var(--gap)'
+                }}
+              >
+                {coordinates.letters.map((letter) => (
+                  <div key={letter} className="text-caption font-mono text-mute flex items-center justify-center">
+                    {letter}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Левые цифры в изометрии */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute"
+              style={{
+                top: 'var(--pad)',
+                left: 0,
+                width: '24px',
+                height: `calc(${BOARD_SIZE} * var(--cell) + ${(BOARD_SIZE - 1)} * var(--gap))`,
+                transform: 'translateX(-28px) rotateX(55deg) rotateZ(45deg) scale(0.92)',
+                transformOrigin: 'right top',
+              }}
+            >
+              <div
+                className="grid"
+                style={{
+                  display: 'grid',
+                  gridTemplateRows: `repeat(${BOARD_SIZE}, var(--cell))`,
+                  rowGap: 'var(--gap)'
+                }}
+              >
+                {coordinates.numbers.map((n) => (
+                  <div key={n} className="text-caption font-mono text-mute flex items-center justify-center">
+                    {n}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
         {/* slab underside shadow */}
         <div
           aria-hidden
