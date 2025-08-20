@@ -35,19 +35,18 @@ const sizeClasses = {
   mini: 'w-cell-mini h-cell-mini',
 };
 
-// Minimalist visual scheme per spec (paper grid, no animations)
 const stateClasses = {
-  idle: '',
-  hover: '',
-  selected: '',
-  miss: '',
-  hit: '',
-  sunk: '',
-  disabled: 'cursor-not-allowed',
-  ship: '',
-  'ship-hit': '',
-  'ship-sunk': '',
-  invalid: '',
+  idle: 'bg-game-water/20 ring-1 ring-border-light hover:ring-primary-400 hover:bg-game-water/30 transition-colors duration-150',
+  hover: 'bg-primary-100 ring-2 ring-primary-400',
+  selected: 'bg-primary-200 ring-2 ring-primary-500',
+  miss: 'bg-game-miss/30 ring-1 ring-border-medium',
+  hit: 'bg-game-hit ring-1 ring-game-hit',
+  sunk: 'bg-game-sunk ring-1 ring-game-sunk',
+  disabled: 'bg-secondary-100/50 ring-1 ring-border-light/50 cursor-not-allowed',
+  ship: 'bg-game-ship/20 ring-1 ring-game-ship/50',
+  'ship-hit': 'bg-game-hit/60 ring-1 ring-game-hit',
+  'ship-sunk': 'bg-game-sunk/80 ring-1 ring-game-sunk',
+  invalid: 'bg-red-300/40 ring-2 ring-red-500/70',
 };
 
 export const Cell: React.FC<CellProps> = ({
@@ -162,10 +161,10 @@ export const Cell: React.FC<CellProps> = ({
     }
   };
 
-  const transitionClass = disabled ? 'transition-none' : '';
+  const transitionClass = disabled ? 'transition-none' : 'transition-colors duration-150';
   const fallbackPx = size === 'sm' ? 28 : size === 'lg' ? 40 : size === 'mini' ? 20 : 34;
   const cellClassName = `
-    grid place-items-center ${transitionClass}
+    grid place-items-center rounded-cell ${transitionClass}
     ${sizeClasses[size]}
     ${stateClasses[state]}
     will-change-transform

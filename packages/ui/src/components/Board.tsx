@@ -13,7 +13,7 @@ interface BoardProps {
   isOpponent?: boolean;
 }
 
-export const Board: React.FC<BoardProps> = React.memo(({
+export const Board: React.FC<BoardProps> = React.memo(({ 
   size = 'md',
   cells,
   onCellClick,
@@ -25,7 +25,6 @@ export const Board: React.FC<BoardProps> = React.memo(({
 }) => {
   const { cellPx, padPx } = adaptiveSizeConfig[size];
 
-  // Валидация размера поля в dev-режиме
   if (process.env.NODE_ENV !== 'production') {
     if (cells.length !== BOARD_SIZE || cells.some(r => r.length !== BOARD_SIZE)) {
       console.warn('Board: expected 10x10 cells, got', cells.length, 'x', cells[0]?.length);
@@ -46,9 +45,8 @@ export const Board: React.FC<BoardProps> = React.memo(({
 
   return (
     <div 
-      className={`relative overflow-hidden max-w-full ${className}`}
+      className={`relative overflow-x-auto max-w-full ${className}`}
       style={{
-        // CSS-vars — единый источник размеров с адаптивными значениями
         ['--cell' as any]: cellPx,
         ['--gap' as any]: `${gapPx}px`,
         ['--pad' as any]: padPx,
@@ -57,13 +55,12 @@ export const Board: React.FC<BoardProps> = React.memo(({
     >
       {showCoordinates && (
         <>
-          {/* Верхние координаты (буквы), сдвинуты на паддинг поля */}
           <div className="absolute left-[var(--pad)] -top-6 right-0 flex justify-start pointer-events-none">
             <div
               className="grid grid-cols-10"
               style={{
-                width: `calc(${BOARD_SIZE} * var(--cell))`,
-                gap: '0px',
+                width: `calc(${BOARD_SIZE} * var(--cell) + ${BOARD_SIZE - 1} * var(--gap))`,
+                gap: 'var(--gap)',
               }}
               aria-hidden
             >
@@ -79,13 +76,12 @@ export const Board: React.FC<BoardProps> = React.memo(({
             </div>
           </div>
 
-          {/* Левые координаты (цифры), сдвинуты на паддинг поля */}
           <div className="absolute top-[var(--pad)] -left-6 bottom-0 flex flex-col justify-start pointer-events-none">
             <div
               className="grid grid-rows-10"
               style={{
-                height: `calc(${BOARD_SIZE} * var(--cell))`,
-                rowGap: '0px',
+                height: `calc(${BOARD_SIZE} * var(--cell) + ${BOARD_SIZE - 1} * var(--gap))`,
+                rowGap: 'var(--gap)',
               }}
               aria-hidden
             >
@@ -103,40 +99,18 @@ export const Board: React.FC<BoardProps> = React.memo(({
         </>
       )}
 
-      {/* Подложка с разметкой "тетрадь в клетку" */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute"
-        style={{
-          left: 'var(--pad)',
-          top: 'var(--pad)',
-          width: `calc(${BOARD_SIZE} * var(--cell))`,
-          height: `calc(${BOARD_SIZE} * var(--cell))`,
-          backgroundImage: `
-            linear-gradient(to right, #111111 1px, transparent 1px),
-            linear-gradient(to bottom, #111111 1px, transparent 1px)
-          `,
-          backgroundSize: 'var(--cell) var(--cell)',
-          backgroundPosition: '0 0',
-          opacity: 1,
-        }}
-      />
-
-      {/* Основная сетка */}
       <div
         role="grid"
         aria-rowcount={BOARD_SIZE}
         aria-colcount={BOARD_SIZE}
-        className="relative grid"
+        className="relative grid rounded-card bg-bg-graphite ring-1 ring-edge transition-colors duration-200"
         style={{
-          gap: '0px',
+          gap: 'var(--gap)',
           padding: 'var(--pad)',
           gridTemplateColumns: `repeat(${BOARD_SIZE}, var(--cell))`,
           gridAutoRows: 'var(--cell)',
-          width: `calc(${BOARD_SIZE} * var(--cell))`,
-          height: `calc(${BOARD_SIZE} * var(--cell))`,
-          boxShadow: 'inset 0 0 0 1px #111111',
-          backgroundColor: '#FAFAFA',
+          width: `calc(${BOARD_SIZE} * var(--cell) + ${(BOARD_SIZE - 1)} * var(--gap))`,
+          height: `calc(${BOARD_SIZE} * var(--cell) + ${(BOARD_SIZE - 1)} * var(--gap))`,
         }}
       >
         {cells.map((row, rowIndex) =>
@@ -153,13 +127,12 @@ export const Board: React.FC<BoardProps> = React.memo(({
         )}
       </div>
 
-      {/* Рамка противника — ниже координат, но поверх поля */}
       {isOpponent && (
         <div
           className="pointer-events-none absolute inset-[calc(var(--pad)-2px)] rounded-card ring-2 ring-sonar/20"
           aria-hidden
         />
-            )}
+      )}
     </div>
   );
 });
