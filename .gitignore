@@ -99,3 +99,7 @@ temp/
 
 # Turbo
 .turbo
+
+# ignore core dumps
+core
+

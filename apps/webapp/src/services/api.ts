@@ -2,7 +2,20 @@ import axios from 'axios';
 import { debugNetAppend, debugNetUpdate } from '../stores/debugNetworkStore';
 import { randomUUID } from './uuid';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? `${window.location.origin.replace(/:\\d+$/, ':3000')}/api` : 'http://localhost:3000/api');
+const API_BASE_URL = (() => {
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+  if (typeof window !== 'undefined') {
+    try {
+      const u = new URL(window.location.href);
+      u.port = u.port || '3000';
+      u.pathname = '/api';
+      u.search = '';
+      u.hash = '';
+      return u.toString();
+    } catch {}
+  }
+  return 'http://localhost:3000/api';
+})();
 
 export const api = axios.create({
   baseURL: API_BASE_URL,

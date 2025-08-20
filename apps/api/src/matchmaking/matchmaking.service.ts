@@ -1,5 +1,5 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
-import { Redis } from 'ioredis';
+import Redis from 'ioredis';
 import { PrismaService } from '../infra/prisma.service';
 import { randomUUID } from 'crypto';
 

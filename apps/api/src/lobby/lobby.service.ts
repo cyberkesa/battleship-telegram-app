@@ -41,7 +41,7 @@ export class LobbyService {
 		await this._prisma.$executeRawUnsafe(
 			`INSERT INTO lobby_players (lobby_id, player_id, name, avatar, is_ready, is_host) VALUES ($1, $2, $3, $4, $5, $6)`,
 			lobbyId,
-			Number(data.playerId) || data.playerId,
+			Number.isFinite(Number(data.playerId)) ? Number(data.playerId) : (() => { throw new BadRequestException('Invalid playerId'); })(),
 			data.playerName,
 			data.playerAvatar ?? null,
 			false,
@@ -53,7 +53,7 @@ export class LobbyService {
 			 FROM lobbies l LEFT JOIN lobby_players lp ON lp.lobby_id = l.id WHERE l.id = $1`,
 			lobbyId,
 		);
-		const players = rows.map(r => ({
+		const players = rows.filter(r => r.player_id !== null).map(r => ({
 			id: String(r.player_id),
 			name: r.name,
 			avatar: r.avatar ?? undefined,

@@ -49,10 +49,14 @@ export class HealthController {
       if (privateUrl || publicUrl) {
         let enableTls = false;
         try {
-          const u = new URL(privateUrl || publicUrl!);
+          const raw = privateUrl || publicUrl!;
+          // Ensure URL has protocol
+          const urlStr = /^redis(s)?:\/\//i.test(raw) ? raw : `redis://${raw}`;
+          const u = new URL(urlStr);
           enableTls = u.protocol === 'rediss:' || /\.proxy\.rlwy\.net$/i.test(u.hostname);
         } catch {}
-        const chosenUrl = privateUrl || publicUrl!;
+        const chosenRaw = privateUrl || publicUrl!;
+        const chosenUrl = /^redis(s)?:\/\//i.test(chosenRaw) ? chosenRaw : `redis://${chosenRaw}`;
         result.redis.endpoint = privateUrl ? 'private' : 'public';
         const withFamily = chosenUrl.includes('family=') ? chosenUrl : `${chosenUrl}${chosenUrl.includes('?') ? '&' : '?'}family=0`;
         client = new Redis(withFamily, { ...commonOpts, tls: enableTls ? {} : undefined });
