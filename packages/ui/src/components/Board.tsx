@@ -141,18 +141,7 @@ export const Board: React.FC<BoardProps> = React.memo(({
             </div>
           </>
         )}
-        {/* slab underside shadow */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 rounded-[6px]"
-          style={{
-            transform: 'translate3d(10px, 16px, 0)',
-            filter: 'brightness(0.7) saturate(1)',
-            background: 'linear-gradient(180deg, #7FE7FA 0%, #5FD3EE 100%)',
-            zIndex: -1,
-            boxShadow: '0 22px 40px rgba(0,0,0,0.45)'
-          }}
-        />
+        {/* removed underside full overlay per request */}
         {/* two visible side faces for volume */}
         <div
           aria-hidden
