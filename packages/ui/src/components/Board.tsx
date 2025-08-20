@@ -117,7 +117,8 @@ export const Board: React.FC<BoardProps> = React.memo(({
           gridAutoRows: 'var(--cell)',
           width: `calc(${BOARD_SIZE} * var(--cell) + ${(BOARD_SIZE - 1)} * var(--gap))`,
           height: `calc(${BOARD_SIZE} * var(--cell) + ${(BOARD_SIZE - 1)} * var(--gap))`,
-          background: 'linear-gradient(180deg, #58C3E4 0%, #2BA1C8 100%)',
+          // Make main slab gradient slightly lighter
+          background: 'linear-gradient(180deg, #5FD3EE 0%, #38B6D6 100%)',
           transform: 'rotateX(55deg) rotateZ(45deg) scale(0.92)',
           transformOrigin: 'center',
           boxShadow: '0 18px 28px rgba(0,0,0,0.35), 0 6px 0 rgba(0,0,0,0.15) inset',
@@ -129,8 +130,8 @@ export const Board: React.FC<BoardProps> = React.memo(({
           className="pointer-events-none absolute inset-0 rounded-card"
           style={{
             transform: 'translate3d(10px, 16px, 0)',
-            filter: 'brightness(0.65) saturate(0.9)',
-            background: 'linear-gradient(180deg, #2BA1C8 0%, #1E6C8B 100%)',
+            filter: 'brightness(0.7) saturate(1)',
+            background: 'linear-gradient(180deg, #5FD3EE 0%, #38B6D6 100%)',
             zIndex: -1,
             boxShadow: '0 22px 40px rgba(0,0,0,0.45)'
           }}
@@ -151,7 +152,7 @@ export const Board: React.FC<BoardProps> = React.memo(({
 
       {isOpponent && (
         <div
-          className="pointer-events-none absolute inset-[calc(var(--pad)-2px)] rounded-card ring-2 ring-sonar/20"
+          className="pointer-events-none absolute inset-[calc(var(--pad)-2px)] rounded-card ring-2 ring-[#1e3a8a]/50"
           aria-hidden
         />
       )}

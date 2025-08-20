@@ -90,8 +90,9 @@ export const Cell: React.FC<CellProps> = ({
     // Helper to render an isometric diamond tile
     const renderIsoTile = (options?: { fill?: string; border?: string; shadow?: string; borderWidth?: number }) => {
       const baseSize = 'calc(var(--cell, 32px) * 0.7071)';
-      const fill = options?.fill ?? 'linear-gradient(180deg, #0F5774 0%, #0A3C53 100%)';
-      const border = options?.border ?? 'rgba(46,170,215,0.35)';
+      // Darken previous rgb(59 130 246 / .5) usages → use deeper ring color
+      const fill = options?.fill ?? 'linear-gradient(180deg, #0E4C67 0%, #083A50 100%)';
+      const border = options?.border ?? 'rgba(21, 94, 153, 0.5)';
       const borderWidth = options?.borderWidth ?? 1;
       const shadow = options?.shadow ?? '0 2px 6px rgba(0,0,0,0.25) inset, 0 1px 0 rgba(255,255,255,0.05)';
       return (
