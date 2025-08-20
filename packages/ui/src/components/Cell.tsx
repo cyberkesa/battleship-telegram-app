@@ -35,17 +35,17 @@ const sizeClasses = {
 };
 
 const stateClasses = {
-  idle: 'bg-game-water/20 ring-1 ring-border-light hover:ring-primary-400 hover:bg-game-water/30 transition-colors duration-150',
-  hover: 'bg-primary-100 ring-2 ring-primary-400',
-  selected: 'bg-primary-200 ring-2 ring-primary-500',
-  miss: 'bg-game-miss/30 ring-1 ring-border-medium',
-  hit: 'bg-game-hit ring-1 ring-game-hit',
-  sunk: 'bg-game-sunk ring-1 ring-game-sunk',
-  disabled: 'bg-secondary-100/50 ring-1 ring-border-light/50 cursor-not-allowed',
-  ship: 'bg-game-ship/20 ring-1 ring-game-ship/50',
-  'ship-hit': 'bg-game-hit/60 ring-1 ring-game-hit',
-  'ship-sunk': 'bg-game-sunk/80 ring-1 ring-game-sunk',
-  invalid: 'bg-red-300/40 ring-2 ring-red-500/70',
+  idle: 'bg-game-water/10 hover:bg-game-water/20 transition-colors duration-150',
+  hover: 'bg-primary-100',
+  selected: 'bg-primary-200',
+  miss: 'bg-game-miss/30',
+  hit: 'bg-game-hit',
+  sunk: 'bg-game-sunk',
+  disabled: 'bg-secondary-100/50 cursor-not-allowed',
+  ship: 'bg-game-ship/20',
+  'ship-hit': 'bg-game-hit/60',
+  'ship-sunk': 'bg-game-sunk/80',
+  invalid: 'bg-red-300/40',
 };
 
 export const Cell: React.FC<CellProps> = ({
@@ -133,7 +133,7 @@ export const Cell: React.FC<CellProps> = ({
   const fallbackPx = size === 'sm' ? 28 : size === 'lg' ? 40 : size === 'mini' ? 20 : 34;
   const hasNoScale = className.includes('no-scale');
   const cellClassName = `
-    grid place-items-center rounded-cell ${transitionClass}
+    grid place-items-center ${transitionClass}
     ${sizeClasses[size]}
     ${stateClasses[state]}
     will-change-transform

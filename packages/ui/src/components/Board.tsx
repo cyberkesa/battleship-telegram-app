@@ -46,7 +46,7 @@ export const Board: React.FC<BoardProps> = React.memo(({
 
   return (
     <div 
-      className={`relative overflow-x-auto max-w-full ${className}`}
+      className={`relative overflow-hidden max-w-full ${className}`}
       style={{
         // CSS-vars — единый источник размеров с адаптивными значениями
         ['--cell' as any]: cellPx,
@@ -62,8 +62,8 @@ export const Board: React.FC<BoardProps> = React.memo(({
             <div
               className="grid grid-cols-10"
               style={{
-                width: `calc(${BOARD_SIZE} * var(--cell) + ${BOARD_SIZE - 1} * var(--gap))`,
-                gap: 'var(--gap)',
+                width: `calc(${BOARD_SIZE} * var(--cell))`,
+                gap: '0px',
               }}
               aria-hidden
             >
@@ -84,8 +84,8 @@ export const Board: React.FC<BoardProps> = React.memo(({
             <div
               className="grid grid-rows-10"
               style={{
-                height: `calc(${BOARD_SIZE} * var(--cell) + ${BOARD_SIZE - 1} * var(--gap))`,
-                rowGap: 'var(--gap)',
+                height: `calc(${BOARD_SIZE} * var(--cell))`,
+                rowGap: '0px',
               }}
               aria-hidden
             >
@@ -103,19 +103,38 @@ export const Board: React.FC<BoardProps> = React.memo(({
         </>
       )}
 
+      {/* Подложка с разметкой "тетрадь в клетку" */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute"
+        style={{
+          left: 'var(--pad)',
+          top: 'var(--pad)',
+          width: `calc(${BOARD_SIZE} * var(--cell))`,
+          height: `calc(${BOARD_SIZE} * var(--cell))`,
+          backgroundImage: `
+            linear-gradient(to right, rgba(255,255,255,0.10) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(255,255,255,0.10) 1px, transparent 1px)
+          `,
+          backgroundSize: 'var(--cell) var(--cell)',
+          backgroundPosition: '0 0',
+        }}
+      />
+
       {/* Основная сетка */}
       <div
         role="grid"
         aria-rowcount={BOARD_SIZE}
         aria-colcount={BOARD_SIZE}
-        className="relative grid rounded-card bg-bg-graphite ring-1 ring-edge transition-colors duration-200"
+        className="relative grid bg-bg-graphite transition-colors duration-200"
         style={{
-          gap: 'var(--gap)',
+          gap: '0px',
           padding: 'var(--pad)',
           gridTemplateColumns: `repeat(${BOARD_SIZE}, var(--cell))`,
           gridAutoRows: 'var(--cell)',
-          width: `calc(${BOARD_SIZE} * var(--cell) + ${(BOARD_SIZE - 1)} * var(--gap))`,
-          height: `calc(${BOARD_SIZE} * var(--cell) + ${(BOARD_SIZE - 1)} * var(--gap))`,
+          width: `calc(${BOARD_SIZE} * var(--cell))`,
+          height: `calc(${BOARD_SIZE} * var(--cell))`,
+          boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.12)',
         }}
       >
         {cells.map((row, rowIndex) =>
