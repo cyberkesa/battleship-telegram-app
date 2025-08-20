@@ -51,7 +51,7 @@ export const Board: React.FC<BoardProps> = React.memo(({
 
   return (
     <div 
-      className={`relative overflow-hidden max-w-full ${className}`}
+      className={`relative overflow-visible max-w-full ${className}`}
       style={{
         ['--cell' as any]: resolvedCell,
         ['--gap' as any]: `${gapPx}px`,
@@ -118,7 +118,7 @@ export const Board: React.FC<BoardProps> = React.memo(({
           width: `calc(${BOARD_SIZE} * var(--cell) + ${(BOARD_SIZE - 1)} * var(--gap))`,
           height: `calc(${BOARD_SIZE} * var(--cell) + ${(BOARD_SIZE - 1)} * var(--gap))`,
           background: 'linear-gradient(180deg, #58C3E4 0%, #2BA1C8 100%)',
-          transform: 'rotateX(55deg) rotateZ(45deg)',
+          transform: 'rotateX(55deg) rotateZ(45deg) scale(0.92)',
           transformOrigin: 'center',
           boxShadow: '0 18px 28px rgba(0,0,0,0.35), 0 6px 0 rgba(0,0,0,0.15) inset',
         }}
