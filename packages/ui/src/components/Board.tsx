@@ -71,8 +71,7 @@ export const Board: React.FC<BoardProps> = React.memo(({
           padding: 'var(--pad)',
           gridTemplateColumns: `repeat(${BOARD_SIZE}, var(--cell))`,
           gridAutoRows: 'var(--cell)',
-          width: `calc(${BOARD_SIZE} * var(--cell) + ${(BOARD_SIZE - 1)} * var(--gap))`,
-          height: `calc(${BOARD_SIZE} * var(--cell) + ${(BOARD_SIZE - 1)} * var(--gap))`,
+          // width/height derive from grid; explicit calc not required
           // Lighter base slab
           background: 'linear-gradient(180deg, #7FE7FA 0%, #5FD3EE 100%)',
           transform: 'rotateX(55deg) rotateZ(45deg) scale(0.92)',
