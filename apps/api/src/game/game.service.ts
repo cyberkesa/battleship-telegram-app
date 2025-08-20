@@ -111,17 +111,26 @@ export class GameService {
     return ships;
   }
 
-  private applyShot(board: { ships: any[]; hits: string[]; misses: string[] }, pos: { x: number; y: number }): boolean {
+  private applyShot(board: { ships: any[]; hits: string[]; misses: string[] }, pos: { x: number; y: number }): { hit: boolean; sunk: boolean } {
     const key = `${pos.x},${pos.y}`;
     if (!board.hits) board.hits = [];
     if (!board.misses) board.misses = [];
-    if (board.hits.includes(key) || board.misses.includes(key)) return false;
+    if (board.hits.includes(key) || board.misses.includes(key)) return { hit: false, sunk: false };
     const hit = board.ships?.some((ship: any) => {
       const cells = Array.from({ length: ship.length }, (_, i) => ship.horizontal ? { x: ship.bow.x + i, y: ship.bow.y } : { x: ship.bow.x, y: ship.bow.y + i });
       return cells.some(c => c.x === pos.x && c.y === pos.y);
     });
     if (hit) board.hits.push(key); else board.misses.push(key);
-    return hit;
+    // determine if any ship sunk due to this hit
+    let sunk = false;
+    if (hit) {
+      for (const ship of board.ships || []) {
+        const cells = Array.from({ length: ship.length }, (_, i) => ship.horizontal ? { x: ship.bow.x + i, y: ship.bow.y } : { x: ship.bow.x, y: ship.bow.y + i });
+        const allHit = cells.every(c => board.hits.includes(`${c.x},${c.y}`));
+        if (allHit) { sunk = true; break; }
+      }
+    }
+    return { hit, sunk };
   }
 
   private pickRandomUntargeted(board: { hits: string[]; misses: string[] }): { x: number; y: number } {
@@ -135,11 +144,24 @@ export class GameService {
     return candidates[Math.floor(Math.random() * candidates.length)];
   }
 
-  private buildFog(enemyBoard: { hits: string[]; misses: string[] }): string[][] {
+  private buildFog(enemyBoard: { hits: string[]; misses: string[]; ships?: any[] }): string[][] {
     const fog = Array.from({ length: 10 }, () => Array(10).fill('')) as string[][];
     (enemyBoard.hits || []).forEach((k: string) => { const [x, y] = k.split(',').map(Number); fog[y][x] = 'H'; });
     (enemyBoard.misses || []).forEach((k: string) => { const [x, y] = k.split(',').map(Number); fog[y][x] = 'M'; });
+    // mark sunk cells as 'S'
+    for (const ship of enemyBoard.ships || []) {
+      const cells = Array.from({ length: ship.length }, (_, i) => ship.horizontal ? { x: ship.bow.x + i, y: ship.bow.y } : { x: ship.bow.x, y: ship.bow.y + i });
+      const allHit = cells.every(c => (enemyBoard.hits || []).includes(`${c.x},${c.y}`));
+      if (allHit) {
+        cells.forEach(c => { fog[c.y][c.x] = 'S'; });
+      }
+    }
     return fog;
+  }
+
+  private isGameOver(board: { ships: any[]; hits: string[] }): boolean {
+    const totalCells = (board.ships || []).reduce((acc, ship) => acc + (ship.length || 0), 0);
+    return (board.hits || []).length >= totalCells && totalCells > 0;
   }
 
   async setupBoard(matchId: string, playerId: string, ships: any[]): Promise<any> {
@@ -247,24 +269,31 @@ export class GameService {
           };
         }
         // Human shoots AI board (boardB)
-        const humanHit = this.applyShot(match.boardB, position);
+        const { hit: humanHit, sunk: humanSunk } = this.applyShot(match.boardB, position);
         // Switch to AI turn
         match.currentTurn = 'B';
         // AI makes random move against player's boardA
         const aiTarget = this.pickRandomUntargeted(match.boardA);
-        const aiHit = this.applyShot(match.boardA, aiTarget);
+        const { hit: aiHit, sunk: aiSunk } = this.applyShot(match.boardA, aiTarget);
         // Switch back to human
         match.currentTurn = 'A';
+        // Check game over
+        const humanWon = this.isGameOver(match.boardB);
+        const aiWon = this.isGameOver(match.boardA);
+        if (humanWon || aiWon) {
+          match.status = 'finished';
+        }
         await this.saveAiMatch(match);
         return {
           success: true,
           data: {
-            result: humanHit ? 'hit' : 'miss',
+            result: humanHit ? (humanSunk ? 'sunk' : 'hit') : 'miss',
             coord: position,
             aiMove: aiTarget,
-            aiResult: aiHit ? 'hit' : 'miss',
-            gameOver: false,
-            currentTurn: match.currentTurn
+            aiResult: aiHit ? (aiSunk ? 'sunk' : 'hit') : 'miss',
+            gameOver: humanWon || aiWon,
+            winner: humanWon ? 'A' : (aiWon ? 'B' : null),
+            currentTurn: match.currentTurn,
           }
         };
       }
