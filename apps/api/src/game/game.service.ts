@@ -118,7 +118,7 @@ export class GameService {
     match.currentTurn = 'B';
     await this.aiSeriesTurn(match);
     // After AI finishes, back to human turn and schedule timeout
-    match.currentTurn = match.status === 'finished' ? match.currentTurn : 'A';
+    match.currentTurn = 'A';
     match.lastActionAt = Date.now();
     await this.saveAiMatch(match);
     if (match.status === 'in_progress') this.scheduleHumanAutoShot(match);
