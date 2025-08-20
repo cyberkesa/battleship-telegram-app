@@ -63,6 +63,85 @@ export class GameService {
     }
   }
 
+  // --- Helpers for AI ---
+  private generateAiFleet(): any[] {
+    // Simple random non-overlapping placement for sizes 4,3,3,2,2,2,1,1,1,1
+    const sizes = [4,3,3,2,2,2,1,1,1,1];
+    const grid = Array.from({ length: 10 }, () => Array(10).fill(0));
+    const ships: any[] = [];
+    const fits = (x: number, y: number, len: number, horiz: boolean) => {
+      for (let i = 0; i < len; i++) {
+        const cx = horiz ? x + i : x;
+        const cy = horiz ? y : y + i;
+        if (cx < 0 || cy < 0 || cx >= 10 || cy >= 10) return false;
+        if (grid[cy][cx] !== 0) return false;
+        // no-touch rule: neighbors
+        for (let ny = cy - 1; ny <= cy + 1; ny++) {
+          for (let nx = cx - 1; nx <= cx + 1; nx++) {
+            if (nx >= 0 && ny >= 0 && nx < 10 && ny < 10 && grid[ny][nx] !== 0) return false;
+          }
+        }
+      }
+      return true;
+    };
+    const place = (x: number, y: number, len: number, horiz: boolean) => {
+      for (let i = 0; i < len; i++) {
+        const cx = horiz ? x + i : x;
+        const cy = horiz ? y : y + i;
+        grid[cy][cx] = 1;
+      }
+    };
+    for (const len of sizes) {
+      let placed = false;
+      for (let attempt = 0; attempt < 1000 && !placed; attempt++) {
+        const horiz = Math.random() < 0.5;
+        const x = Math.floor(Math.random() * (horiz ? 11 - len : 10));
+        const y = Math.floor(Math.random() * (horiz ? 10 : 11 - len));
+        if (fits(x, y, len, horiz)) {
+          place(x, y, len, horiz);
+          ships.push({ bow: { x, y }, length: len, horizontal: horiz });
+          placed = true;
+        }
+      }
+      if (!placed) {
+        // fallback naive
+        ships.push({ bow: { x: 0, y: 0 }, length: len, horizontal: true });
+      }
+    }
+    return ships;
+  }
+
+  private applyShot(board: { ships: any[]; hits: string[]; misses: string[] }, pos: { x: number; y: number }): boolean {
+    const key = `${pos.x},${pos.y}`;
+    if (!board.hits) board.hits = [];
+    if (!board.misses) board.misses = [];
+    if (board.hits.includes(key) || board.misses.includes(key)) return false;
+    const hit = board.ships?.some((ship: any) => {
+      const cells = Array.from({ length: ship.length }, (_, i) => ship.horizontal ? { x: ship.bow.x + i, y: ship.bow.y } : { x: ship.bow.x, y: ship.bow.y + i });
+      return cells.some(c => c.x === pos.x && c.y === pos.y);
+    });
+    if (hit) board.hits.push(key); else board.misses.push(key);
+    return hit;
+  }
+
+  private pickRandomUntargeted(board: { hits: string[]; misses: string[] }): { x: number; y: number } {
+    const tried = new Set([...(board.hits || []), ...(board.misses || [])]);
+    const candidates: { x: number; y: number }[] = [];
+    for (let y = 0; y < 10; y++) for (let x = 0; x < 10; x++) {
+      const key = `${x},${y}`;
+      if (!tried.has(key)) candidates.push({ x, y });
+    }
+    if (candidates.length === 0) return { x: 0, y: 0 };
+    return candidates[Math.floor(Math.random() * candidates.length)];
+  }
+
+  private buildFog(enemyBoard: { hits: string[]; misses: string[] }): string[][] {
+    const fog = Array.from({ length: 10 }, () => Array(10).fill('')) as string[][];
+    (enemyBoard.hits || []).forEach((k: string) => { const [x, y] = k.split(',').map(Number); fog[y][x] = 'H'; });
+    (enemyBoard.misses || []).forEach((k: string) => { const [x, y] = k.split(',').map(Number); fog[y][x] = 'M'; });
+    return fog;
+  }
+
   async setupBoard(matchId: string, playerId: string, ships: any[]): Promise<any> {
     try {
       // Simple validation for testing
@@ -73,12 +152,14 @@ export class GameService {
       if (matchId === 'computer') {
         // Create new computer game
         const actualMatchId = `computer-${playerId}-${Date.now()}`;
+        // Generate AI ships
+        const aiShips = this.generateAiFleet();
         const match: MatchState = {
           id: actualMatchId,
           status: 'in_progress',
           currentTurn: 'A',
           boardA: { ships, hits: [], misses: [] },
-          boardB: { ships: [] }
+          boardB: { ships: aiShips, hits: [], misses: [] }
         };
         
         // Store match (persist if Redis available)
@@ -165,14 +246,23 @@ export class GameService {
             }
           };
         }
-        const result = { kind: 'miss', message: 'Move recorded' };
-        match.currentTurn = match.currentTurn === 'A' ? 'B' : 'A';
+        // Human shoots AI board (boardB)
+        const humanHit = this.applyShot(match.boardB, position);
+        // Switch to AI turn
+        match.currentTurn = 'B';
+        // AI makes random move against player's boardA
+        const aiTarget = this.pickRandomUntargeted(match.boardA);
+        const aiHit = this.applyShot(match.boardA, aiTarget);
+        // Switch back to human
+        match.currentTurn = 'A';
         await this.saveAiMatch(match);
         return {
           success: true,
           data: {
-            result: result.kind,
+            result: humanHit ? 'hit' : 'miss',
             coord: position,
+            aiMove: aiTarget,
+            aiResult: aiHit ? 'hit' : 'miss',
             gameOver: false,
             currentTurn: match.currentTurn
           }
@@ -252,7 +342,7 @@ export class GameService {
             }
           };
         }
-        const publicState = { fog: [], board: match.boardA };
+        const publicState = { fog: this.buildFog(match.boardB), board: match.boardA };
         return {
           success: true,
           data: {

@@ -87,6 +87,7 @@ export const GameScreen: React.FC = () => {
 
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [isMyTurn, setIsMyTurn] = useState(false);
+  const [turnTime, setTurnTime] = useState(5);
 
   useEffect(() => {
     if (matchId) {
@@ -98,6 +99,7 @@ export const GameScreen: React.FC = () => {
     if (currentMatch && user) {
       // For computer games, player is always 'A'
       setIsMyTurn(currentMatch.currentTurn === 'A');
+      setTurnTime(5);
     }
   }, [currentMatch, user]);
 
@@ -119,6 +121,7 @@ export const GameScreen: React.FC = () => {
           if (data.success) {
             setGameState(data.data);
             setIsMyTurn(data.data.currentTurn === 'A');
+            setTurnTime(5);
           }
         } else if (response.status === 404 && matchId.startsWith('computer-')) {
           // Try to refetch shortly if AI state not yet persisted
@@ -140,11 +143,47 @@ export const GameScreen: React.FC = () => {
       // Refresh game state after move
       setTimeout(() => {
         getGameState(matchId);
-      }, 500);
+      }, 300);
     } catch (error) {
       console.error('Failed to make move:', error);
     }
   };
+
+  // 5-second turn timer with auto-random shot
+  useEffect(() => {
+    if (!isMyTurn || !matchId || !gameState) return;
+    setTurnTime(5);
+    const t = setInterval(() => {
+      setTurnTime((prev) => {
+        if (prev <= 1) {
+          // auto fire at a random untried fog cell
+          try {
+            const fog = gameState.publicState?.fog || [];
+            const tried = new Set<string>();
+            for (let y = 0; y < 10; y++) {
+              for (let x = 0; x < 10; x++) {
+                const v = fog[y]?.[x];
+                if (v === 'H' || v === 'M' || v === 'S') tried.add(`${x},${y}`);
+              }
+            }
+            const candidates: Position[] = [];
+            for (let y = 0; y < 10; y++) {
+              for (let x = 0; x < 10; x++) {
+                const key = `${x},${y}`;
+                if (!tried.has(key)) candidates.push({ x, y });
+              }
+            }
+            const pick = candidates.length ? candidates[Math.floor(Math.random() * candidates.length)] : { x: 0, y: 0 };
+            handleCellClick(pick);
+          } catch {}
+          clearInterval(t);
+          return 5;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(t);
+  }, [isMyTurn, matchId, gameState]);
 
   const getOpponentName = () => {
     return 'Компьютер';
@@ -157,7 +196,7 @@ export const GameScreen: React.FC = () => {
       return gameState.winner === 'A' ? 'Победа!' : 'Поражение';
     }
     
-    return isMyTurn ? 'Ваш ход' : 'Ход компьютера';
+    return isMyTurn ? `Ваш ход (${turnTime}s)` : 'Ход компьютера';
   };
 
   if (isLoading) {
