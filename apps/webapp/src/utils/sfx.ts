@@ -4,6 +4,22 @@
 type SfxKind = 'hit' | 'miss' | 'sunk' | 'win' | 'lose';
 
 let audioCtx: AudioContext | null = null;
+let masterVolume = 0.6; // 0..1
+let muted = false;
+const lastPlayAt: Record<SfxKind, number> = {
+  hit: 0,
+  miss: 0,
+  sunk: 0,
+  win: 0,
+  lose: 0,
+};
+const minInterval: Record<SfxKind, number> = {
+  hit: 90,
+  miss: 60,
+  sunk: 240,
+  win: 400,
+  lose: 400,
+};
 
 function ensureCtx(): AudioContext | null {
   try {
@@ -31,9 +47,10 @@ function tone(freq: number, durMs: number, type: OscillatorType = 'sine', gain =
   osc.type = type;
   osc.frequency.setValueAtTime(freq, t0);
   const g = ctx.createGain();
-  g.gain.setValueAtTime(gain, t0);
+  const vol = muted ? 0 : Math.max(0, Math.min(1, masterVolume)) * gain;
+  g.gain.setValueAtTime(vol, t0);
   // simple attack/decay envelope
-  g.gain.exponentialRampToValueAtTime(Math.max(0.0001, gain * 0.6), t0 + 0.03);
+  g.gain.exponentialRampToValueAtTime(Math.max(0.0001, vol * 0.6), t0 + 0.03);
   g.gain.exponentialRampToValueAtTime(0.0001, t1);
   osc.connect(g).connect(ctx.destination);
   osc.start(t0);
@@ -45,6 +62,8 @@ export function initSfx() {
     ensureCtx();
     const resume = () => { try { ensureCtx()?.resume(); } catch {} };
     window.addEventListener('touchstart', resume, { once: true, passive: true } as any);
+    window.addEventListener('pointerdown', resume, { once: true } as any);
+    window.addEventListener('keydown', resume, { once: true } as any);
     window.addEventListener('click', resume, { once: true } as any);
   } catch {}
 }
@@ -52,6 +71,9 @@ export function initSfx() {
 export function playSfx(kind: SfxKind) {
   const ctx = ensureCtx();
   if (!ctx) return;
+  const nowMs = performance.now();
+  if (nowMs - lastPlayAt[kind] < minInterval[kind]) return;
+  lastPlayAt[kind] = nowMs;
   const now = ctx.currentTime + 0.001;
   switch (kind) {
     case 'hit': {
@@ -87,5 +109,25 @@ export function playSfx(kind: SfxKind) {
       break;
     }
   }
+}
+
+export function setSfxMuted(m: boolean) {
+  muted = m;
+  try { localStorage.setItem('sfx_muted', m ? '1' : '0'); } catch {}
+}
+
+export function setSfxVolume(v: number) {
+  masterVolume = Math.max(0, Math.min(1, v));
+  try { localStorage.setItem('sfx_volume', String(masterVolume)); } catch {}
+}
+
+export function getSfxSettings() {
+  try {
+    const m = localStorage.getItem('sfx_muted');
+    const v = localStorage.getItem('sfx_volume');
+    if (m !== null) muted = m === '1';
+    if (v !== null) masterVolume = Math.max(0, Math.min(1, Number(v) || 0.6));
+  } catch {}
+  return { muted, volume: masterVolume };
 }
 
