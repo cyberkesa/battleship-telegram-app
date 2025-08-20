@@ -137,6 +137,11 @@ export const GameScreen: React.FC = () => {
             setGameState(data.data);
             setIsMyTurn(data.data.currentTurn === 'A');
             setTurnTime(5);
+            if (data.data.status === 'finished') {
+              const youWon = data.data.winner === 'A';
+              alert(youWon ? 'Вы выиграли!' : 'Вы проиграли');
+              setTimeout(() => navigate('/'), 800);
+            }
           }
         } else if (response.status === 404 && matchId.startsWith('computer-')) {
           // Try to refetch shortly if AI state not yet persisted

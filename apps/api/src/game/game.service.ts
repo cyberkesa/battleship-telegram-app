@@ -9,6 +9,7 @@ interface MatchState {
   currentTurn: string;
   boardA: any;
   boardB: any;
+  winner?: 'A' | 'B' | null;
 }
 
 
@@ -282,6 +283,7 @@ export class GameService {
         const aiWon = this.isGameOver(match.boardA);
         if (humanWon || aiWon) {
           match.status = 'finished';
+          match.winner = humanWon ? 'A' : 'B';
         }
         await this.saveAiMatch(match);
         return {
@@ -372,6 +374,7 @@ export class GameService {
           };
         }
         const publicState = { fog: this.buildFog(match.boardB), board: match.boardA };
+        const winner = match.winner ?? (this.isGameOver(match.boardB) ? 'A' : (this.isGameOver(match.boardA) ? 'B' : null));
         return {
           success: true,
           data: {
@@ -379,6 +382,7 @@ export class GameService {
             status: match.status,
             currentTurn: match.currentTurn,
             playerRole: 'A',
+            winner,
             publicState
           }
         };
