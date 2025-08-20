@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getSfxSettings, setSfxMuted, setSfxVolume, initSfx } from '../utils/sfx';
 import { useNavigate } from 'react-router-dom';
 
 import { 
@@ -25,6 +26,10 @@ const LANGUAGES: Language[] = [
 export const SettingsScreen: React.FC = () => {
   const navigate = useNavigate();
   const [selectedLanguage, setSelectedLanguage] = useState('ru');
+  const [{ muted, volume }, setSfxState] = useState(getSfxSettings());
+  const toggleMuted = () => { setSfxMuted(!muted); setSfxState(getSfxSettings()); };
+  const changeVolume = (e: React.ChangeEvent<HTMLInputElement>) => { setSfxVolume(Number(e.target.value)); setSfxState(getSfxSettings()); };
+  React.useEffect(() => { initSfx(); }, []);
 
   const handleBack = () => {
     navigate('/');
@@ -125,9 +130,10 @@ export const SettingsScreen: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <div className="w-12 h-6 bg-steel rounded-full border-2 border-edge relative">
-                <div className="w-4 h-4 bg-sonar rounded-full absolute top-0.5 left-0.5 transition-transform"></div>
-              </div>
+              <label className="flex items-center gap-2">
+                <input type="checkbox" checked={muted} onChange={toggleMuted} />
+                <span className="text-caption">Отключить</span>
+              </label>
             </div>
 
             <div className="flex items-center justify-between p-3 bg-steel rounded-lg">
@@ -137,15 +143,16 @@ export const SettingsScreen: React.FC = () => {
                 </div>
                 <div>
                   <div className="font-heading font-semibold text-body text-foam">
-                    Уведомления
+                    Громкость звуков
                   </div>
                   <div className="text-caption text-mist">
-                    Push-уведомления
+                    Общий уровень громкости
                   </div>
                 </div>
               </div>
-              <div className="w-12 h-6 bg-steel rounded-full border-2 border-edge relative">
-                <div className="w-4 h-4 bg-sonar rounded-full absolute top-0.5 left-0.5 transition-transform"></div>
+              <div className="flex items-center gap-2">
+                <input type="range" min="0" max="1" step="0.05" value={volume} onChange={changeVolume} />
+                <span className="text-caption">{Math.round(volume * 100)}%</span>
               </div>
             </div>
           </div>
