@@ -11,6 +11,8 @@ interface BoardProps {
   className?: string;
   showCoordinates?: boolean;
   isOpponent?: boolean;
+  cellPxOverride?: number;
+  padPxOverride?: number;
 }
 
 export const Board: React.FC<BoardProps> = React.memo(({ 
@@ -22,8 +24,12 @@ export const Board: React.FC<BoardProps> = React.memo(({
   className = '',
   showCoordinates = true,
   isOpponent = false,
+  cellPxOverride,
+  padPxOverride,
 }) => {
   const { cellPx, padPx } = adaptiveSizeConfig[size];
+  const resolvedCell = typeof cellPxOverride === 'number' ? `${Math.max(10, Math.floor(cellPxOverride))}px` : cellPx;
+  const resolvedPad = typeof padPxOverride === 'number' ? `${Math.max(0, Math.floor(padPxOverride))}px` : padPx;
 
   if (process.env.NODE_ENV !== 'production') {
     if (cells.length !== BOARD_SIZE || cells.some(r => r.length !== BOARD_SIZE)) {
@@ -45,11 +51,11 @@ export const Board: React.FC<BoardProps> = React.memo(({
 
   return (
     <div 
-      className={`relative overflow-x-auto max-w-full ${className}`}
+      className={`relative overflow-hidden max-w-full ${className}`}
       style={{
-        ['--cell' as any]: cellPx,
+        ['--cell' as any]: resolvedCell,
         ['--gap' as any]: `${gapPx}px`,
-        ['--pad' as any]: padPx,
+        ['--pad' as any]: resolvedPad,
       }}
       onContextMenu={(e) => e.preventDefault()}
     >
