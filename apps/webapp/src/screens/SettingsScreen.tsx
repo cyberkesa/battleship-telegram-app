@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { getSfxSettings, setSfxMuted, setSfxVolume, initSfx } from '../utils/sfx';
+import { getAppSettings, setLanguage, setNotificationsEnabled, setVibrationEnabled } from '../utils/settings';
 import { useNavigate } from 'react-router-dom';
 
 import { 
@@ -25,7 +26,9 @@ const LANGUAGES: Language[] = [
 
 export const SettingsScreen: React.FC = () => {
   const navigate = useNavigate();
-  const [selectedLanguage, setSelectedLanguage] = useState('ru');
+  const [selectedLanguage, setSelectedLanguage] = useState(getAppSettings().language);
+  const [notificationsEnabled, setNotifications] = useState(getAppSettings().notificationsEnabled);
+  const [vibrationEnabled, setVibration] = useState(getAppSettings().vibrationEnabled);
   const [{ muted, volume }, setSfxState] = useState(getSfxSettings());
   const toggleMuted = () => { setSfxMuted(!muted); setSfxState(getSfxSettings()); };
   const changeVolume = (e: React.ChangeEvent<HTMLInputElement>) => { setSfxVolume(Number(e.target.value)); setSfxState(getSfxSettings()); };
@@ -37,7 +40,19 @@ export const SettingsScreen: React.FC = () => {
 
   const handleLanguageChange = (languageCode: string) => {
     setSelectedLanguage(languageCode);
-    // Здесь можно добавить логику смены языка
+    setLanguage(languageCode);
+  };
+
+  const toggleNotifications = async () => {
+    const next = !notificationsEnabled;
+    const allowed = await setNotificationsEnabled(next);
+    setNotifications(allowed);
+  };
+
+  const toggleVibration = () => {
+    const next = !vibrationEnabled;
+    setVibrationEnabled(next);
+    setVibration(next);
   };
 
   return (
@@ -154,6 +169,46 @@ export const SettingsScreen: React.FC = () => {
                 <input type="range" min="0" max="1" step="0.05" value={volume} onChange={changeVolume} />
                 <span className="text-caption">{Math.round(volume * 100)}%</span>
               </div>
+            </div>
+
+            <div className="flex items-center justify-between p-3 bg-steel rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-info rounded-full flex items-center justify-center">
+                  <Bell className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <div className="font-heading font-semibold text-body text-foam">
+                    Уведомления
+                  </div>
+                  <div className="text-caption text-mist">
+                    Пуш-уведомления (если доступны)
+                  </div>
+                </div>
+              </div>
+              <label className="flex items-center gap-2">
+                <input type="checkbox" checked={notificationsEnabled} onChange={toggleNotifications} />
+                <span className="text-caption">Разрешить</span>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between p-3 bg-steel rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-radio rounded-full flex items-center justify-center">
+                  <Volume2 className="w-4 h-4 text-white rotate-90" />
+                </div>
+                <div>
+                  <div className="font-heading font-semibold text-body text-foam">
+                    Вибрация
+                  </div>
+                  <div className="text-caption text-mist">
+                    Тактильная отдача при событиях
+                  </div>
+                </div>
+              </div>
+              <label className="flex items-center gap-2">
+                <input type="checkbox" checked={vibrationEnabled} onChange={toggleVibration} />
+                <span className="text-caption">Включить</span>
+              </label>
             </div>
           </div>
         </div>
