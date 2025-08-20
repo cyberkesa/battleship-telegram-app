@@ -65,7 +65,7 @@ export const Board: React.FC<BoardProps> = React.memo(({
         role="grid"
         aria-rowcount={BOARD_SIZE}
         aria-colcount={BOARD_SIZE}
-        className="relative grid rounded-card ring-1 ring-edge transition-colors duration-200"
+        className="relative grid rounded-[6px] ring-1 ring-edge transition-colors duration-200"
         style={{
           gap: 'var(--gap)',
           padding: 'var(--pad)',
@@ -73,8 +73,8 @@ export const Board: React.FC<BoardProps> = React.memo(({
           gridAutoRows: 'var(--cell)',
           width: `calc(${BOARD_SIZE} * var(--cell) + ${(BOARD_SIZE - 1)} * var(--gap))`,
           height: `calc(${BOARD_SIZE} * var(--cell) + ${(BOARD_SIZE - 1)} * var(--gap))`,
-          // Make main slab gradient slightly lighter
-          background: 'linear-gradient(180deg, #5FD3EE 0%, #38B6D6 100%)',
+          // Lighter base slab
+          background: 'linear-gradient(180deg, #7FE7FA 0%, #5FD3EE 100%)',
           transform: 'rotateX(55deg) rotateZ(45deg) scale(0.92)',
           transformOrigin: 'center',
           boxShadow: '0 18px 28px rgba(0,0,0,0.35), 0 6px 0 rgba(0,0,0,0.15) inset',
@@ -144,13 +144,46 @@ export const Board: React.FC<BoardProps> = React.memo(({
         {/* slab underside shadow */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 rounded-card"
+          className="pointer-events-none absolute inset-0 rounded-[6px]"
           style={{
             transform: 'translate3d(10px, 16px, 0)',
             filter: 'brightness(0.7) saturate(1)',
-            background: 'linear-gradient(180deg, #5FD3EE 0%, #38B6D6 100%)',
+            background: 'linear-gradient(180deg, #7FE7FA 0%, #5FD3EE 100%)',
             zIndex: -1,
             boxShadow: '0 22px 40px rgba(0,0,0,0.45)'
+          }}
+        />
+        {/* two visible side faces for volume */}
+        <div
+          aria-hidden
+          className="absolute"
+          style={{
+            left: 0,
+            bottom: 0,
+            width: '100%',
+            height: '12px',
+            transform: 'translateY(6px) rotateX(55deg) rotateZ(45deg)',
+            transformOrigin: 'top',
+            background: 'linear-gradient(180deg, rgba(0,0,0,0.10), rgba(0,0,0,0.28))',
+            borderBottomLeftRadius: '6px',
+            borderBottomRightRadius: '6px',
+            zIndex: -1,
+          }}
+        />
+        <div
+          aria-hidden
+          className="absolute"
+          style={{
+            right: 0,
+            top: 0,
+            width: '12px',
+            height: '100%',
+            transform: 'translateX(6px) rotateX(55deg) rotateZ(45deg)',
+            transformOrigin: 'left',
+            background: 'linear-gradient(180deg, rgba(0,0,0,0.06), rgba(0,0,0,0.22))',
+            borderTopRightRadius: '6px',
+            borderBottomRightRadius: '6px',
+            zIndex: -1,
           }}
         />
         {cells.map((row, rowIndex) =>

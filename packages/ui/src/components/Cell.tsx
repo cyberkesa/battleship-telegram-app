@@ -139,23 +139,8 @@ export const Cell: React.FC<CellProps> = ({
       case 'invalid':
         return renderIsoTile({ fill: 'linear-gradient(180deg, rgba(120,40,40,0.5), rgba(80,20,20,0.6))', border: 'rgba(255,80,80,0.8)', borderWidth: 2 });
       default:
-        // 'idle' — только центральный пэг, без дублирующей большой плитки
-        return (
-          <div
-            aria-hidden
-            style={{
-              position: 'absolute',
-              left: '50%',
-              top: '50%',
-              width: 'calc(var(--cell, 32px) * 0.18)',
-              height: 'calc(var(--cell, 32px) * 0.18)',
-              transform: 'translate(-50%, -50%)',
-              background: 'linear-gradient(180deg, #0D2A3A 0%, #071A25 100%)',
-              borderRadius: '3px',
-              boxShadow: '0 -1px 0 rgba(255,255,255,0.08) inset, 0 2px 2px rgba(0,0,0,0.35)'
-            }}
-          />
-        );
+        // 'idle' — пустая ячейка без «точек»/пэгов
+        return null;
     }
   };
 
