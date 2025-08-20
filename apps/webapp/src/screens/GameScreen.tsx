@@ -18,6 +18,43 @@ export const GameScreen: React.FC = () => {
   const [turnTime, setTurnTime] = useState(5);
   const [initialized, setInitialized] = useState(false);
   const stateRef = useRef<any | null>(null);
+  const isMyTurnRef = useRef(false);
+  const turnTimerRef = useRef<number | null>(null);
+
+  const clearTurnTimer = () => {
+    if (turnTimerRef.current !== null) {
+      clearInterval(turnTimerRef.current);
+      turnTimerRef.current = null;
+    }
+  };
+
+  const autoRandomShot = () => {
+    if (!matchId) return;
+    try {
+      const fog = stateRef.current?.publicState?.fog || [];
+      const tried = new Set<string>();
+      for (let y=0;y<10;y++) for (let x=0;x<10;x++){ const v=fog[y]?.[x]; if (v==='H'||v==='M'||v==='S') tried.add(`${x},${y}`);} 
+      const cand: {x:number;y:number}[] = [];
+      for (let y=0;y<10;y++) for (let x=0;x<10;x++){ const k=`${x},${y}`; if (!tried.has(k)) cand.push({x,y}); }
+      const pick = cand.length? cand[Math.floor(Math.random()*cand.length)] : {x:0,y:0};
+      makeMove(matchId, pick as any).then(()=> setTimeout(()=> getGameState(matchId), 250)).catch(()=>{});
+    } catch {}
+  };
+
+  const startTurnTimer = () => {
+    clearTurnTimer();
+    setTurnTime(5);
+    let elapsed = 0;
+    turnTimerRef.current = window.setInterval(() => {
+      setTurnTime((p)=> (p>0? p-1:0));
+      elapsed += 1;
+      if (elapsed>=5) {
+        elapsed = 0;
+        clearTurnTimer();
+        autoRandomShot();
+      }
+    }, 1000);
+  };
 
   // Helpers
   const convertFog = (fog: FogCell[][]) => {
@@ -66,11 +103,8 @@ export const GameScreen: React.FC = () => {
   }, [matchId, getGameState]);
 
   useEffect(() => {
-    if (currentMatch && user) {
-      setIsMyTurn(currentMatch.currentTurn === 'A');
-      setTurnTime(5);
-    }
-  }, [currentMatch, user]);
+    return () => clearTurnTimer();
+  }, []);
 
   // Polling
   useEffect(() => {
@@ -89,7 +123,14 @@ export const GameScreen: React.FC = () => {
           stateRef.current = next;
           return next;
         });
-        setIsMyTurn(json.data.currentTurn === 'A');
+        const nextIsMyTurn = json.data.currentTurn === 'A';
+        if (nextIsMyTurn && !isMyTurnRef.current) {
+          startTurnTimer();
+        } else if (!nextIsMyTurn && isMyTurnRef.current) {
+          clearTurnTimer();
+        }
+        setIsMyTurn(nextIsMyTurn);
+        isMyTurnRef.current = nextIsMyTurn;
         if (!initialized) setInitialized(true);
         // sfx on diff
         try {
@@ -102,6 +143,7 @@ export const GameScreen: React.FC = () => {
           }
         } catch {}
         if (json.data.status === 'finished') {
+          clearTurnTimer();
           const youWon = json.data.winner === 'A';
           playSfx(youWon ? 'win' : 'lose');
           alert(youWon ? 'Вы выиграли!' : 'Вы проиграли');
@@ -112,30 +154,6 @@ export const GameScreen: React.FC = () => {
     return () => clearInterval(t);
   }, [matchId, initialized, navigate]);
 
-  // Timer with auto shot
-  useEffect(() => {
-    if (!isMyTurn || !matchId) return;
-    setTurnTime(5);
-    let elapsed = 0;
-    const t = setInterval(() => {
-      setTurnTime((p)=> (p>0? p-1:0));
-      elapsed += 1;
-      if (elapsed>=5) {
-        elapsed=0;
-        try {
-          const fog = stateRef.current?.publicState?.fog || [];
-          const tried = new Set<string>();
-          for (let y=0;y<10;y++) for (let x=0;x<10;x++){ const v=fog[y]?.[x]; if (v==='H'||v==='M'||v==='S') tried.add(`${x},${y}`);} 
-          const cand: {x:number;y:number}[] = [];
-          for (let y=0;y<10;y++) for (let x=0;x<10;x++){ const k=`${x},${y}`; if (!tried.has(k)) cand.push({x,y}); }
-          const pick = cand.length? cand[Math.floor(Math.random()*cand.length)] : {x:0,y:0};
-          makeMove(matchId, pick as any).then(()=> setTimeout(()=> getGameState(matchId), 250)).catch(()=>{});
-        } catch {}
-        clearInterval(t);
-      }
-    }, 1000);
-    return () => clearInterval(t);
-  }, [isMyTurn, matchId, makeMove, getGameState]);
 
   if (!initialized && !gameState) {
     return (
