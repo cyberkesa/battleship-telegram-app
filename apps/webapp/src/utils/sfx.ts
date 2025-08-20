@@ -40,6 +40,15 @@ function tone(freq: number, durMs: number, type: OscillatorType = 'sine', gain =
   osc.stop(t1);
 }
 
+export function initSfx() {
+  try {
+    ensureCtx();
+    const resume = () => { try { ensureCtx()?.resume(); } catch {} };
+    window.addEventListener('touchstart', resume, { once: true, passive: true } as any);
+    window.addEventListener('click', resume, { once: true } as any);
+  } catch {}
+}
+
 export function playSfx(kind: SfxKind) {
   const ctx = ensureCtx();
   if (!ctx) return;
