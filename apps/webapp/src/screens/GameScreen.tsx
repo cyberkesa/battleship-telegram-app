@@ -17,6 +17,21 @@ const convertFogToCellStates = (fog: any[][]): CellState[][] => {
       if (cell === 'H') board[y][x] = 'hit';
       else if (cell === 'M') board[y][x] = 'miss';
       else if (cell === 'S') board[y][x] = 'sunk';
+      // when hit, shade diagonals around hit for UX feedback
+      if (cell === 'H') {
+        const diag = [
+          { dx: -1, dy: -1 },
+          { dx: 1, dy: -1 },
+          { dx: -1, dy: 1 },
+          { dx: 1, dy: 1 },
+        ];
+        for (const d of diag) {
+          const nx = x + d.dx; const ny = y + d.dy;
+          if (nx >= 0 && ny >= 0 && nx < 10 && ny < 10) {
+            if (board[ny][nx] === 'idle') board[ny][nx] = 'miss';
+          }
+        }
+      }
     }
   }
   return board;
