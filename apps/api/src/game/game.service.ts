@@ -10,6 +10,7 @@ interface MatchState {
   boardA: any;
   boardB: any;
   winner?: 'A' | 'B' | null;
+  lastActionAt?: number;
 }
 
 
@@ -20,6 +21,7 @@ export class GameService {
   private aiStates = new Map<string, any>(); // AI state for computer games
   private matches = new Map<string, MatchState>(); // In-memory matches
   private redis?: Redis;
+  private turnTimers = new Map<string, any>();
 
   constructor(private _prisma: PrismaService) {
     // Optional Redis for AI matches persistence across requests/instances
@@ -61,6 +63,90 @@ export class GameService {
       try {
         await this.redis.set(`ai:match:${state.id}`, JSON.stringify(state), 'EX', 60 * 60); // 1h TTL
       } catch {}
+    }
+  }
+
+  private clearTurnTimer(matchId: string) {
+    const t = this.turnTimers.get(matchId);
+    if (t) {
+      clearTimeout(t);
+      this.turnTimers.delete(matchId);
+    }
+  }
+
+  private scheduleHumanAutoShot(match: MatchState) {
+    this.clearTurnTimer(match.id);
+    if (match.status !== 'in_progress') return;
+    if (match.currentTurn !== 'A') return;
+    const now = Date.now();
+    const last = match.lastActionAt ?? now;
+    const delay = Math.max(0, 5000 - (now - last));
+    const t = setTimeout(() => this.handleHumanTimeout(match.id).catch(()=>{}), Math.max(0, delay + 50));
+    this.turnTimers.set(match.id, t);
+  }
+
+  private async handleHumanTimeout(matchId: string) {
+    const match = await this.loadAiMatch(matchId);
+    if (!match) return;
+    if (match.status !== 'in_progress') return;
+    if (match.currentTurn !== 'A') return;
+    const now = Date.now();
+    const last = match.lastActionAt ?? 0;
+    if (now - last < 4950) { // tolerance
+      this.scheduleHumanAutoShot(match);
+      return;
+    }
+    // Auto human shot
+    const pos = this.pickRandomUntargeted(match.boardB);
+    const { hit } = this.applyShot(match.boardB, pos);
+    await this.logMoveSafe(match.id, 'A', pos.x, pos.y, hit ? 'hit' : 'miss');
+    match.lastActionAt = Date.now();
+    if (this.isGameOver(match.boardB)) {
+      match.status = 'finished';
+      match.winner = 'A';
+      await this.saveAiMatch(match);
+      this.clearTurnTimer(match.id);
+      return;
+    }
+    if (hit) {
+      // Stay on human turn and schedule next shot timeout
+      await this.saveAiMatch(match);
+      this.scheduleHumanAutoShot(match);
+      return;
+    }
+    // Miss → AI's series turn
+    match.currentTurn = 'B';
+    await this.aiSeriesTurn(match);
+    // After AI finishes, back to human turn and schedule timeout
+    match.currentTurn = match.status === 'finished' ? match.currentTurn : 'A';
+    match.lastActionAt = Date.now();
+    await this.saveAiMatch(match);
+    if (match.status === 'in_progress') this.scheduleHumanAutoShot(match);
+  }
+
+  private async aiSeriesTurn(match: MatchState) {
+    // AI keeps shooting until it misses or game over
+    while (match.status === 'in_progress' && match.currentTurn === 'B') {
+      const aiTarget = this.pickRandomUntargeted(match.boardA);
+      const { hit } = this.applyShot(match.boardA, aiTarget);
+      await this.logMoveSafe(match.id, 'B', aiTarget.x, aiTarget.y, hit ? 'hit' : 'miss');
+      if (this.isGameOver(match.boardA)) {
+        match.status = 'finished';
+        match.winner = 'B';
+        break;
+      }
+      if (!hit) break; // stop on miss
+    }
+  }
+
+  private async logMoveSafe(matchId: string, by: 'A'|'B', x: number, y: number, result: string) {
+    try {
+      // Prefer DB logging if model exists
+      await (this._prisma as any).gameMove?.create?.({
+        data: { matchId, playerId: by, x, y, result }
+      });
+    } catch (e) {
+      this.logger.log(`game_move ${matchId} ${by} (${x},${y}) ${result}`);
     }
   }
 
@@ -203,11 +289,14 @@ export class GameService {
           status: 'in_progress',
           currentTurn: 'A',
           boardA: { ships, hits: [], misses: [] },
-          boardB: { ships: aiShips, hits: [], misses: [] }
+          boardB: { ships: aiShips, hits: [], misses: [] },
+          lastActionAt: Date.now(),
         };
         
         // Store match (persist if Redis available)
         await this.saveAiMatch(match);
+        // Schedule human auto-shot timer
+        this.scheduleHumanAutoShot(match);
         
         return {
           success: true,
@@ -290,32 +379,70 @@ export class GameService {
             }
           };
         }
+        if (match.currentTurn !== 'A') {
+          throw new BadRequestException('Not your turn');
+        }
         // Human shoots AI board (boardB)
         const { hit: humanHit, sunk: humanSunk } = this.applyShot(match.boardB, position);
-        // Switch to AI turn
-        match.currentTurn = 'B';
-        // AI makes random move against player's boardA
-        const aiTarget = this.pickRandomUntargeted(match.boardA);
-        const { hit: aiHit, sunk: aiSunk } = this.applyShot(match.boardA, aiTarget);
-        // Switch back to human
-        match.currentTurn = 'A';
-        // Check game over
-        const humanWon = this.isGameOver(match.boardB);
-        const aiWon = this.isGameOver(match.boardA);
-        if (humanWon || aiWon) {
+        await this.logMoveSafe(match.id, 'A', position.x, position.y, humanHit ? (humanSunk ? 'sunk' : 'hit') : 'miss');
+        match.lastActionAt = Date.now();
+        // Check game over after human shot
+        if (this.isGameOver(match.boardB)) {
           match.status = 'finished';
-          match.winner = humanWon ? 'A' : 'B';
+          match.winner = 'A';
+          await this.saveAiMatch(match);
+          this.clearTurnTimer(match.id);
+          return {
+            success: true,
+            data: {
+              result: humanHit ? (humanSunk ? 'sunk' : 'hit') : 'miss',
+              coord: position,
+              gameOver: true,
+              winner: 'A',
+              currentTurn: 'A',
+            }
+          };
+        }
+        if (humanHit) {
+          // Multi-hit rule: stay on human turn until a miss
+          match.currentTurn = 'A';
+          await this.saveAiMatch(match);
+          this.scheduleHumanAutoShot(match);
+          return {
+            success: true,
+            data: {
+              result: humanSunk ? 'sunk' : 'hit',
+              coord: position,
+              gameOver: false,
+              currentTurn: 'A',
+            }
+          };
+        }
+        // Human miss → AI takes a series of shots until it misses
+        match.currentTurn = 'B';
+        await this.aiSeriesTurn(match);
+        let gameOver = false;
+        let winner: 'A'|'B'|null = null;
+        if (this.isGameOver(match.boardA)) { gameOver = true; winner = 'B'; }
+        if (this.isGameOver(match.boardB)) { gameOver = true; winner = 'A'; }
+        if (gameOver) {
+          match.status = 'finished';
+          match.winner = winner as any;
+        }
+        // After AI series (stop on miss or game over)
+        if (match.status !== 'finished') {
+          match.currentTurn = 'A';
+          match.lastActionAt = Date.now();
         }
         await this.saveAiMatch(match);
+        if (match.status === 'in_progress') this.scheduleHumanAutoShot(match);
         return {
           success: true,
           data: {
-            result: humanHit ? (humanSunk ? 'sunk' : 'hit') : 'miss',
+            result: 'miss',
             coord: position,
-            aiMove: aiTarget,
-            aiResult: aiHit ? (aiSunk ? 'sunk' : 'hit') : 'miss',
-            gameOver: humanWon || aiWon,
-            winner: humanWon ? 'A' : (aiWon ? 'B' : null),
+            gameOver: match.status === 'finished',
+            winner: match.winner ?? null,
             currentTurn: match.currentTurn,
           }
         };
