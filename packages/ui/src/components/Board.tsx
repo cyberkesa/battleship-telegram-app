@@ -109,7 +109,7 @@ export const Board: React.FC<BoardProps> = React.memo(({
         role="grid"
         aria-rowcount={BOARD_SIZE}
         aria-colcount={BOARD_SIZE}
-        className="relative grid rounded-card bg-bg-graphite ring-1 ring-edge transition-colors duration-200"
+        className="relative grid rounded-card ring-1 ring-edge transition-colors duration-200"
         style={{
           gap: 'var(--gap)',
           padding: 'var(--pad)',
@@ -117,8 +117,24 @@ export const Board: React.FC<BoardProps> = React.memo(({
           gridAutoRows: 'var(--cell)',
           width: `calc(${BOARD_SIZE} * var(--cell) + ${(BOARD_SIZE - 1)} * var(--gap))`,
           height: `calc(${BOARD_SIZE} * var(--cell) + ${(BOARD_SIZE - 1)} * var(--gap))`,
+          background: 'linear-gradient(180deg, #58C3E4 0%, #2BA1C8 100%)',
+          transform: 'rotateX(55deg) rotateZ(45deg)',
+          transformOrigin: 'center',
+          boxShadow: '0 18px 28px rgba(0,0,0,0.35), 0 6px 0 rgba(0,0,0,0.15) inset',
         }}
       >
+        {/* slab underside shadow */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 rounded-card"
+          style={{
+            transform: 'translate3d(10px, 16px, 0)',
+            filter: 'brightness(0.65) saturate(0.9)',
+            background: 'linear-gradient(180deg, #2BA1C8 0%, #1E6C8B 100%)',
+            zIndex: -1,
+            boxShadow: '0 22px 40px rgba(0,0,0,0.45)'
+          }}
+        />
         {cells.map((row, rowIndex) =>
           row.map((cellState, colIndex) => (
             <Cell
