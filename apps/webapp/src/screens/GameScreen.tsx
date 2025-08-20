@@ -20,6 +20,7 @@ export const GameScreen: React.FC = () => {
   const stateRef = useRef<any | null>(null);
   const isMyTurnRef = useRef(false);
   const turnTimerRef = useRef<number | null>(null);
+  const fogCountRef = useRef<number>(0);
 
   const clearTurnTimer = () => {
     if (turnTimerRef.current !== null) {
@@ -136,10 +137,21 @@ export const GameScreen: React.FC = () => {
         try {
           const prevFog = prev?.publicState?.fog || [];
           const nextFog = json.data.publicState?.fog || [];
+          let diffPlayed = false;
           outer: for (let y=0;y<10;y++) for (let x=0;x<10;x++) {
             const a = prevFog[y]?.[x];
             const b = nextFog[y]?.[x];
-            if (a!==b) { if (b==='S'){playSfx('sunk');break outer;} if (b==='H'){playSfx('hit');break outer;} if (b==='M'){playSfx('miss');break outer;} }
+            if (a!==b) { if (b==='S'){playSfx('sunk');diffPlayed=true;break outer;} if (b==='H'){playSfx('hit');diffPlayed=true;break outer;} if (b==='M'){playSfx('miss');diffPlayed=true;break outer;} }
+          }
+          // restart timer if my turn persists and fog changed (new result for my shot)
+          if (diffPlayed) {
+            let newCount = 0;
+            for (let y=0;y<10;y++) for (let x=0;x<10;x++) { const v = nextFog[y]?.[x]; if (v==='H'||v==='M'||v==='S') newCount++; }
+            const prevCount = fogCountRef.current;
+            if (newCount !== prevCount && isMyTurnRef.current) {
+              startTurnTimer();
+            }
+            fogCountRef.current = newCount;
           }
         } catch {}
         if (json.data.status === 'finished') {
@@ -207,6 +219,7 @@ export const GameScreen: React.FC = () => {
             <div className="flex justify-center">
               <Board size="sm" cells={convertFog(gameState.publicState.fog) as any} disabled={!isMyTurn || gameState.status!=='in_progress'} onCellClick={(row,col)=>{
                 if (!isMyTurn||!matchId) return;
+                clearTurnTimer();
                 makeMove(matchId, { x: col, y: row } as any).then(()=> setTimeout(()=> getGameState(matchId!), 250));
               }} isOpponent />
             </div>
