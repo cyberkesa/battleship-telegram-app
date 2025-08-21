@@ -27,6 +27,8 @@ interface CellProps {
   draggable?: boolean;
   isometric?: boolean;
   style?: React.CSSProperties;
+  shipNeighborTop?: boolean;
+  shipNeighborRight?: boolean;
 }
 
 const sizeClasses = {
@@ -62,6 +64,8 @@ export const Cell: React.FC<CellProps> = ({
   children,
   draggable = false,
   isometric = false,
+  shipNeighborTop = false,
+  shipNeighborRight = false,
 }) => {
   const [isLongPress, setIsLongPress] = React.useState(false);
   const longPressTimer = React.useRef<NodeJS.Timeout>();
@@ -95,8 +99,8 @@ export const Cell: React.FC<CellProps> = ({
     const waterTop = '#80bdfe';
     const waterLeft = '#3e8fe1';
     const waterRight = '#2870bd';
-    const shipTop = '#222222';
-    const topColor = (state === 'ship' || state === 'ship-hit' || state === 'ship-sunk') ? shipTop : waterTop;
+    const isShip = (state === 'ship' || state === 'ship-hit' || state === 'ship-sunk');
+    const topColor = isShip ? '#2a2a2a' : waterTop;
     return (
       <div
         className={className}
@@ -108,9 +112,16 @@ export const Cell: React.FC<CellProps> = ({
         onTouchStart={handleMouseDown}
         onTouchEnd={handleMouseUp}
       >
-        <div style={{ position: 'absolute', inset: 0, background: topColor, transform: `translateZ(${thickness})`, boxShadow: 'inset 0 0 0 1px rgba(0,0,0,.06)' }} />
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: thickness, background: waterLeft, transformOrigin: 'top', transform: 'rotateX(90deg)' }} />
-        <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: thickness, background: waterRight, transformOrigin: 'right', transform: `rotateY(-90deg) translateX(${thickness})` }} />
+        {/* top face (with gloss for ships) */}
+        <div style={{ position: 'absolute', inset: 0, transform: `translateZ(${thickness})` }}>
+          <div style={{ position: 'absolute', inset: 0, background: topColor }} />
+          {isShip && (
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0) 45%, rgba(0,0,0,0.18) 100%)', mixBlendMode: 'overlay', pointerEvents: 'none' }} />
+          )}
+        </div>
+        {/* left/right faces with hidden inner seams for continuous hull */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: thickness, background: isShip ? 'linear-gradient(180deg, #1f1f1f, #0d0d0d)' : waterLeft, transformOrigin: 'top', transform: 'rotateX(90deg)', visibility: shipNeighborTop && isShip ? 'hidden' : 'visible' }} />
+        <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: thickness, background: isShip ? 'linear-gradient(180deg, #1a1a1a, #0a0a0a)' : waterRight, transformOrigin: 'right', transform: `rotateY(-90deg) translateX(${thickness})`, visibility: shipNeighborRight && isShip ? 'hidden' : 'visible' }} />
         {state === 'miss' && (
           <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', transform: `translateZ(calc(${thickness} + 1px))` }}>
             <div style={{ width: 'calc(var(--cell, 32px) * 0.22)', height: 'calc(var(--cell, 32px) * 0.22)', backgroundColor: '#204A86', borderRadius: '50%' }} />

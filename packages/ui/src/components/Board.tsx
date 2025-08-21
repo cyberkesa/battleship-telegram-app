@@ -222,17 +222,24 @@ export const Board: React.FC<BoardProps> = React.memo(({
           }}
         />
         {cells.map((row, rowIndex) =>
-          row.map((cellState, colIndex) => (
-            <Cell
-              key={`${rowIndex}-${colIndex}`}
-              state={cellState}
-              size={size}
-              onClick={() => handleCellClick(rowIndex, colIndex)}
-              onLongPress={() => handleCellLongPress(rowIndex, colIndex)}
-              disabled={disabled}
-              isometric={variant === 'isometric'}
-            />
-          ))
+          row.map((cellState, colIndex) => {
+            const isShip = (s: CellState) => s === 'ship' || s === 'ship-hit' || s === 'ship-sunk';
+            const topNeighbor = rowIndex > 0 ? cells[rowIndex - 1][colIndex] : 'idle';
+            const rightNeighbor = colIndex < (BOARD_SIZE - 1) ? row[colIndex + 1] : 'idle';
+            return (
+              <Cell
+                key={`${rowIndex}-${colIndex}`}
+                state={cellState}
+                size={size}
+                onClick={() => handleCellClick(rowIndex, colIndex)}
+                onLongPress={() => handleCellLongPress(rowIndex, colIndex)}
+                disabled={disabled}
+                isometric={variant === 'isometric'}
+                shipNeighborTop={isShip(topNeighbor)}
+                shipNeighborRight={isShip(rightNeighbor)}
+              />
+            );
+          })
         )}
       </div>
 
