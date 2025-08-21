@@ -92,6 +92,20 @@ export class LobbyController {
     return lobby;
   }
 
+  @Post(':lobbyId/unready')
+  @UseGuards(JwtAuthGuard)
+  async unsetPlayerReady(@Param('lobbyId') lobbyId: string, @Request() req) {
+    const lobby = await this._lobbyService.unsetPlayerReady(lobbyId, req.user.sub);
+    return lobby;
+  }
+
+  @Post(':lobbyId/start')
+  @UseGuards(JwtAuthGuard)
+  async startLobby(@Param('lobbyId') lobbyId: string, @Request() req) {
+    const lobby = await this._lobbyService.startLobby(lobbyId, req.user.sub);
+    return lobby;
+  }
+
   @Post(':lobbyId/leave')
   @UseGuards(JwtAuthGuard)
   async leaveLobby(@Param('lobbyId') lobbyId: string, @Request() req) {

@@ -204,27 +204,66 @@ export class LobbyService {
 			players.sort((a, b) => (Number(b.is_host) - Number(a.is_host)) || (Number(a.player_id) - Number(b.player_id)));
 
 			if (players.length === 2 && players.every(p => !!p.is_ready) && !lobbyRow[0]?.match_id) {
-				const playerA = Number(players[0].player_id);
-				const playerB = Number(players[1].player_id);
-				const matchId = (global as any).crypto?.randomUUID?.() || require('crypto').randomUUID();
-				// Insert match using raw SQL against existing DB schema (MatchStatus enum)
+				// Mark lobby as ready; actual match creation will be done by startLobby()
 				await tx.$executeRawUnsafe(
-					`INSERT INTO matches (id, status, player_a_id, player_b_id) VALUES ($1, $2, $3, $4)`,
-					matchId,
-					'PLACING',
-					playerA,
-					playerB,
-				);
-				// Attach match to lobby and mark starting
-				await tx.$executeRawUnsafe(
-					`UPDATE lobbies SET match_id = $1, status = $2, updated_at = NOW() WHERE id = $3`,
-					matchId,
-					'starting',
+					`UPDATE lobbies SET status = $2, updated_at = NOW() WHERE id = $1`,
 					lobbyId,
+					'ready',
 				);
 			}
 		});
 
+		return this.getLobbyStatus(lobbyId);
+	}
+
+	async unsetPlayerReady(lobbyId: string, playerId: string): Promise<Lobby> {
+		await this._prisma.$executeRawUnsafe(
+			`UPDATE lobby_players SET is_ready = FALSE WHERE lobby_id = $1 AND player_id = $2`,
+			lobbyId,
+			Number(playerId),
+		);
+		// If lobby was marked ready/starting without match, revert to waiting
+		await this._prisma.$executeRawUnsafe(
+			`UPDATE lobbies SET status = $2, updated_at = NOW() WHERE id = $1 AND match_id IS NULL`,
+			lobbyId,
+			'waiting',
+		);
+		return this.getLobbyStatus(lobbyId);
+	}
+
+	async startLobby(lobbyId: string, byPlayerId: string): Promise<Lobby> {
+		await this._prisma.$transaction(async (tx) => {
+			const rows: any[] = await tx.$queryRawUnsafe(
+				`SELECT id, status, match_id FROM lobbies WHERE id = $1 FOR UPDATE`,
+				lobbyId,
+			);
+			if (rows.length === 0) throw new NotFoundException('Лобби не найдено');
+			if (rows[0].match_id) return; // already started
+			const players: any[] = await tx.$queryRawUnsafe(
+				`SELECT player_id, is_ready, is_host FROM lobby_players WHERE lobby_id = $1 FOR UPDATE`,
+				lobbyId,
+			);
+			if (!(players.length === 2 && players.every(p => !!p.is_ready))) {
+				throw new BadRequestException('Оба игрока должны быть готовы');
+			}
+			players.sort((a, b) => (Number(b.is_host) - Number(a.is_host)) || (Number(a.player_id) - Number(b.player_id)));
+			const playerA = Number(players[0].player_id);
+			const playerB = Number(players[1].player_id);
+			const matchId = (global as any).crypto?.randomUUID?.() || require('crypto').randomUUID();
+			await tx.$executeRawUnsafe(
+				`INSERT INTO matches (id, status, player_a_id, player_b_id) VALUES ($1, $2, $3, $4)`,
+				matchId,
+				'PLACING',
+				playerA,
+				playerB,
+			);
+			await tx.$executeRawUnsafe(
+				`UPDATE lobbies SET match_id = $2, status = $3, updated_at = NOW() WHERE id = $1`,
+				lobbyId,
+				matchId,
+				'starting',
+			);
+		});
 		return this.getLobbyStatus(lobbyId);
 	}
 

@@ -41,6 +41,8 @@ export const LobbyScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const countdownRef = React.useRef<number | null>(null);
 
   const buildLobbyDeepLink = (id: string) => {
     const raw = import.meta.env.VITE_TELEGRAM_BOT_USERNAME as string | undefined;
@@ -122,6 +124,39 @@ export const LobbyScreen: React.FC = () => {
     document.addEventListener('visibilitychange', onVisible);
     return () => { cancelled = true; clearInterval(id); document.removeEventListener('visibilitychange', onVisible); };
   }, [lobbyId, user?.id, navigate]);
+
+  useEffect(() => {
+    if (!lobby) return;
+    if (lobby.status === 'ready' && lobby.players.length === 2 && lobby.players.every(p => p.isReady) && !lobby.matchId) {
+      if (countdownRef.current !== null) return;
+      setCountdown(3);
+      const t = window.setInterval(() => {
+        setCountdown(prev => {
+          const next = (prev ?? 0) - 1;
+          if (next <= 0) {
+            window.clearInterval(t);
+            countdownRef.current = null;
+            // trigger backend start
+            lobbyAPI.ready(lobby.id); // noop to keep auth warm
+            fetch(`${(import.meta as any).env.VITE_API_URL || '/api'}/lobby/${lobby.id}/start`, {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+            }).catch(()=>{});
+            return 0;
+          }
+          return next;
+        });
+      }, 1000);
+      countdownRef.current = t as unknown as number;
+      return () => { window.clearInterval(t); countdownRef.current = null; };
+    } else {
+      if (countdownRef.current !== null) {
+        window.clearInterval(countdownRef.current);
+        countdownRef.current = null;
+        setCountdown(null);
+      }
+    }
+  }, [lobby?.status, lobby?.players, lobby?.matchId, lobby?.id]);
 
   const handleToggleReady = async () => {
     if (!lobby || !user || !lobbyId) return;
@@ -340,7 +375,7 @@ export const LobbyScreen: React.FC = () => {
             {isReady ? (
               <>
                 <CheckCircle className="w-4 h-4" />
-                Готов к игре
+                {countdown ? `Игра начнется через ${countdown}...` : 'Готов к игре'}
               </>
             ) : (
               <>
