@@ -110,6 +110,8 @@ export const lobbyAPI = {
     api.post('/lobby/join', { lobbyId, playerName, playerAvatar }),
   status: (lobbyId: string) => api.get(`/lobby/${lobbyId}`),
   ready: (lobbyId: string) => api.post(`/lobby/${lobbyId}/ready`),
+  unready: (lobbyId: string) => api.post(`/lobby/${lobbyId}/unready`),
+  start: (lobbyId: string) => api.post(`/lobby/${lobbyId}/start`),
   leave: (lobbyId: string) => api.post(`/lobby/${lobbyId}/leave`),
 };
 

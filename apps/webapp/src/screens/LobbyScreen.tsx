@@ -132,7 +132,7 @@ export const LobbyScreen: React.FC = () => {
     if (bothReady && !countdownActiveRef.current) {
       countdownActiveRef.current = true;
       setCountdown(3);
-      const startUrl = `${(import.meta as any).env.VITE_API_URL || '/api'}/lobby/${lobby.id}/start`;
+      const startLobby = () => lobbyAPI.start(lobby.id).catch(()=>{});
       const t = window.setInterval(() => {
         setCountdown(prev => {
           const current = typeof prev === 'number' ? prev : 3;
@@ -141,7 +141,7 @@ export const LobbyScreen: React.FC = () => {
             window.clearInterval(t);
             countdownTimerRef.current = null;
             countdownActiveRef.current = false;
-            fetch(startUrl, { method: 'POST', headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` } }).catch(()=>{});
+            startLobby();
             return 0;
           }
           return next;
