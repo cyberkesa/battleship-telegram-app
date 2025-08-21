@@ -250,20 +250,16 @@ export class LobbyService {
 			const playerA = Number(players[0].player_id);
 			const playerB = Number(players[1].player_id);
 			const matchId = (global as any).crypto?.randomUUID?.() || require('crypto').randomUUID();
-			// idempotent create: ensure no existing row
-			const exists: any[] = await tx.$queryRawUnsafe(
-				`SELECT 1 FROM matches WHERE id = $1 LIMIT 1`,
+			// idempotent create to avoid 500 on concurrent starts
+			await tx.$executeRawUnsafe(
+				`INSERT INTO matches (id, status, player_a_id, player_b_id)
+				 VALUES ($1, $2, $3, $4)
+				 ON CONFLICT (id) DO NOTHING`,
 				matchId,
+				'PLACING',
+				playerA,
+				playerB,
 			);
-			if (exists.length === 0) {
-				await tx.$executeRawUnsafe(
-					`INSERT INTO matches (id, status, player_a_id, player_b_id) VALUES ($1, $2, $3, $4)`,
-					matchId,
-					'PLACING',
-					playerA,
-					playerB,
-				);
-			}
 			await tx.$executeRawUnsafe(
 				`UPDATE lobbies SET match_id = $2, status = $3, updated_at = NOW() WHERE id = $1`,
 				lobbyId,
