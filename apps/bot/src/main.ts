@@ -9,9 +9,14 @@ const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN!);
 // Handle /start command
 bot.command('start', async (ctx) => {
   const args = ctx.match as string | undefined;
-  // Support deep-links like /start join:<lobbyId>
-  if (args && args.startsWith('join:')) {
-    const lobbyId = args.slice('join:'.length);
+  // Support deep-links like /start join_<lobbyId> and legacy /start join:<lobbyId>
+  let lobbyId: string | null = null;
+  if (args?.startsWith('join_')) {
+    lobbyId = args.slice('join_'.length);
+  } else if (args?.startsWith('join:')) {
+    lobbyId = args.slice('join:'.length);
+  }
+  if (lobbyId) {
     const url = process.env.FRONTEND_URL || 'https://battleship-telegram-app-webapp.vercel.app';
     await ctx.reply('Открываю лобби...', {
       reply_markup: {

@@ -28,7 +28,7 @@ export class LobbyService {
 		const rawBotUsername = process.env.TELEGRAM_BOT_USERNAME;
 		const botUsername = rawBotUsername?.startsWith('@') ? rawBotUsername.slice(1) : rawBotUsername;
 		const inviteLink = botUsername
-			? `https://t.me/${botUsername}?startapp=${encodeURIComponent(`join:${lobbyId}`)}`
+			? `https://t.me/${botUsername}?startapp=${encodeURIComponent(`join_${lobbyId}`)}`
 			: `${process.env.FRONTEND_URL}/lobby/${lobbyId}`;
 
 		await this._prisma.$executeRawUnsafe(

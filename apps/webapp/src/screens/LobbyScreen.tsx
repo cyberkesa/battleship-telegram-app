@@ -46,7 +46,7 @@ export const LobbyScreen: React.FC = () => {
     const raw = import.meta.env.VITE_TELEGRAM_BOT_USERNAME as string | undefined;
     const botUsername = raw?.startsWith('@') ? raw.slice(1) : raw;
     if (botUsername) {
-      const payload = `join:${id}`;
+      const payload = `join_${id}`;
       return `https://t.me/${botUsername}?startapp=${encodeURIComponent(payload)}`;
     }
     return `${window.location.origin}/lobby/${id}`;
