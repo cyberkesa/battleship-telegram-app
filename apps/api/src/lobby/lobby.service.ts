@@ -223,40 +223,45 @@ export class LobbyService {
 	}
 
 	async startLobby(lobbyId: string, byPlayerId: string): Promise<Lobby> {
-		await this._prisma.$transaction(async (tx) => {
-			const rows: any[] = await tx.$queryRawUnsafe(
-				`SELECT id, status, match_id FROM lobbies WHERE id = $1 FOR UPDATE`,
-				lobbyId,
-			);
-			if (rows.length === 0) throw new NotFoundException('Лобби не найдено');
-			if (rows[0].match_id) return; // already started
-			const players: any[] = await tx.$queryRawUnsafe(
-				`SELECT player_id, is_ready, is_host FROM lobby_players WHERE lobby_id = $1 FOR UPDATE`,
-				lobbyId,
-			);
-			if (!(players.length === 2 && players.every(p => !!p.is_ready))) {
-				throw new BadRequestException('Оба игрока должны быть готовы');
-			}
-			players.sort((a, b) => (Number(b.is_host) - Number(a.is_host)) || (Number(a.player_id) - Number(b.player_id)));
-			const playerA = Number(players[0].player_id);
-			const playerB = Number(players[1].player_id);
-			const matchId = randomUUID();
-			await tx.$executeRawUnsafe(
-				`INSERT INTO matches (id, status, player_a_id, player_b_id)
-				 VALUES ($1, $2, $3, $4)
-				 ON CONFLICT (id) DO NOTHING`,
-				matchId,
-				'PLACING',
-				playerA,
-				playerB,
-			);
-			await tx.$executeRawUnsafe(
-				`UPDATE lobbies SET match_id = $2, status = $3, updated_at = NOW() WHERE id = $1`,
-				lobbyId,
-				matchId,
-				'starting',
-			);
-		});
+		try {
+			await this._prisma.$transaction(async (tx) => {
+				const rows: any[] = await tx.$queryRawUnsafe(
+					`SELECT id, status, match_id FROM lobbies WHERE id = $1 FOR UPDATE`,
+					lobbyId,
+				);
+				if (rows.length === 0) throw new NotFoundException('Лобби не найдено');
+				if (rows[0].match_id) return; // already started
+				const players: any[] = await tx.$queryRawUnsafe(
+					`SELECT player_id, is_ready, is_host FROM lobby_players WHERE lobby_id = $1 FOR UPDATE`,
+					lobbyId,
+				);
+				if (!(players.length === 2 && players.every(p => !!p.is_ready))) {
+					throw new BadRequestException('Оба игрока должны быть готовы');
+				}
+				players.sort((a, b) => (Number(b.is_host) - Number(a.is_host)) || (Number(a.player_id) - Number(b.player_id)));
+				const playerA = Number(players[0].player_id);
+				const playerB = Number(players[1].player_id);
+				const matchId = randomUUID();
+				await tx.$executeRawUnsafe(
+					`INSERT INTO matches (id, status, player_a_id, player_b_id)
+					 VALUES ($1, $2, $3, $4)
+					 ON CONFLICT (id) DO NOTHING`,
+					matchId,
+					'PLACING',
+					playerA,
+					playerB,
+				);
+				await tx.$executeRawUnsafe(
+					`UPDATE lobbies SET match_id = $2, status = $3, updated_at = NOW() WHERE id = $1`,
+					lobbyId,
+					matchId,
+					'starting',
+				);
+			});
+		} catch (e: any) {
+			console.error('[LobbyStart] error', { lobbyId, message: e?.message, code: e?.code });
+			throw e;
+		}
 		return this.getLobbyStatus(lobbyId);
 	}
 
