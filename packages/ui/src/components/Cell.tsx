@@ -99,8 +99,10 @@ export const Cell: React.FC<CellProps> = ({
     const waterTop = '#80bdfe';
     const waterLeft = '#3e8fe1';
     const waterRight = '#2870bd';
-    const isShip = (state === 'ship' || state === 'ship-hit' || state === 'ship-sunk');
-    const topColor = isShip ? '#2a2a2a' : waterTop;
+    const isShipLike = (state === 'ship' || state === 'ship-hit' || state === 'ship-sunk');
+    const isSunk = (state === 'sunk' || state === 'ship-sunk');
+    const isHitOnly = (state === 'hit' || state === 'ship-hit');
+    const topColor = isShipLike ? (isSunk ? '#1a1a1a' : '#2a2a2a') : waterTop;
     return (
       <div
         className={className}
@@ -112,22 +114,22 @@ export const Cell: React.FC<CellProps> = ({
         onTouchStart={handleMouseDown}
         onTouchEnd={handleMouseUp}
       >
-        {/* top face (with gloss for ships) */}
+        {/* top face (gloss only for non-sunk ships) */}
         <div style={{ position: 'absolute', inset: 0, transform: `translateZ(${thickness})` }}>
           <div style={{ position: 'absolute', inset: 0, background: topColor }} />
-          {isShip && (
+          {isShipLike && !isSunk && (
             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0) 45%, rgba(0,0,0,0.18) 100%)', mixBlendMode: 'overlay', pointerEvents: 'none' }} />
           )}
         </div>
         {/* left/right faces with hidden inner seams for continuous hull */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: thickness, background: isShip ? 'linear-gradient(180deg, #1f1f1f, #0d0d0d)' : waterLeft, transformOrigin: 'top', transform: 'rotateX(90deg)', visibility: shipNeighborTop && isShip ? 'hidden' : 'visible' }} />
-        <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: thickness, background: isShip ? 'linear-gradient(180deg, #1a1a1a, #0a0a0a)' : waterRight, transformOrigin: 'right', transform: `rotateY(-90deg) translateX(${thickness})`, visibility: shipNeighborRight && isShip ? 'hidden' : 'visible' }} />
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: thickness, background: isShipLike ? (isSunk ? 'linear-gradient(180deg, #121212, #000000)' : 'linear-gradient(180deg, #1f1f1f, #0d0d0d)') : waterLeft, transformOrigin: 'top', transform: 'rotateX(90deg)', visibility: shipNeighborTop && isShipLike ? 'hidden' : 'visible' }} />
+        <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: thickness, background: isShipLike ? (isSunk ? 'linear-gradient(180deg, #101010, #000000)' : 'linear-gradient(180deg, #1a1a1a, #0a0a0a)') : waterRight, transformOrigin: 'right', transform: `rotateY(-90deg) translateX(${thickness})`, visibility: shipNeighborRight && isShipLike ? 'hidden' : 'visible' }} />
         {state === 'miss' && (
           <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', transform: `translateZ(calc(${thickness} + 1px))` }}>
             <div style={{ width: 'calc(var(--cell, 32px) * 0.22)', height: 'calc(var(--cell, 32px) * 0.22)', backgroundColor: '#204A86', borderRadius: '50%' }} />
           </div>
         )}
-        {(state === 'hit' || state === 'ship-hit' || state === 'sunk' || state === 'ship-sunk') && (
+        {isHitOnly && (
           <div style={{ position: 'absolute', inset: 0, transform: `translateZ(calc(${thickness} + 1px))` }} aria-hidden>
             <div style={{ position: 'absolute', left: '12%', top: '50%', width: '76%', height: '2px', backgroundColor: '#C22121', transform: 'rotate(45deg)', transformOrigin: 'center' }} />
             <div style={{ position: 'absolute', left: '12%', top: '50%', width: '76%', height: '2px', backgroundColor: '#C22121', transform: 'rotate(-45deg)', transformOrigin: 'center' }} />
