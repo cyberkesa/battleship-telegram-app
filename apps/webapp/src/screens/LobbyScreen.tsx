@@ -145,7 +145,9 @@ export const LobbyScreen: React.FC = () => {
             } catch {}
             await new Promise(r => setTimeout(r, 250));
           }
-        } catch {}
+        } catch (e:any) {
+          console.error('[LobbyStart] fatal', e?.response?.status, e?.response?.data);
+        }
       };
       const t = window.setInterval(() => {
         setCountdown(prev => {

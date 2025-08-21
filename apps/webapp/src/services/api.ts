@@ -70,6 +70,17 @@ api.interceptors.response.use(
   },
   (error) => {
     try {
+      const url = error?.config?.url || '';
+      if (/\/lobby\/[^/]+\/start/.test(url)) {
+        console.error('[LobbyStart] request failed', {
+          status: error?.response?.status,
+          body: error?.response?.data,
+          headers: error?.response?.headers,
+          config: { baseURL: error?.config?.baseURL, url: error?.config?.url, method: error?.config?.method }
+        });
+      }
+    } catch {}
+    try {
       const cfg: any = error.config || {};
       const id: string | undefined = cfg.__dbg_id;
       if (id) {
