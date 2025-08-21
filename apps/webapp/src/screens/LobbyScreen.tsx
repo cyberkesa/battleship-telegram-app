@@ -42,7 +42,8 @@ export const LobbyScreen: React.FC = () => {
   const [isReady, setIsReady] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
-  const countdownRef = React.useRef<number | null>(null);
+  const countdownTimerRef = React.useRef<number | null>(null);
+  const countdownActiveRef = React.useRef<boolean>(false);
 
   const buildLobbyDeepLink = (id: string) => {
     const raw = import.meta.env.VITE_TELEGRAM_BOT_USERNAME as string | undefined;
@@ -127,36 +128,40 @@ export const LobbyScreen: React.FC = () => {
 
   useEffect(() => {
     if (!lobby) return;
-    if (lobby.status === 'ready' && lobby.players.length === 2 && lobby.players.every(p => p.isReady) && !lobby.matchId) {
-      if (countdownRef.current !== null) return;
+    const bothReady = lobby.players.length === 2 && lobby.players.every(p => p.isReady) && !lobby.matchId;
+    if (bothReady && !countdownActiveRef.current) {
+      countdownActiveRef.current = true;
       setCountdown(3);
+      const startUrl = `${(import.meta as any).env.VITE_API_URL || '/api'}/lobby/${lobby.id}/start`;
       const t = window.setInterval(() => {
         setCountdown(prev => {
-          const next = (prev ?? 0) - 1;
+          const current = typeof prev === 'number' ? prev : 3;
+          const next = current - 1;
           if (next <= 0) {
             window.clearInterval(t);
-            countdownRef.current = null;
-            // trigger backend start
-            lobbyAPI.ready(lobby.id); // noop to keep auth warm
-            fetch(`${(import.meta as any).env.VITE_API_URL || '/api'}/lobby/${lobby.id}/start`, {
-              method: 'POST',
-              headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
-            }).catch(()=>{});
+            countdownTimerRef.current = null;
+            countdownActiveRef.current = false;
+            fetch(startUrl, { method: 'POST', headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` } }).catch(()=>{});
             return 0;
           }
           return next;
         });
       }, 1000);
-      countdownRef.current = t as unknown as number;
-      return () => { window.clearInterval(t); countdownRef.current = null; };
-    } else {
-      if (countdownRef.current !== null) {
-        window.clearInterval(countdownRef.current);
-        countdownRef.current = null;
-        setCountdown(null);
-      }
+      countdownTimerRef.current = t as unknown as number;
+    } else if ((!bothReady || lobby.matchId) && countdownTimerRef.current !== null) {
+      window.clearInterval(countdownTimerRef.current);
+      countdownTimerRef.current = null;
+      countdownActiveRef.current = false;
+      setCountdown(null);
     }
-  }, [lobby?.status, lobby?.players, lobby?.matchId, lobby?.id]);
+    return () => {
+      if (countdownTimerRef.current !== null && (!bothReady || lobby.matchId)) {
+        window.clearInterval(countdownTimerRef.current);
+        countdownTimerRef.current = null;
+        countdownActiveRef.current = false;
+      }
+    };
+  }, [lobby?.players, lobby?.matchId, lobby?.id]);
 
   const handleToggleReady = async () => {
     if (!lobby || !user || !lobbyId) return;
