@@ -244,10 +244,9 @@ export class LobbyService {
 				const matchId = randomUUID();
 				await tx.$executeRawUnsafe(
 					`INSERT INTO matches (id, status, player_a_id, player_b_id)
-					 VALUES ($1, $2, $3, $4)
+					 VALUES ($1, 'PLACING'::"MatchStatus", $2, $3)
 					 ON CONFLICT (id) DO NOTHING`,
 					matchId,
-					'PLACING',
 					playerA,
 					playerB,
 				);
