@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
+import { fromB64Url } from './utils/deeplink';
 import { TelegramProvider } from './providers/TelegramProvider';
 import { AuthProvider } from './providers/AuthProvider';
 import { HomeScreen } from './screens/HomeScreen';
@@ -21,13 +22,7 @@ function DeepLinkHandler() {
     const search = new URLSearchParams(location.search);
     const startParam: string = tg?.initDataUnsafe?.start_param ?? search.get('tgWebAppStartParam') ?? '';
 
-    // base64url helpers
-    const fromB64Url = (s: string) => {
-      if (!s) return s;
-      let t = s.replace(/-/g, '+').replace(/_/g, '/');
-      while (t.length % 4) t += '=';
-      try { return atob(t); } catch { return ''; }
-    };
+    // base64url helper moved to utils
 
     if (import.meta.env.DEV) {
       console.log('[DeepLink] start_param =', startParam);

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { buildLobbyDeepLink, openTelegramShare } from '../utils/deeplink';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@battleship/ui';
 import { useAuth } from '../providers/AuthProvider';
@@ -26,26 +27,9 @@ export const CreateLobbyScreen: React.FC = () => {
   const abortRef = useRef<AbortController | null>(null);
   useEffect(() => () => { abortRef.current?.abort(); }, []);
 
-  const inviteDeepLink = useMemo(() => {
-    if (!lobbyId) return '';
-    const raw = import.meta.env.VITE_TELEGRAM_BOT_USERNAME as string | undefined;
-    const botUsername = raw?.startsWith('@') ? raw.slice(1) : raw;
-    if (botUsername) {
-      const payload = `join_${lobbyId}`;
-      return `https://t.me/${botUsername}?startapp=${encodeURIComponent(payload)}`;
-    }
-    return `${window.location.origin}/lobby/${lobbyId}`;
-  }, [lobbyId]);
+  const inviteDeepLink = useMemo(() => lobbyId ? buildLobbyDeepLink(lobbyId) : '', [lobbyId]);
 
-  const openTelegramShare = (deepLink: string, text: string) => {
-    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(deepLink)}&text=${encodeURIComponent(text)}`;
-    const tg: any = (window as any).Telegram?.WebApp;
-    if (tg?.openTelegramLink) {
-      tg.openTelegramLink(shareUrl);
-      return true;
-    }
-    return false;
-  };
+  const shareViaTelegram = (deepLink: string, text: string) => openTelegramShare(deepLink, text);
 
   const handleCreateLobby = useCallback(async () => {
     if (isCreating) return;
@@ -97,7 +81,7 @@ export const CreateLobbyScreen: React.FC = () => {
   const handleShare = useCallback(async () => {
     const deepLink = inviteLink || inviteDeepLink;
     const text = 'Приглашаю тебя сыграть в Морской бой!';
-    if (!openTelegramShare(deepLink, text)) {
+    if (!shareViaTelegram(deepLink, text)) {
       if (navigator.share) {
         try {
           await navigator.share({ title: 'Присоединяйся к игре Морской бой', text, url: deepLink });

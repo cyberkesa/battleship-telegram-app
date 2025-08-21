@@ -13,6 +13,7 @@ import {
   Share
 } from 'lucide-react';
 import { lobbyAPI } from '../services/api';
+import { buildLobbyDeepLink, openTelegramShare } from '../utils/deeplink';
 
 interface LobbyPlayer {
   id: string;
@@ -45,15 +46,7 @@ export const LobbyScreen: React.FC = () => {
   const countdownTimerRef = React.useRef<number | null>(null);
   const countdownActiveRef = React.useRef<boolean>(false);
 
-  const buildLobbyDeepLink = (id: string) => {
-    const raw = import.meta.env.VITE_TELEGRAM_BOT_USERNAME as string | undefined;
-    const botUsername = raw?.startsWith('@') ? raw.slice(1) : raw;
-    if (botUsername) {
-      const payload = `join_${id}`;
-      return `https://t.me/${botUsername}?startapp=${encodeURIComponent(payload)}`;
-    }
-    return `${window.location.origin}/lobby/${id}`;
-  };
+  const buildLink = (id: string) => buildLobbyDeepLink(id);
 
   // Load lobby from backend
   useEffect(() => {
@@ -220,14 +213,9 @@ export const LobbyScreen: React.FC = () => {
 
   const handleInviteFriend = () => {
     if (!lobbyId) return;
-    const deepLink = lobby?.inviteLink || buildLobbyDeepLink(lobbyId);
+    const deepLink = lobby?.inviteLink || buildLink(lobbyId);
     const text = 'Приглашаю тебя сыграть в Морской бой!';
-    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(deepLink)}&text=${encodeURIComponent(text)}`;
-    const tg: any = (window as any).Telegram?.WebApp;
-    if (tg?.openTelegramLink) {
-      tg.openTelegramLink(shareUrl);
-      return;
-    }
+    if (openTelegramShare(deepLink, text)) return;
     if (navigator.share) {
       navigator.share({ title: 'Морской бой', text, url: deepLink }).catch(() => {});
       return;
