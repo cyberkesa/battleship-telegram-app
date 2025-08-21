@@ -189,6 +189,7 @@ export const Board: React.FC<BoardProps> = React.memo(({
         )}
         {/* removed underside full overlay per request */}
         {/* two visible side faces for volume */}
+        {/* side faces (isometric slab) */}
         <div
           aria-hidden
           className="absolute"
@@ -197,9 +198,9 @@ export const Board: React.FC<BoardProps> = React.memo(({
             bottom: 0,
             width: '100%',
             height: '12px',
-            transform: 'translateY(6px) rotateX(55deg) rotateZ(45deg)',
+            transform: 'translateY(6px) rotateX(58deg) rotateZ(45deg)',
             transformOrigin: 'top',
-            background: 'linear-gradient(180deg, rgba(0,0,0,0.10), rgba(0,0,0,0.28))',
+            background: variant === 'isometric' ? '#3e8fe1' : 'transparent',
             borderBottomLeftRadius: '6px',
             borderBottomRightRadius: '6px',
             zIndex: -1,
@@ -213,9 +214,9 @@ export const Board: React.FC<BoardProps> = React.memo(({
             top: 0,
             width: '12px',
             height: '100%',
-            transform: 'translateX(6px) rotateX(55deg) rotateZ(45deg)',
+            transform: 'translateX(6px) rotateX(58deg) rotateZ(45deg)',
             transformOrigin: 'left',
-            background: 'linear-gradient(180deg, rgba(0,0,0,0.06), rgba(0,0,0,0.22))',
+            background: variant === 'isometric' ? '#2870bd' : 'transparent',
             borderTopRightRadius: '6px',
             borderBottomRightRadius: '6px',
             zIndex: -1,
