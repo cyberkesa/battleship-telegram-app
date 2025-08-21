@@ -311,51 +311,58 @@ export class GameService {
           }
         };
       } else {
-        // Multiplayer setup
-        const dbMatch = await this._prisma.match.findUnique({
-          where: { id: matchId }
-        });
+        // Multiplayer setup against current DB schema (matches/boards)
+        const rows: any[] = await this._prisma.$queryRawUnsafe(
+          `SELECT id, status, player_a_id, player_b_id, turn FROM matches WHERE id = $1 LIMIT 1`,
+          matchId,
+        );
+        if (rows.length === 0) throw new NotFoundException('Match not found');
+        const m = rows[0];
+        const role = Number(playerId) === Number(m.player_a_id) ? 'A' : Number(playerId) === Number(m.player_b_id) ? 'B' : null;
+        if (!role) throw new BadRequestException('Player not part of this match');
 
-        if (!dbMatch) {
-          throw new NotFoundException('Match not found');
-        }
+        // Upsert board for this player and mark ready
+        await this._prisma.$executeRawUnsafe(
+          `INSERT INTO boards (id, match_id, player_id, layout, ready) VALUES ($1, $2, $3, $4::jsonb, TRUE)
+           ON CONFLICT (match_id, player_id) DO UPDATE SET layout = EXCLUDED.layout, ready = TRUE`,
+          `${matchId}-${playerId}`,
+          matchId,
+          Number(playerId),
+          JSON.stringify({ ships }),
+        );
 
-        const role = playerId === dbMatch.playerAId ? 'A' : playerId === dbMatch.playerBId ? 'B' : null;
-        if (!role) {
-          throw new BadRequestException('Player not part of this match');
-        }
+        // Check if both boards are ready
+        const readyRows: any[] = await this._prisma.$queryRawUnsafe(
+          `SELECT player_id, ready FROM boards WHERE match_id = $1`,
+          matchId,
+        );
+        const aReady = readyRows.some(r => Number(r.player_id) === Number(m.player_a_id) && r.ready === true);
+        const bReady = readyRows.some(r => Number(r.player_id) === Number(m.player_b_id) && r.ready === true);
 
-        const state: any = (dbMatch.state as any) || { boards: { A: null, B: null }, ready: { A: false, B: false } };
-        state.boards = state.boards || { A: null, B: null };
-        state.ready = state.ready || { A: false, B: false };
-        state.boards[role] = { ships };
-        state.ready[role] = true;
-
-        let nextStatus = dbMatch.status;
-        let currentTurn = dbMatch.currentTurn;
-        if (state.ready.A && state.ready.B) {
-          nextStatus = 'in_progress';
-          currentTurn = currentTurn || 'A';
-          state.phase = 'in_progress';
+        // If both ready, set match IN_PROGRESS and set initial turn if null
+        if (aReady && bReady) {
+          await this._prisma.$executeRawUnsafe(
+            `UPDATE matches SET status = 'IN_PROGRESS', turn = COALESCE(turn, 'A') WHERE id = $1`,
+            matchId,
+          );
         } else {
-          state.phase = 'placing';
+          await this._prisma.$executeRawUnsafe(
+            `UPDATE matches SET status = 'PLACING' WHERE id = $1`,
+            matchId,
+          );
         }
 
-        const updated = await this._prisma.match.update({
-          where: { id: matchId },
-          data: {
-            status: nextStatus,
-            currentTurn: currentTurn,
-            state: state as any,
-          }
-        });
-
+        const refreshed: any[] = await this._prisma.$queryRawUnsafe(
+          `SELECT id, status, turn FROM matches WHERE id = $1`,
+          matchId,
+        );
+        const mm = refreshed[0];
         return {
           success: true,
           data: {
-            matchId: updated.id,
-            status: updated.status,
-            currentTurn: updated.currentTurn,
+            matchId: String(mm.id),
+            status: String(mm.status).toLowerCase(),
+            currentTurn: mm.turn || null,
           }
         };
       }
@@ -454,51 +461,51 @@ export class GameService {
 
       // Multiplayer
       // If not a computer match and not found in-memory, try DB
-      const dbMatch = await this._prisma.match.findUnique({ where: { id: matchId } });
-      if (!dbMatch) {
-        throw new NotFoundException('Match not found');
-      }
-      const role = playerId === dbMatch.playerAId ? 'A' : playerId === dbMatch.playerBId ? 'B' : null;
+      const mrows: any[] = await this._prisma.$queryRawUnsafe(
+        `SELECT id, status, player_a_id, player_b_id, turn FROM matches WHERE id = $1 LIMIT 1`,
+        matchId,
+      );
+      if (mrows.length === 0) throw new NotFoundException('Match not found');
+      const dbMatch = mrows[0];
+      const role = Number(playerId) === Number(dbMatch.player_a_id) ? 'A' : Number(playerId) === Number(dbMatch.player_b_id) ? 'B' : null;
       if (!role) {
         throw new BadRequestException('Player not part of this match');
       }
-      if (dbMatch.status !== 'in_progress') {
+      if (String(dbMatch.status) !== 'IN_PROGRESS') {
         throw new BadRequestException('Match is not in progress');
       }
-      if (dbMatch.currentTurn && dbMatch.currentTurn !== role) {
+      if (dbMatch.turn && dbMatch.turn !== role) {
         throw new BadRequestException('Not your turn');
       }
 
-      const resultKind = 'miss';
+      const resultKind = 'MISS';
       const nextTurn = role === 'A' ? 'B' : 'A';
-      const state: any = (dbMatch.state as any) || {};
-      state.lastMove = { x: position.x, y: position.y, result: resultKind, by: role };
 
-      await this._prisma.gameMove.create({
-        data: {
-          matchId: dbMatch.id,
-          playerId,
-          x: position.x,
-          y: position.y,
-          result: resultKind,
-        }
-      });
+      const { randomUUID } = await import('crypto');
+      await this._prisma.$executeRawUnsafe(
+        `INSERT INTO moves (id, match_id, by_player_id, x, y, result, turn_no) 
+         VALUES ($1, $2, $3, $4, $5, $6, COALESCE((SELECT MAX(turn_no)+1 FROM moves WHERE match_id = $2), 1))`,
+        randomUUID(),
+        matchId,
+        Number(playerId),
+        Number(position.x),
+        Number(position.y),
+        resultKind,
+      );
 
-      const updated = await this._prisma.match.update({
-        where: { id: matchId },
-        data: {
-          currentTurn: nextTurn,
-          state: state as any,
-        }
-      });
+      await this._prisma.$executeRawUnsafe(
+        `UPDATE matches SET turn = $2 WHERE id = $1`,
+        matchId,
+        nextTurn,
+      );
 
       return {
         success: true,
         data: {
-          result: resultKind,
+          result: 'miss',
           coord: position,
           gameOver: false,
-          currentTurn: updated.currentTurn,
+          currentTurn: nextTurn,
         }
       };
     } catch (error) {
@@ -540,22 +547,34 @@ export class GameService {
         };
       }
 
-      const dbMatch = await this._prisma.match.findUnique({ where: { id: matchId } });
-      if (!dbMatch) {
-        throw new NotFoundException('Match not found');
-      }
-      const role = playerId === dbMatch.playerAId ? 'A' : playerId === dbMatch.playerBId ? 'B' : null;
+      const mrows2: any[] = await this._prisma.$queryRawUnsafe(
+        `SELECT id, status, player_a_id, player_b_id, turn FROM matches WHERE id = $1 LIMIT 1`,
+        matchId,
+      );
+      if (mrows2.length === 0) throw new NotFoundException('Match not found');
+      const dbMatch = mrows2[0];
+      const role = Number(playerId) === Number(dbMatch.player_a_id) ? 'A' : Number(playerId) === Number(dbMatch.player_b_id) ? 'B' : null;
       if (!role) {
         throw new BadRequestException('Player not part of this match');
       }
-      const state: any = (dbMatch.state as any) || {};
-      const publicState = { lastMove: state.lastMove, phase: state.phase };
+      // Minimal public state for multiplayer (extend later with boards view)
+      const lastMoveRows: any[] = await this._prisma.$queryRawUnsafe(
+        `SELECT by_player_id, x, y, result FROM moves WHERE match_id = $1 ORDER BY turn_no DESC LIMIT 1`,
+        matchId,
+      );
+      const lastMove = lastMoveRows[0] ? { 
+        by: Number(lastMoveRows[0].by_player_id) === Number(dbMatch.player_a_id) ? 'A' : 'B',
+        x: lastMoveRows[0].x,
+        y: lastMoveRows[0].y,
+        result: String(lastMoveRows[0].result).toLowerCase(),
+      } : undefined;
+      const publicState = { lastMove, phase: String(dbMatch.status).toLowerCase() };
       return {
         success: true,
         data: {
-          id: dbMatch.id,
-          status: dbMatch.status,
-          currentTurn: dbMatch.currentTurn,
+          id: String(dbMatch.id),
+          status: String(dbMatch.status).toLowerCase(),
+          currentTurn: dbMatch.turn || null,
           playerRole: role,
           publicState
         }
