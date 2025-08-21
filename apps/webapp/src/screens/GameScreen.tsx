@@ -83,6 +83,33 @@ import { initSfx, playSfx } from '../utils/sfx';
      return board as any;
    };
 
+   const countSunkShips = (fog: FogCell[][]): number => {
+     if (!Array.isArray(fog) || fog.length !== 10) return 0;
+     const seen: boolean[][] = Array.from({ length: 10 }, () => Array(10).fill(false));
+     let groups = 0;
+     for (let y = 0; y < 10; y++) {
+       for (let x = 0; x < 10; x++) {
+         if (fog[y]?.[x] === 'S' && !seen[y][x]) {
+           groups++;
+           const stack: Array<[number, number]> = [[x, y]];
+           seen[y][x] = true;
+           while (stack.length) {
+             const [cx, cy] = stack.pop()!;
+             const dirs = [[1,0],[-1,0],[0,1],[0,-1]] as const;
+             for (const [dx, dy] of dirs) {
+               const nx = cx + dx, ny = cy + dy;
+               if (nx>=0 && ny>=0 && nx<10 && ny<10 && !seen[ny][nx] && fog[ny]?.[nx] === 'S') {
+                 seen[ny][nx] = true;
+                 stack.push([nx, ny]);
+               }
+             }
+           }
+         }
+       }
+     }
+     return groups;
+   };
+
    const convertOwn = (board: any) => {
      const cells: string[][] = Array.from({ length: 10 }, () => Array(10).fill('idle'));
      const hits: string[] = Array.isArray(board?.hits) ? board.hits : [];
@@ -190,6 +217,10 @@ import { initSfx, playSfx } from '../utils/sfx';
      );
    }
 
+   const sunkCount = countSunkShips(stateRef.current?.publicState?.fog || []);
+   const totalShips = 10; // классическая раскладка
+   const remainingShips = Math.max(0, totalShips - sunkCount);
+
    return (
      <div className="min-h-screen bg-tg-bg p-4" style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
        <div className="max-w-2xl mx-auto">
@@ -209,11 +240,14 @@ import { initSfx, playSfx } from '../utils/sfx';
              <Board variant="isometric" size="sm" cells={convertOwn(gameState.publicState.board) as any} disabled />
            </div>
            <div className="flex justify-center">
-             <Board variant="isometric" size="sm" cells={convertFog(gameState.publicState.fog) as any} disabled={!isMyTurn || gameState.status!=='in_progress'} onCellClick={(row,col)=>{
-               if (!isMyTurn||!matchId) return;
-               clearTurnTimer();
-               makeMove(matchId, { x: col, y: row } as any).then(()=> setTimeout(()=> getGameState(matchId!), 200));
-             }} isOpponent />
+             <div className="w-full">
+               <div className="text-center text-tg-hint mb-2">Осталось потопить: {remainingShips}</div>
+               <Board variant="isometric" size="sm" cells={convertFog(gameState.publicState.fog) as any} disabled={!isMyTurn || gameState.status!=='in_progress'} onCellClick={(row,col)=>{
+                 if (!isMyTurn||!matchId) return;
+                 clearTurnTimer();
+                 makeMove(matchId, { x: col, y: row } as any).then(()=> setTimeout(()=> getGameState(matchId!), 200));
+               }} isOpponent />
+             </div>
            </div>
          </div>
 
