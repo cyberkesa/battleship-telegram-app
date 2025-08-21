@@ -158,57 +158,49 @@ export class LobbyService {
 	}
 
 	async setPlayerReady(lobbyId: string, playerId: string): Promise<Lobby> {
-		await this._prisma.$executeRawUnsafe(
-			`UPDATE lobby_players SET is_ready = TRUE WHERE lobby_id = $1 AND player_id = $2`,
-			lobbyId,
-			Number(playerId),
-		);
+		// Use a transaction to avoid race conditions on match creation
+		await this._prisma.$transaction(async (tx) => {
+			// Mark player as ready
+			await tx.$executeRawUnsafe(
+				`UPDATE lobby_players SET is_ready = TRUE WHERE lobby_id = $1 AND player_id = $2`,
+				lobbyId,
+				Number(playerId),
+			);
 
-		// Check if both players are ready and match not yet created
-		const lobbyRow: any[] = await this._prisma.$queryRawUnsafe(
-			`SELECT id, status, match_id FROM lobbies WHERE id = $1`,
-			lobbyId,
-		);
-		const players: any[] = await this._prisma.$queryRawUnsafe(
-			`SELECT player_id, is_ready, is_host FROM lobby_players WHERE lobby_id = $1 ORDER BY is_host DESC, player_id ASC`,
-			lobbyId,
-		);
-		if (players.length === 2 && players.every(p => !!p.is_ready) && !lobbyRow[0]?.match_id) {
-			// Determine player roles (host becomes A)
-			const playerA = String(players[0].player_id);
-			const playerB = String(players[1].player_id);
-			// Create a new match via Prisma to respect schema mapping
-			const matchId = (global as any).crypto?.randomUUID?.() || require('crypto').randomUUID();
-			const initialState: any = { boards: { A: null, B: null }, ready: { A: false, B: false }, phase: 'placing' };
-			try {
-				await (this._prisma as any).match.create({
-					data: {
-						id: matchId,
-						status: 'placing',
-						playerAId: playerA,
-						playerBId: playerB,
-						currentTurn: null,
-						state: initialState,
-					},
-				});
-			} catch (e) {
-				// Fallback: try raw insert with minimal required columns if Prisma model mismatches
-				await this._prisma.$executeRawUnsafe(
+			// Lock lobby row for update
+			const lobbyRow: any[] = await tx.$queryRawUnsafe(
+				`SELECT id, status, match_id FROM lobbies WHERE id = $1 FOR UPDATE`,
+				lobbyId,
+			);
+			// Lock players rows for update to ensure consistent readiness view
+			const players: any[] = await tx.$queryRawUnsafe(
+				`SELECT player_id, is_ready, is_host FROM lobby_players WHERE lobby_id = $1 FOR UPDATE`,
+				lobbyId,
+			);
+			// Sort to ensure host is player A
+			players.sort((a, b) => (Number(b.is_host) - Number(a.is_host)) || (Number(a.player_id) - Number(b.player_id)));
+
+			if (players.length === 2 && players.every(p => !!p.is_ready) && !lobbyRow[0]?.match_id) {
+				const playerA = Number(players[0].player_id);
+				const playerB = Number(players[1].player_id);
+				const matchId = (global as any).crypto?.randomUUID?.() || require('crypto').randomUUID();
+				// Insert match using raw SQL against existing DB schema (MatchStatus enum)
+				await tx.$executeRawUnsafe(
 					`INSERT INTO matches (id, status, player_a_id, player_b_id) VALUES ($1, $2, $3, $4)`,
 					matchId,
 					'PLACING',
-					Number(playerA),
-					Number(playerB),
+					playerA,
+					playerB,
+				);
+				// Attach match to lobby and mark starting
+				await tx.$executeRawUnsafe(
+					`UPDATE lobbies SET match_id = $1, status = $2, updated_at = NOW() WHERE id = $3`,
+					matchId,
+					'starting',
+					lobbyId,
 				);
 			}
-			// Attach match to lobby and mark starting
-			await this._prisma.$executeRawUnsafe(
-				`UPDATE lobbies SET match_id = $1, status = $2, updated_at = NOW() WHERE id = $3`,
-				matchId,
-				'starting',
-				lobbyId,
-			);
-		}
+		});
 
 		return this.getLobbyStatus(lobbyId);
 	}
