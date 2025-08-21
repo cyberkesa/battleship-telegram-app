@@ -88,6 +88,44 @@ export const Cell: React.FC<CellProps> = ({
     }
   };
 
+  // Isometric rendering branch
+  const fallbackPxIso = size === 'sm' ? 28 : size === 'lg' ? 40 : size === 'mini' ? 20 : 34;
+  if (isometric) {
+    const thickness = 'calc(var(--cell, 32px) * 0.12)';
+    const waterTop = '#80bdfe';
+    const waterLeft = '#3e8fe1';
+    const waterRight = '#2870bd';
+    const shipTop = '#222222';
+    const topColor = (state === 'ship' || state === 'ship-hit' || state === 'ship-sunk') ? shipTop : waterTop;
+    return (
+      <div
+        className={className}
+        style={{ width: `var(--cell, ${fallbackPxIso}px)`, height: `var(--cell, ${fallbackPxIso}px)`, position: 'relative', transformStyle: 'preserve-3d' }}
+        onClick={handleClick}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onTouchStart={handleMouseDown}
+        onTouchEnd={handleMouseUp}
+      >
+        <div style={{ position: 'absolute', inset: 0, background: topColor, transform: `translateZ(${thickness})`, boxShadow: 'inset 0 0 0 1px rgba(0,0,0,.06)' }} />
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: thickness, background: waterLeft, transformOrigin: 'top', transform: 'rotateX(90deg)' }} />
+        <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: thickness, background: waterRight, transformOrigin: 'right', transform: `rotateY(-90deg) translateX(${thickness})` }} />
+        {state === 'miss' && (
+          <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', transform: `translateZ(calc(${thickness} + 1px))` }}>
+            <div style={{ width: 'calc(var(--cell, 32px) * 0.22)', height: 'calc(var(--cell, 32px) * 0.22)', backgroundColor: '#204A86', borderRadius: '50%' }} />
+          </div>
+        )}
+        {(state === 'hit' || state === 'ship-hit' || state === 'sunk' || state === 'ship-sunk') && (
+          <div style={{ position: 'absolute', inset: 0, transform: `translateZ(calc(${thickness} + 1px))` }} aria-hidden>
+            <div style={{ position: 'absolute', left: '12%', top: '50%', width: '76%', height: '2px', backgroundColor: '#C22121', transform: 'rotate(45deg)', transformOrigin: 'center' }} />
+            <div style={{ position: 'absolute', left: '12%', top: '50%', width: '76%', height: '2px', backgroundColor: '#C22121', transform: 'rotate(-45deg)', transformOrigin: 'center' }} />
+          </div>
+        )}
+      </div>
+    );
+  }
+
   const getCellContent = () => {
     // Helper to render an isometric diamond tile
     const renderIsoTile = (options?: { fill?: string; border?: string; shadow?: string; borderWidth?: number }) => {
@@ -198,4 +236,4 @@ export const Cell: React.FC<CellProps> = ({
       {getCellContent()}
     </div>
   );
-};
+}
