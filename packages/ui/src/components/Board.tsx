@@ -121,8 +121,8 @@ export const Board: React.FC<BoardProps> = React.memo(({
           gridAutoRows: 'var(--cell)',
           width: `calc(${BOARD_SIZE} * var(--cell) + ${(BOARD_SIZE - 1)} * var(--gap))`,
           height: `calc(${BOARD_SIZE} * var(--cell) + ${(BOARD_SIZE - 1)} * var(--gap))`,
-          transform: variant === 'isometric' ? 'perspective(900px) rotateX(58deg) rotateZ(45deg)' : undefined,
-          transformOrigin: variant === 'isometric' ? 'center top' : undefined,
+          transform: variant === 'isometric' ? 'rotateX(58deg) rotateZ(45deg)' : undefined,
+          transformOrigin: variant === 'isometric' ? 'center' : undefined,
           
         }}
       >
