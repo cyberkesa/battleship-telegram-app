@@ -68,7 +68,7 @@ export const LobbyScreen: React.FC = () => {
           createdAt: (data as any).createdAt || new Date().toISOString(),
         });
         if (user) {
-          const current = data.players.find(p => p.id === user.id);
+          const current = data.players.find(p => String(p.id) === String(user.id));
           setIsReady(!!current?.isReady);
           // Auto-join if not in lobby and lobby is waiting
           if (!current && data.status === 'waiting' && data.players.length < 2) {
@@ -77,7 +77,7 @@ export const LobbyScreen: React.FC = () => {
               const refreshed = await lobbyAPI.status(lobbyId);
               const newData = refreshed.data as Lobby;
               setLobby(newData as any);
-              const me = newData.players.find(p => p.id === user.id);
+              const me = newData.players.find(p => String(p.id) === String(user.id));
               setIsReady(!!me?.isReady);
             } catch (e) {
               // ignore join errors
@@ -107,7 +107,7 @@ export const LobbyScreen: React.FC = () => {
           createdAt: (data as any).createdAt || new Date().toISOString(),
         });
         if (user) {
-          const current = data.players.find(p => p.id === user.id);
+          const current = data.players.find(p => String(p.id) === String(user.id));
           setIsReady(!!current?.isReady);
         }
         if (data.matchId) {
@@ -132,7 +132,7 @@ export const LobbyScreen: React.FC = () => {
       const res = await lobbyAPI.status(lobbyId);
       const data = res.data as Lobby;
       setLobby(data);
-      const current = data.players.find(p => p.id === user.id);
+      const current = data.players.find(p => String(p.id) === String(user.id));
       setIsReady(!!current?.isReady);
       if (data.matchId) {
         setIsStarting(true);
@@ -208,7 +208,7 @@ export const LobbyScreen: React.FC = () => {
     );
   }
 
-  const isHost = lobby.players.find(p => p.id === user?.id)?.isHost || false;
+  const isHost = lobby.players.find(p => String(p.id) === String(user?.id))?.isHost || false;
   const allPlayersReady = lobby.players.length === 2 && lobby.players.every(p => p.isReady);
   const canStartGame = isHost && allPlayersReady;
 

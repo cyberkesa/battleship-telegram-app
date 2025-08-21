@@ -160,12 +160,35 @@ export class LobbyService {
 	async setPlayerReady(lobbyId: string, playerId: string): Promise<Lobby> {
 		// Use a transaction to avoid race conditions on match creation
 		await this._prisma.$transaction(async (tx) => {
-			// Mark player as ready
-			await tx.$executeRawUnsafe(
-				`UPDATE lobby_players SET is_ready = TRUE WHERE lobby_id = $1 AND player_id = $2`,
+			const pid = Number(playerId);
+			// Ensure player is in the lobby; if not, insert row with ready=true
+			const exists: any[] = await tx.$queryRawUnsafe(
+				`SELECT 1 FROM lobby_players WHERE lobby_id = $1 AND player_id = $2 LIMIT 1`,
 				lobbyId,
-				Number(playerId),
+				pid,
 			);
+			if (exists.length === 0) {
+				// Fetch user profile for name/avatar
+				const urows: any[] = await tx.$queryRawUnsafe(
+					`SELECT first_name, last_name, avatar_url FROM users WHERE id = $1 LIMIT 1`,
+					pid,
+				);
+				const playerName = [urows?.[0]?.first_name, urows?.[0]?.last_name].filter(Boolean).join(' ').trim() || 'Игрок';
+				await tx.$executeRawUnsafe(
+					`INSERT INTO lobby_players (lobby_id, player_id, name, avatar, is_ready, is_host) VALUES ($1, $2, $3, $4, TRUE, FALSE)` ,
+					lobbyId,
+					pid,
+					playerName,
+					urows?.[0]?.avatar_url ?? null,
+				);
+			} else {
+				// Mark player as ready
+				await tx.$executeRawUnsafe(
+					`UPDATE lobby_players SET is_ready = TRUE WHERE lobby_id = $1 AND player_id = $2`,
+					lobbyId,
+					pid,
+				);
+			}
 
 			// Lock lobby row for update
 			const lobbyRow: any[] = await tx.$queryRawUnsafe(

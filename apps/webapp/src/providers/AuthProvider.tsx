@@ -79,7 +79,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               if (me.data?.success && me.data?.data) {
                 const u = me.data.data;
                 const normalizedUser: User = {
-                  id: u.id,
+                  id: String(u.id),
                   telegramId: u.telegramId,
                   firstName: u.firstName || tgUser?.first_name || 'Игрок',
                   lastName: u.lastName ?? tgUser?.last_name,
@@ -104,7 +104,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
             // Fallback: use data from authenticate response
             const normalizedUser: User = {
-              id: user.id,
+              id: String(user.id),
               telegramId: user.telegramId,
               firstName: user.firstName || tgUser?.first_name || 'Игрок',
               lastName: user.lastName ?? tgUser?.last_name,
@@ -138,7 +138,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           if (me.data?.success && me.data?.data) {
             const u = me.data.data;
             const normalizedUser: User = {
-              id: u.id,
+              id: String(u.id),
               telegramId: u.telegramId,
               firstName: u.firstName,
               lastName: u.lastName,
