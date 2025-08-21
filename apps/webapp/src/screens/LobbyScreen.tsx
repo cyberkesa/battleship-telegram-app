@@ -132,7 +132,16 @@ export const LobbyScreen: React.FC = () => {
     if (bothReady && !countdownActiveRef.current) {
       countdownActiveRef.current = true;
       setCountdown(3);
-      const startLobby = () => lobbyAPI.start(lobby.id).catch(()=>{});
+      const startLobby = async () => {
+        try {
+          const res = await lobbyAPI.start(lobby.id);
+          const lb: any = res?.data;
+          const mid = lb?.matchId || lb?.match_id;
+          if (mid) {
+            navigate(`/setup/${String(mid)}`);
+          }
+        } catch {}
+      };
       const t = window.setInterval(() => {
         setCountdown(prev => {
           const current = typeof prev === 'number' ? prev : 3;
