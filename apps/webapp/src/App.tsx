@@ -18,17 +18,33 @@ function DeepLinkHandler() {
   const navigate = useNavigate();
   useEffect(() => {
     const tg: any = (window as any).Telegram?.WebApp;
-    const startParam: string | undefined = tg?.initDataUnsafe?.start_param;
+    const search = new URLSearchParams(location.search);
+    const startParam: string = tg?.initDataUnsafe?.start_param ?? search.get('tgWebAppStartParam') ?? '';
+
+    // base64url helpers
+    const fromB64Url = (s: string) => {
+      if (!s) return s;
+      let t = s.replace(/-/g, '+').replace(/_/g, '/');
+      while (t.length % 4) t += '=';
+      try { return atob(t); } catch { return ''; }
+    };
+
     if (import.meta.env.DEV) {
-      console.log('[DeepLink] initData start_param =', startParam);
+      console.log('[DeepLink] start_param =', startParam);
     }
+
     if (startParam) {
-      if (startParam.startsWith('join:') || startParam.startsWith('join_')) {
-        const id = startParam.replace(/^join[:_]/, '');
-        if (id) {
-          navigate(`/lobby/${id}`, { replace: true });
-        }
+      let lobbyId = '';
+      if (/^join_[A-Za-z0-9_-]+$/.test(startParam)) {
+        lobbyId = startParam.slice(5);
+      } else {
+        try {
+          const decoded = fromB64Url(startParam);
+          const obj = JSON.parse(decoded);
+          if (obj?.t === 'join' && typeof obj.id === 'string') lobbyId = obj.id;
+        } catch {}
       }
+      if (lobbyId) navigate(`/lobby/${lobbyId}`, { replace: true });
     }
   }, [navigate]);
   return null;
@@ -46,23 +62,17 @@ function App() {
           <Routes>
             {/* Главная страница */}
             <Route path="/" element={<HomeScreen />} />
-            
             {/* Создание лобби */}
             <Route path="/lobby/create" element={<CreateLobbyScreen />} />
-            
             {/* Лобби */}
             <Route path="/lobby/:lobbyId" element={<LobbyScreen />} />
-            
             {/* Расстановка кораблей */}
             <Route path="/setup/:matchId" element={<SetupScreen />} />
-            
             {/* Игра */}
             <Route path="/game/:matchId" element={<GameScreen />} />
             <Route path="/game/quick-game" element={<GameScreen />} />
-            
             {/* Поиск игры */}
             <Route path="/matchmaking" element={<MatchmakingScreen />} />
-            
             {/* Профиль и настройки */}
             <Route path="/profile" element={<ProfileScreen />} />
             <Route path="/settings" element={<SettingsScreen />} />
