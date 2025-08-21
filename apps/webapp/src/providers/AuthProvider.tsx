@@ -13,6 +13,16 @@ interface User {
   gamesWon: number;
   rating: number;
   createdAt: string;
+  history?: Array<{
+    id: string;
+    status: string;
+    startedAt: string;
+    finishedAt: string | null;
+    durationSec: number | null;
+    youWon: boolean | null;
+    opponent: { id: string; name: string; avatar?: string | null; username?: string | null };
+    stats: { myMoves: number; oppMoves: number; myHits: number; oppHits: number };
+  }>;
 }
 
 interface AuthContextType {
@@ -78,7 +88,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                   gamesPlayed: u.gamesPlayed ?? 0,
                   gamesWon: u.gamesWon ?? 0,
                   rating: u.rating ?? 1000,
-                  createdAt: u.createdAt
+                  createdAt: u.createdAt,
+                  history: Array.isArray(u.history) ? u.history : []
                 };
                 setAuthState({
                   isAuthenticated: true,
@@ -136,7 +147,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               gamesPlayed: u.gamesPlayed ?? 0,
               gamesWon: u.gamesWon ?? 0,
               rating: u.rating ?? 1000,
-              createdAt: u.createdAt
+              createdAt: u.createdAt,
+              history: Array.isArray(u.history) ? u.history : []
             };
             setAuthState({
               isAuthenticated: true,

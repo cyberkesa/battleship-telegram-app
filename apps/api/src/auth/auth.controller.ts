@@ -62,6 +62,8 @@ export class AuthController {
       const firstName = user.firstName || req.user.firstName || user.username || 'Игрок';
       const lastName = user.lastName || req.user.lastName || null;
       const photoUrl = user.photoUrl || req.user.photoUrl || null;
+      // Load recent match history (lightweight)
+      const history = await this._authService.getMatchHistory(req.user.sub, 20);
       return {
         success: true,
         data: {
@@ -75,6 +77,7 @@ export class AuthController {
           rating: user.rating ?? 1000,
           gamesPlayed: user.gamesPlayed ?? 0,
           gamesWon: user.gamesWon ?? 0,
+          history,
         }
       };
     } catch (error) {
