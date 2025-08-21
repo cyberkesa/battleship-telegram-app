@@ -23,6 +23,8 @@ export class GameService {
   private redis?: Redis;
   private turnTimers = new Map<string, any>();
 
+  private async sleep(ms: number): Promise<void> { return new Promise(res => setTimeout(res, ms)); }
+
   constructor(private _prisma: PrismaService) {
     // Optional Redis for AI matches persistence across requests/instances
     try {
@@ -136,6 +138,8 @@ export class GameService {
         break;
       }
       if (!hit) break; // stop on miss
+      // add small delay between consecutive AI shots for UX
+      await this.sleep(1000);
     }
   }
 
