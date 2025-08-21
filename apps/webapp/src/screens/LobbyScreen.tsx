@@ -93,6 +93,36 @@ export const LobbyScreen: React.FC = () => {
     load();
   }, [lobbyId, user?.id]);
 
+  // Poll lobby status periodically to reflect joins/ready state in real-time
+  useEffect(() => {
+    if (!lobbyId) return;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const res = await lobbyAPI.status(lobbyId);
+        if (cancelled) return;
+        const data = res.data as Lobby;
+        setLobby({
+          ...data,
+          createdAt: (data as any).createdAt || new Date().toISOString(),
+        });
+        if (user) {
+          const current = data.players.find(p => p.id === user.id);
+          setIsReady(!!current?.isReady);
+        }
+        if (data.matchId) {
+          setIsStarting(true);
+          navigate(`/setup/${data.matchId}`);
+        }
+      } catch {}
+    };
+    const id = setInterval(tick, 2000);
+    // also run one immediate tick when regaining visibility
+    const onVisible = () => { if (document.visibilityState === 'visible') tick(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { cancelled = true; clearInterval(id); document.removeEventListener('visibilitychange', onVisible); };
+  }, [lobbyId, user?.id, navigate]);
+
   const handleToggleReady = async () => {
     if (!lobby || !user || !lobbyId) return;
 

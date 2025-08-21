@@ -112,13 +112,15 @@ export class LobbyService {
 			 FROM lobbies l LEFT JOIN lobby_players lp ON lp.lobby_id = l.id WHERE l.id = $1`,
 			data.lobbyId,
 		);
-		const players = rows.map(r => ({
-			id: String(r.player_id),
-			name: r.name,
-			avatar: r.avatar ?? undefined,
-			isReady: !!r.is_ready,
-			isHost: !!r.is_host,
-		}));
+		const players = rows
+			.filter(r => r.player_id !== null && r.player_id !== undefined)
+			.map(r => ({
+				id: String(r.player_id),
+				name: r.name,
+				avatar: r.avatar ?? undefined,
+				isReady: !!r.is_ready,
+				isHost: !!r.is_host,
+			}));
 		return {
 			id: String(rows[0].id),
 			status: rows[0].status,
@@ -136,13 +138,15 @@ export class LobbyService {
 			lobbyId,
 		);
 		if (rows.length === 0) throw new NotFoundException('Лобби не найдено');
-		const players = rows.map(r => ({
-			id: String(r.player_id),
-			name: r.name,
-			avatar: r.avatar ?? undefined,
-			isReady: !!r.is_ready,
-			isHost: !!r.is_host,
-		}));
+		const players = rows
+			.filter(r => r.player_id !== null && r.player_id !== undefined)
+			.map(r => ({
+				id: String(r.player_id),
+				name: r.name,
+				avatar: r.avatar ?? undefined,
+				isReady: !!r.is_ready,
+				isHost: !!r.is_host,
+			}));
 		return {
 			id: String(rows[0].id),
 			status: rows[0].status,
