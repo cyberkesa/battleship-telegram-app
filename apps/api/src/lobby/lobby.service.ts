@@ -12,7 +12,7 @@ export interface LobbyPlayer {
 
 export interface Lobby {
 	id: string;
-	status: 'waiting' | 'ready' | 'playing' | 'finished';
+	status: 'waiting' | 'ready' | 'starting' | 'playing' | 'finished';
 	players: LobbyPlayer[];
 	inviteLink: string;
 	createdAt: Date;

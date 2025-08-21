@@ -167,7 +167,7 @@ export const LobbyScreen: React.FC = () => {
     if (!lobby || !user || !lobbyId) return;
 
     try {
-      await lobbyAPI.ready(lobbyId);
+      if (isReady) await lobbyAPI.unready(lobbyId); else await lobbyAPI.ready(lobbyId);
       // Refresh
       const res = await lobbyAPI.status(lobbyId);
       const data = res.data as Lobby;
