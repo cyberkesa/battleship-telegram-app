@@ -206,10 +206,10 @@ import { initSfx, playSfx } from '../utils/sfx';
 
          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6" ref={boardsWrapRef}>
            <div className="flex justify-center">
-             <Board size="sm" cells={convertOwn(gameState.publicState.board) as any} disabled />
+             <Board variant="isometric" size="sm" cells={convertOwn(gameState.publicState.board) as any} disabled />
            </div>
            <div className="flex justify-center">
-             <Board size="sm" cells={convertFog(gameState.publicState.fog) as any} disabled={!isMyTurn || gameState.status!=='in_progress'} onCellClick={(row,col)=>{
+             <Board variant="isometric" size="sm" cells={convertFog(gameState.publicState.fog) as any} disabled={!isMyTurn || gameState.status!=='in_progress'} onCellClick={(row,col)=>{
                if (!isMyTurn||!matchId) return;
                clearTurnTimer();
                makeMove(matchId, { x: col, y: row } as any).then(()=> setTimeout(()=> getGameState(matchId!), 200));
