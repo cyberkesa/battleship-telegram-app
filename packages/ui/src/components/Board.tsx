@@ -126,67 +126,7 @@ export const Board: React.FC<BoardProps> = React.memo(({
           
         }}
       >
-        {showCoordinates && (
-          <>
-            {/* Верхние буквы в изометрии */}
-            <div
-              aria-hidden
-              className="pointer-events-none absolute"
-              style={{
-                left: 'var(--pad)',
-                top: 0,
-                width: `calc(${BOARD_SIZE} * var(--cell) + ${(BOARD_SIZE - 1)} * var(--gap))`,
-                height: '24px',
-                transform: 'translateY(-28px) rotateX(55deg) rotateZ(45deg) scale(0.92)',
-                transformOrigin: 'left bottom',
-              }}
-            >
-              <div
-                className="grid"
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: `repeat(${BOARD_SIZE}, var(--cell))`,
-                  columnGap: 'var(--gap)'
-                }}
-              >
-                {coordinates.letters.map((letter) => (
-                  <div key={letter} className="text-caption font-mono text-mute flex items-center justify-center">
-                    {letter}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Левые цифры в изометрии */}
-            <div
-              aria-hidden
-              className="pointer-events-none absolute"
-              style={{
-                top: 'var(--pad)',
-                left: 0,
-                width: '24px',
-                height: `calc(${BOARD_SIZE} * var(--cell) + ${(BOARD_SIZE - 1)} * var(--gap))`,
-                transform: 'translateX(-28px) rotateX(55deg) rotateZ(45deg) scale(0.92)',
-                transformOrigin: 'right top',
-              }}
-            >
-              <div
-                className="grid"
-                style={{
-                  display: 'grid',
-                  gridTemplateRows: `repeat(${BOARD_SIZE}, var(--cell))`,
-                  rowGap: 'var(--gap)'
-                }}
-              >
-                {coordinates.numbers.map((n) => (
-                  <div key={n} className="text-caption font-mono text-mute flex items-center justify-center">
-                    {n}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </>
-        )}
+        {/* В изометрии координаты отключены для пиксель‑перфект выравнивания */}
         {/* removed underside full overlay per request */}
         {/* two visible side faces for volume */}
         {/* side faces (isometric slab) */}
@@ -198,7 +138,7 @@ export const Board: React.FC<BoardProps> = React.memo(({
             bottom: 0,
             width: '100%',
             height: '12px',
-            transform: 'translateY(6px) rotateX(58deg) rotateZ(45deg)',
+            transform: variant === 'isometric' ? 'translateY(6px) rotateX(58deg) rotateZ(45deg)' : 'none',
             transformOrigin: 'top',
             background: variant === 'isometric' ? '#3e8fe1' : 'transparent',
             borderBottomLeftRadius: '6px',
@@ -214,7 +154,7 @@ export const Board: React.FC<BoardProps> = React.memo(({
             top: 0,
             width: '12px',
             height: '100%',
-            transform: 'translateX(6px) rotateX(58deg) rotateZ(45deg)',
+            transform: variant === 'isometric' ? 'translateX(6px) rotateX(58deg) rotateZ(45deg)' : 'none',
             transformOrigin: 'left',
             background: variant === 'isometric' ? '#2870bd' : 'transparent',
             borderTopRightRadius: '6px',
