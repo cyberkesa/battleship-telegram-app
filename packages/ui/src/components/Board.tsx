@@ -13,6 +13,7 @@ interface BoardProps {
   isOpponent?: boolean;
   cellPxOverride?: number;
   padPxOverride?: number;
+  variant?: 'flat' | 'isometric';
 }
 
 export const Board: React.FC<BoardProps> = React.memo(({ 
@@ -26,6 +27,7 @@ export const Board: React.FC<BoardProps> = React.memo(({
   isOpponent = false,
   cellPxOverride,
   padPxOverride,
+  variant = 'flat',
 }) => {
   const { cellPx, padPx } = adaptiveSizeConfig[size];
   const resolvedCell = typeof cellPxOverride === 'number' ? `${Math.max(10, Math.floor(cellPxOverride))}px` : cellPx;
@@ -49,6 +51,8 @@ export const Board: React.FC<BoardProps> = React.memo(({
     }
   }, [disabled, onCellLongPress]);
 
+  const coordsVisible = showCoordinates && variant !== 'isometric';
+
   return (
     <div 
       className={`relative overflow-visible max-w-full ${className}`}
@@ -59,7 +63,55 @@ export const Board: React.FC<BoardProps> = React.memo(({
       }}
       onContextMenu={(e) => e.preventDefault()}
     >
+<<<<<<< HEAD
       {/* Внешние координаты убраны — координаты рендерим в изометрии внутри плоскости */}
+=======
+      {coordsVisible && (
+        <>
+          <div className="absolute left-[var(--pad)] -top-6 right-0 flex justify-start pointer-events-none">
+            <div
+              className="grid grid-cols-10"
+              style={{
+                width: `calc(${BOARD_SIZE} * var(--cell) + ${BOARD_SIZE - 1} * var(--gap))`,
+                gap: 'var(--gap)',
+              }}
+              aria-hidden
+            >
+              {coordinates.letters.map((letter) => (
+                <div
+                  key={letter}
+                  className="flex items-center justify-center text-caption font-mono text-mute"
+                  style={{ width: 'var(--cell)', height: '24px' }}
+                >
+                  {letter}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="absolute top-[var(--pad)] -left-6 bottom-0 flex flex-col justify-start pointer-events-none">
+            <div
+              className="grid grid-rows-10"
+              style={{
+                height: `calc(${BOARD_SIZE} * var(--cell) + ${BOARD_SIZE - 1} * var(--gap))`,
+                rowGap: 'var(--gap)',
+              }}
+              aria-hidden
+            >
+              {coordinates.numbers.map((number) => (
+                <div
+                  key={number}
+                  className="flex items-center justify-center text-caption font-mono text-mute"
+                  style={{ width: '24px', height: 'var(--cell)' }}
+                >
+                  {number}
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+>>>>>>> 148b3e6 (feat(ui): add isometric variant to Board and Cell support)
 
       <div
         role="grid"
@@ -71,12 +123,19 @@ export const Board: React.FC<BoardProps> = React.memo(({
           padding: 'var(--pad)',
           gridTemplateColumns: `repeat(${BOARD_SIZE}, var(--cell))`,
           gridAutoRows: 'var(--cell)',
+<<<<<<< HEAD
           // width/height derive from grid; explicit calc not required
           // Lighter base slab
           background: 'linear-gradient(180deg, #7FE7FA 0%, #5FD3EE 100%)',
           transform: 'rotateX(55deg) rotateZ(45deg) scale(0.92)',
           transformOrigin: 'center',
           boxShadow: '0 18px 28px rgba(0,0,0,0.35), 0 6px 0 rgba(0,0,0,0.15) inset',
+=======
+          width: `calc(${BOARD_SIZE} * var(--cell) + ${(BOARD_SIZE - 1)} * var(--gap))`,
+          height: `calc(${BOARD_SIZE} * var(--cell) + ${(BOARD_SIZE - 1)} * var(--gap))`,
+          transform: variant === 'isometric' ? 'perspective(900px) rotateX(58deg) rotateZ(45deg)' : undefined,
+          transformOrigin: variant === 'isometric' ? 'center top' : undefined,
+>>>>>>> 148b3e6 (feat(ui): add isometric variant to Board and Cell support)
         }}
       >
         {showCoordinates && (
@@ -183,6 +242,7 @@ export const Board: React.FC<BoardProps> = React.memo(({
               onClick={() => handleCellClick(rowIndex, colIndex)}
               onLongPress={() => handleCellLongPress(rowIndex, colIndex)}
               disabled={disabled}
+              isometric={variant === 'isometric'}
             />
           ))
         )}

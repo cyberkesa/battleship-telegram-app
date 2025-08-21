@@ -25,6 +25,7 @@ interface CellProps {
   className?: string;
   children?: React.ReactNode;
   draggable?: boolean;
+  isometric?: boolean;
   style?: React.CSSProperties;
 }
 
@@ -60,6 +61,7 @@ export const Cell: React.FC<CellProps> = ({
   className = '',
   children,
   draggable = false,
+  isometric = false,
 }) => {
   const [isLongPress, setIsLongPress] = React.useState(false);
   const longPressTimer = React.useRef<NodeJS.Timeout>();
