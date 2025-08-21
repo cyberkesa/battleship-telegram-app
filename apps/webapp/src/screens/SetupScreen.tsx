@@ -86,8 +86,8 @@ export const SetupScreen: React.FC = () => {
 
   // Определяем, является ли это быстрой игрой (против компьютера)
   const isQuickGame = matchId === 'computer';
-  // Используем matchId или fallback на 'computer' для корректного роутинга
-  const gameId = matchId ?? 'computer'; // Исправляем роутинг
+  // Определяем gameId строго по режиму: quick -> 'computer', иначе используем фактический matchId
+  const gameId = isQuickGame ? 'computer' : (matchId as string);
 
   // Мемоизированный расчет доступных кораблей для размещения
   const availableShips = React.useMemo(() => {
