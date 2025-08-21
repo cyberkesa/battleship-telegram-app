@@ -71,7 +71,7 @@ export class LobbyService {
 
 	async joinLobby(data: { lobbyId: string; playerId: string; playerName: string; playerAvatar?: string }): Promise<Lobby> {
 		const lobbyRows: any[] = await this._prisma.$queryRawUnsafe(
-			`SELECT id, status, invite_link, created_at FROM lobbies WHERE id = $1`,
+			`SELECT id, status, invite_link, match_id, created_at FROM lobbies WHERE id = $1`,
 			data.lobbyId,
 		);
 		if (lobbyRows.length === 0) throw new NotFoundException('Лобби не найдено');
@@ -108,7 +108,7 @@ export class LobbyService {
 		);
 
 		const rows: any[] = await this._prisma.$queryRawUnsafe(
-			`SELECT l.id, l.status, l.invite_link, l.created_at, lp.player_id, lp.name, lp.avatar, lp.is_ready, lp.is_host
+			`SELECT l.id, l.status, l.invite_link, l.match_id, l.created_at, lp.player_id, lp.name, lp.avatar, lp.is_ready, lp.is_host
 			 FROM lobbies l LEFT JOIN lobby_players lp ON lp.lobby_id = l.id WHERE l.id = $1`,
 			data.lobbyId,
 		);
@@ -125,12 +125,13 @@ export class LobbyService {
 			players,
 			inviteLink: rows[0].invite_link,
 			createdAt: rows[0].created_at,
+			matchId: rows[0].match_id ?? undefined,
 		};
 	}
 
 	async getLobbyStatus(lobbyId: string): Promise<Lobby> {
 		const rows: any[] = await this._prisma.$queryRawUnsafe(
-			`SELECT l.id, l.status, l.invite_link, l.created_at, lp.player_id, lp.name, lp.avatar, lp.is_ready, lp.is_host
+			`SELECT l.id, l.status, l.invite_link, l.match_id, l.created_at, lp.player_id, lp.name, lp.avatar, lp.is_ready, lp.is_host
 			 FROM lobbies l LEFT JOIN lobby_players lp ON lp.lobby_id = l.id WHERE l.id = $1`,
 			lobbyId,
 		);
@@ -148,6 +149,7 @@ export class LobbyService {
 			players,
 			inviteLink: rows[0].invite_link,
 			createdAt: rows[0].created_at,
+			matchId: rows[0].match_id ?? undefined,
 		};
 	}
 
@@ -157,6 +159,53 @@ export class LobbyService {
 			lobbyId,
 			Number(playerId),
 		);
+
+		// Check if both players are ready and match not yet created
+		const lobbyRow: any[] = await this._prisma.$queryRawUnsafe(
+			`SELECT id, status, match_id FROM lobbies WHERE id = $1`,
+			lobbyId,
+		);
+		const players: any[] = await this._prisma.$queryRawUnsafe(
+			`SELECT player_id, is_ready, is_host FROM lobby_players WHERE lobby_id = $1 ORDER BY is_host DESC, player_id ASC`,
+			lobbyId,
+		);
+		if (players.length === 2 && players.every(p => !!p.is_ready) && !lobbyRow[0]?.match_id) {
+			// Determine player roles (host becomes A)
+			const playerA = String(players[0].player_id);
+			const playerB = String(players[1].player_id);
+			// Create a new match via Prisma to respect schema mapping
+			const matchId = (global as any).crypto?.randomUUID?.() || require('crypto').randomUUID();
+			const initialState: any = { boards: { A: null, B: null }, ready: { A: false, B: false }, phase: 'placing' };
+			try {
+				await (this._prisma as any).match.create({
+					data: {
+						id: matchId,
+						status: 'placing',
+						playerAId: playerA,
+						playerBId: playerB,
+						currentTurn: null,
+						state: initialState,
+					},
+				});
+			} catch (e) {
+				// Fallback: try raw insert with minimal required columns if Prisma model mismatches
+				await this._prisma.$executeRawUnsafe(
+					`INSERT INTO matches (id, status, player_a_id, player_b_id) VALUES ($1, $2, $3, $4)`,
+					matchId,
+					'PLACING',
+					Number(playerA),
+					Number(playerB),
+				);
+			}
+			// Attach match to lobby and mark starting
+			await this._prisma.$executeRawUnsafe(
+				`UPDATE lobbies SET match_id = $1, status = $2, updated_at = NOW() WHERE id = $3`,
+				matchId,
+				'starting',
+				lobbyId,
+			);
+		}
+
 		return this.getLobbyStatus(lobbyId);
 	}
 
