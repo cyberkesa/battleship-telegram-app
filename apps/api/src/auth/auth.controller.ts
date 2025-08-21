@@ -72,6 +72,9 @@ export class AuthController {
           lastName,
           photoUrl,
           createdAt: user.createdAt.toISOString(),
+          rating: user.rating ?? 1000,
+          gamesPlayed: user.gamesPlayed ?? 0,
+          gamesWon: user.gamesWon ?? 0,
         }
       };
     } catch (error) {
