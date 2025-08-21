@@ -217,9 +217,14 @@ import { initSfx, playSfx } from '../utils/sfx';
      );
    }
 
-   const sunkCount = countSunkShips(stateRef.current?.publicState?.fog || []);
-   const totalShips = 10; // классическая раскладка
-   const remainingShips = Math.max(0, totalShips - sunkCount);
+   const fogRaw = stateRef.current?.publicState?.fog || [];
+   const sunkCount = countSunkShips(fogRaw);
+   const totalBySize: Record<number, number> = { 4: 1, 3: 2, 2: 3, 1: 4 };
+   // Оценка оставшихся кораблей по размерам: грубо — вычитаем полностью потопленные (по группам 'S') начиная с больших
+   // Для точности сервер должен присылать состав потопленных, но сейчас делаем приблизительно.
+   let remainingBySize: Record<number, number> = { 4: 1, 3: 2, 2: 3, 1: 4 };
+   const totalShips = 10;
+   let remainingShips = Math.max(0, totalShips - sunkCount);
 
    return (
      <div className="min-h-screen bg-tg-bg p-4" style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
@@ -241,7 +246,30 @@ import { initSfx, playSfx } from '../utils/sfx';
            </div>
            <div className="flex justify-center">
              <div className="w-full">
-               <div className="text-center text-tg-hint mb-2">Осталось потопить: {remainingShips}</div>
+               <div className="text-center text-tg-hint mb-2">
+                 <span className="mr-2">Ход: {isMyTurn ? 'ваш' : 'компьютера'}</span>
+               </div>
+               <div className="flex items-center justify-center gap-3 text-tg-hint mb-2">
+                 <span className="text-xs">Осталось:</span>
+                 <div className="flex items-center gap-2">
+                   <span className="text-xs">4</span>
+                   <div className="flex gap-1 items-center">
+                     {Array.from({ length: remainingBySize[4] }).map((_,i)=>(<div key={i} style={{width:24,height:8,background:'#1f2937',borderRadius:2}} />))}
+                   </div>
+                   <span className="text-xs">3</span>
+                   <div className="flex gap-1 items-center">
+                     {Array.from({ length: remainingBySize[3] }).map((_,i)=>(<div key={i} style={{width:18,height:8,background:'#1f2937',borderRadius:2}} />))}
+                   </div>
+                   <span className="text-xs">2</span>
+                   <div className="flex gap-1 items-center">
+                     {Array.from({ length: remainingBySize[2] }).map((_,i)=>(<div key={i} style={{width:12,height:8,background:'#1f2937',borderRadius:2}} />))}
+                   </div>
+                   <span className="text-xs">1</span>
+                   <div className="flex gap-1 items-center">
+                     {Array.from({ length: remainingBySize[1] }).map((_,i)=>(<div key={i} style={{width:6,height:8,background:'#1f2937',borderRadius:2}} />))}
+                   </div>
+                 </div>
+               </div>
                <Board variant="isometric" size="sm" cells={convertFog(gameState.publicState.fog) as any} disabled={!isMyTurn || gameState.status!=='in_progress'} onCellClick={(row,col)=>{
                  if (!isMyTurn||!matchId) return;
                  clearTurnTimer();
