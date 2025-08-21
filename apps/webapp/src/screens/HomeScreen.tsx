@@ -28,21 +28,21 @@ const GAME_MODES: GameMode[] = [
     id: 'online',
     title: 'Онлайн с человеком',
     description: 'Играйте с случайным игроком',
-    icon: <Users className="w-6 h-6" />,
+    icon: <Users className="w-6 h-6 text-white" />,
     route: '/matchmaking'
   },
   {
     id: 'computer',
     title: 'С компьютером',
     description: 'Играйте против ИИ',
-    icon: <Bot className="w-6 h-6" />,
+    icon: <Bot className="w-6 h-6 text-white" />,
     route: '/setup/computer'
   },
   {
     id: 'friend',
     title: 'С другом',
     description: 'Создайте лобби и пригласите друга',
-    icon: <UserPlus className="w-6 h-6" />,
+    icon: <UserPlus className="w-6 h-6 text-white" />,
     route: '/lobby/create'
   }
 ];

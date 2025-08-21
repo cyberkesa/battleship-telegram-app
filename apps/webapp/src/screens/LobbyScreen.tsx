@@ -240,7 +240,7 @@ export const LobbyScreen: React.FC = () => {
       <div className="min-h-screen bg-bg-deep text-foam flex items-center justify-center p-4">
         <div className="text-center">
           <div className="flex items-center justify-center gap-2 text-torpedo mb-2">
-            <AlertCircle className="w-6 h-6" />
+            <AlertCircle className="w-6 h-6 text-white" />
             <h2 className="font-heading font-semibold text-h2 text-foam">
               Ошибка
             </h2>
@@ -324,7 +324,7 @@ export const LobbyScreen: React.FC = () => {
                     {player.avatar ? (
                       <img src={player.avatar} alt="Avatar" className="w-full h-full rounded-full" />
                     ) : (
-                      <User className="w-5 h-5 text-sonar" />
+                      <User className="w-5 h-5 text-white" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -358,7 +358,7 @@ export const LobbyScreen: React.FC = () => {
             <div className="bg-bg-graphite/50 rounded-card ring-1 ring-edge/50 border-dashed p-4">
               <div className="text-center">
                 <div className="flex items-center justify-center gap-2 text-mist mb-2">
-                  <Clock className="w-5 h-5" />
+                  <Clock className="w-5 h-5 text-white" />
                   <p className="text-body">Ожидание второго игрока...</p>
                 </div>
               </div>
