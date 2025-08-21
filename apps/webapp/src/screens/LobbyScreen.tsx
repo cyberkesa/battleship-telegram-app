@@ -119,7 +119,7 @@ export const LobbyScreen: React.FC = () => {
         }
       } catch {}
     };
-    const id = setInterval(tick, 2000);
+    const id = setInterval(tick, 1000);
     // also run one immediate tick when regaining visibility
     const onVisible = () => { if (document.visibilityState === 'visible') tick(); };
     document.addEventListener('visibilitychange', onVisible);
@@ -139,6 +139,18 @@ export const LobbyScreen: React.FC = () => {
           const mid = lb?.matchId || lb?.match_id;
           if (mid) {
             navigate(`/setup/${String(mid)}`);
+            return;
+          }
+          // Fallback: short poll for matchId
+          const tryUntil = Date.now() + 5000;
+          while (Date.now() < tryUntil) {
+            try {
+              const s = await lobbyAPI.status(lobby.id);
+              const data: any = s.data;
+              if (data?.matchId) { navigate(`/setup/${String(data.matchId)}`); return; }
+              if (data?.match_id) { navigate(`/setup/${String(data.match_id)}`); return; }
+            } catch {}
+            await new Promise(r => setTimeout(r, 250));
           }
         } catch {}
       };
